@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   SandpackProvider,
   SandpackPreview,
@@ -15,39 +15,36 @@ import { Badge } from "@/components/ui/badge";
 import type { FileMap } from "@/lib/parser";
 
 function ErrorOverlay({ hasUserCode }: { hasUserCode: boolean }) {
-  const { sandpack } = useSandpack();
-  const error = sandpack.error;
-  const status = sandpack.status;
+  const { sandpack, listen } = useSandpack();
+  const [bundlerDone, setBundlerDone] = useState(false);
   const [stuckSeconds, setStuckSeconds] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const hasLoadedOnce = useRef(false);
 
   useEffect(() => {
-    if (status === "idle") {
-      hasLoadedOnce.current = true;
-      setStuckSeconds(0);
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-  }, [status]);
+    setBundlerDone(false);
+    setStuckSeconds(0);
+
+    const unsub = listen((msg) => {
+      if (msg.type === "done") {
+        setBundlerDone(true);
+      }
+    });
+
+    return unsub;
+  }, [listen]);
 
   useEffect(() => {
-    if (hasLoadedOnce.current) return;
-
-    if (status === "running" || status === "initial") {
-      setStuckSeconds(0);
-      timerRef.current = setInterval(() => {
-        setStuckSeconds((s) => s + 1);
-      }, 1000);
-    } else {
-      setStuckSeconds(0);
-      if (timerRef.current) clearInterval(timerRef.current);
+    if (bundlerDone || !hasUserCode) {
+      return;
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [status]);
 
-  if (error) {
+    const timer = setInterval(() => {
+      setStuckSeconds((s) => s + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [bundlerDone, hasUserCode]);
+
+  if (sandpack.error) {
     return (
       <div className="absolute inset-0 z-10 flex flex-col bg-[#1e1e2e] text-white overflow-auto">
         <div className="flex items-center gap-3 border-b border-red-500/30 bg-red-500/10 px-5 py-3">
@@ -56,7 +53,7 @@ function ErrorOverlay({ hasUserCode }: { hasUserCode: boolean }) {
         </div>
         <div className="flex-1 p-5 overflow-auto">
           <pre className="text-sm font-mono text-red-200 whitespace-pre-wrap break-words leading-relaxed">
-            {error.message}
+            {sandpack.error.message}
           </pre>
         </div>
         <div className="border-t border-white/10 px-5 py-3">
@@ -68,7 +65,7 @@ function ErrorOverlay({ hasUserCode }: { hasUserCode: boolean }) {
     );
   }
 
-  if (hasUserCode && stuckSeconds > 15) {
+  if (hasUserCode && !bundlerDone && stuckSeconds > 15) {
     return (
       <div className="absolute inset-0 z-10 flex flex-col bg-[#1e1e2e] text-white overflow-auto">
         <div className="flex items-center gap-3 border-b border-amber-500/30 bg-amber-500/10 px-5 py-3">
@@ -96,7 +93,7 @@ function ErrorOverlay({ hasUserCode }: { hasUserCode: boolean }) {
     );
   }
 
-  if (hasUserCode && stuckSeconds > 5 && status !== "idle") {
+  if (hasUserCode && !bundlerDone && stuckSeconds > 5) {
     return (
       <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#1e1e2e]/80">
         <div className="flex flex-col items-center gap-3 text-white/70">
