@@ -1,0 +1,5 @@
+1- Rate limit en post /api/generate (arreglar)
+2- Sin Autenticación ni Autorización (arreglar cuando el sistema tenga backend, login y demás)
+3- Sin Validación del Tamaño del Payload (arreglar, que sea grande pero tampoco inmenso)
+4- Exposición de Errores Internos al Cliente (Loggear el error real server-side y enviar un mensaje genérico al cliente)
+5- Cancelación de Generación (hacer que el usuario pueda cancelar una generación que se esté ejecutando)
