@@ -1,111 +1,17 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   SandpackProvider,
   SandpackPreview,
   SandpackCodeEditor,
   SandpackFileExplorer,
-  useSandpack,
 } from "@codesandbox/sandpack-react";
 import { dracula } from "@codesandbox/sandpack-themes";
-import { Eye, Code2, Copy, Check, FolderTree, AlertTriangle, Loader2, Terminal } from "lucide-react";
+import { Eye, Code2, Copy, Check, FolderTree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { FileMap } from "@/lib/parser";
-
-function ErrorOverlay({ hasUserCode }: { hasUserCode: boolean }) {
-  const { sandpack, listen } = useSandpack();
-  const [bundlerDone, setBundlerDone] = useState(false);
-  const [stuckSeconds, setStuckSeconds] = useState(0);
-
-  useEffect(() => {
-    setBundlerDone(false);
-    setStuckSeconds(0);
-
-    const unsub = listen((msg) => {
-      if (msg.type === "done") {
-        setBundlerDone(true);
-      }
-    });
-
-    return unsub;
-  }, [listen]);
-
-  useEffect(() => {
-    if (bundlerDone || !hasUserCode) {
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setStuckSeconds((s) => s + 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [bundlerDone, hasUserCode]);
-
-  if (sandpack.error) {
-    return (
-      <div className="absolute inset-0 z-10 flex flex-col bg-[#1e1e2e] text-white overflow-auto">
-        <div className="flex items-center gap-3 border-b border-red-500/30 bg-red-500/10 px-5 py-3">
-          <AlertTriangle className="h-5 w-5 text-red-400 shrink-0" />
-          <span className="text-sm font-semibold text-red-300">Error de compilación</span>
-        </div>
-        <div className="flex-1 p-5 overflow-auto">
-          <pre className="text-sm font-mono text-red-200 whitespace-pre-wrap break-words leading-relaxed">
-            {sandpack.error.message}
-          </pre>
-        </div>
-        <div className="border-t border-white/10 px-5 py-3">
-          <p className="text-xs text-white/50">
-            Envía un nuevo prompt para corregir el error.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (hasUserCode && !bundlerDone && stuckSeconds > 15) {
-    return (
-      <div className="absolute inset-0 z-10 flex flex-col bg-[#1e1e2e] text-white overflow-auto">
-        <div className="flex items-center gap-3 border-b border-amber-500/30 bg-amber-500/10 px-5 py-3">
-          <Terminal className="h-5 w-5 text-amber-400 shrink-0" />
-          <span className="text-sm font-semibold text-amber-300">Preview no disponible</span>
-        </div>
-        <div className="flex-1 p-5 overflow-auto">
-          <p className="text-sm text-amber-200 leading-relaxed">
-            El sandbox lleva más de {stuckSeconds}s intentando compilar el proyecto.
-            Es probable que haya un error en el código generado que impide la compilación.
-          </p>
-          <p className="text-sm text-white/60 mt-4">
-            Posibles causas:
-          </p>
-          <ul className="text-sm text-white/60 mt-2 space-y-1 list-disc list-inside">
-            <li>Error de importación entre archivos</li>
-            <li>Resolución de módulos fallida</li>
-            <li>Error de sintaxis en el código generado</li>
-          </ul>
-          <p className="text-sm text-white/60 mt-4">
-            Revisa el código en la pestaña &quot;Code&quot; o envía un nuevo prompt.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (hasUserCode && !bundlerDone && stuckSeconds > 5) {
-    return (
-      <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#1e1e2e]/80">
-        <div className="flex flex-col items-center gap-3 text-white/70">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-sm">Compilando proyecto... ({stuckSeconds}s)</p>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
-}
 
 interface CodePreviewProps {
   files: FileMap;
@@ -204,17 +110,16 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
           files={displayFiles}
           customSetup={{
             dependencies: {
-              "lucide-react": "latest",
+              "lucide-react": "0.460.0",
             },
           }}
           options={{
             activeFile: "/App.tsx",
             externalResources: [
-              "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4",
+              "https://cdn.tailwindcss.com",
             ],
           }}
         >
-          <ErrorOverlay hasUserCode={Object.keys(files).length > 0} />
           <div
             className="absolute inset-0"
             style={{
