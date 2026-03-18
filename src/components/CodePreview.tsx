@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   Eye,
   Code2,
@@ -15,6 +15,8 @@ import {
   ChevronDown,
   ChevronRight,
   AlertCircle,
+  Download,
+  FileCode2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,22 +52,22 @@ const STATUS_CONFIG: Record<ContainerStatus, { label: string; icon: React.ReactN
   error: { label: "Error", icon: <AlertCircle className="w-3.5 h-3.5" />, color: "text-destructive" },
 };
 
-function FileTreeView({ files }: { files: FileMap }) {
-  const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set(["components"]));
+function FileTreeView({ files, selectedFile, onSelectFile }: { files: FileMap; selectedFile: string; onSelectFile: (path: string) => void }) {
+  const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set(["components", "pages", "hooks", "utils", "types", "data", "lib"]));
 
   const tree = useMemo(() => {
-    const dirs: Record<string, string[]> = {};
-    const rootFiles: string[] = [];
+    const dirs: Record<string, { name: string; fullPath: string }[]> = {};
+    const rootFiles: { name: string; fullPath: string }[] = [];
 
     for (const path of Object.keys(files)) {
       const clean = path.startsWith("/") ? path.slice(1) : path;
       const parts = clean.split("/");
       if (parts.length === 1) {
-        rootFiles.push(clean);
+        rootFiles.push({ name: clean, fullPath: path });
       } else {
         const dir = parts[0];
         if (!dirs[dir]) dirs[dir] = [];
-        dirs[dir].push(parts.slice(1).join("/"));
+        dirs[dir].push({ name: parts.slice(1).join("/"), fullPath: path });
       }
     }
     return { dirs, rootFiles };
@@ -79,6 +81,8 @@ function FileTreeView({ files }: { files: FileMap }) {
       return next;
     });
   }
+
+  const selectedClean = selectedFile.startsWith("/") ? selectedFile.slice(1) : selectedFile;
 
   return (
     <div className="p-2 text-xs font-mono space-y-0.5">
@@ -98,18 +102,36 @@ function FileTreeView({ files }: { files: FileMap }) {
           {expandedDirs.has(dir) && (
             <div className="ml-4 space-y-0.5">
               {children.map((child) => (
-                <div key={child} className="px-2 py-1 text-muted-foreground truncate">
-                  {child}
-                </div>
+                <button
+                  key={child.fullPath}
+                  onClick={() => onSelectFile(child.fullPath)}
+                  className={`flex items-center gap-1.5 w-full px-2 py-1 rounded truncate transition ${
+                    selectedClean === child.fullPath.replace(/^\//, "")
+                      ? "bg-primary/10 text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <FileCode2 className="w-3 h-3 shrink-0 opacity-50" />
+                  {child.name}
+                </button>
               ))}
             </div>
           )}
         </div>
       ))}
       {tree.rootFiles.map((file) => (
-        <div key={file} className="px-2 py-1 text-muted-foreground truncate">
-          {file}
-        </div>
+        <button
+          key={file.fullPath}
+          onClick={() => onSelectFile(file.fullPath)}
+          className={`flex items-center gap-1.5 w-full px-2 py-1 rounded truncate transition ${
+            selectedClean === file.name
+              ? "bg-primary/10 text-foreground font-medium"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <FileCode2 className="w-3 h-3 shrink-0 opacity-50" />
+          {file.name}
+        </button>
       ))}
     </div>
   );
@@ -119,6 +141,7 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
+  const [iframeLoaded, setIframeLoaded] = useState(false);
   const { status, previewUrl, error, logs, mountFiles } = useWebContainer();
   const prevGenKeyRef = useRef<number>(-1);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -131,6 +154,11 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
   const fileCount = Object.keys(displayFiles).length;
   const isMultiFile = fileCount > 1;
   const statusConfig = STATUS_CONFIG[status];
+
+  // Reset iframeLoaded when URL changes
+  useEffect(() => {
+    setIframeLoaded(false);
+  }, [previewUrl]);
 
   // Mount files when generationKey changes
   useEffect(() => {
@@ -158,8 +186,64 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
 
   function handleRefresh() {
     if (iframeRef.current && previewUrl) {
+      setIframeLoaded(false);
       iframeRef.current.src = previewUrl;
     }
+  }
+
+  const handleIframeLoad = useCallback(() => {
+    setIframeLoaded(true);
+  }, []);
+
+  async function handleDownloadProject() {
+    const { default: JSZip } = await import("jszip");
+    const zip = new JSZip();
+
+    for (const [path, content] of Object.entries(displayFiles)) {
+      const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+      zip.file(`src/${cleanPath}`, content);
+    }
+
+    // Add scaffold files
+    zip.file("package.json", JSON.stringify({
+      name: "dokiflux-project",
+      private: true,
+      type: "module",
+      scripts: { dev: "vite", build: "vite build", preview: "vite preview" },
+      dependencies: { react: "^18.3.1", "react-dom": "^18.3.1", "lucide-react": "^0.460.0" },
+      devDependencies: {
+        "@vitejs/plugin-react": "^4.3.4", vite: "^6.0.0",
+        "@types/react": "^18.3.0", "@types/react-dom": "^18.3.0",
+        typescript: "^5.6.0", tailwindcss: "^3.4.17",
+        postcss: "^8.4.49", autoprefixer: "^10.4.20",
+      },
+    }, null, 2));
+    zip.file("vite.config.ts", 'import { defineConfig } from "vite";\nimport react from "@vitejs/plugin-react";\n\nexport default defineConfig({\n  plugins: [react()],\n});\n');
+    zip.file("tailwind.config.js", '/** @type {import(\'tailwindcss\').Config} */\nexport default {\n  content: ["./**/*.{js,ts,jsx,tsx}"],\n  theme: { extend: {} },\n  plugins: [],\n};\n');
+    zip.file("postcss.config.js", 'export default {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n};\n');
+    zip.file("index.html", '<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>Dokiflux Project</title>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.tsx"></script>\n  </body>\n</html>\n');
+    zip.file("src/main.tsx", 'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport App from "./App";\nimport "./index.css";\n\nReactDOM.createRoot(document.getElementById("root")!).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n);\n');
+    zip.file("src/index.css", '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n');
+    zip.file("tsconfig.json", JSON.stringify({
+      compilerOptions: {
+        target: "ES2020", useDefineForClassFields: true,
+        lib: ["ES2020", "DOM", "DOM.Iterable"], module: "ESNext",
+        skipLibCheck: true, moduleResolution: "bundler",
+        allowImportingTsExtensions: true, isolatedModules: true,
+        moduleDetection: "force", noEmit: true, jsx: "react-jsx",
+        strict: true, allowJs: true,
+      },
+      include: ["src"],
+    }, null, 2));
+    zip.file("README.md", '# Dokiflux Project\n\nGenerated with [Dokiflux](https://github.com/jaume768/DokiFlux).\n\n## Getting Started\n\n```bash\nnpm install\nnpm run dev\n```\n');
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "dokiflux-project.zip";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   const fileList = Object.keys(displayFiles);
@@ -228,6 +312,10 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
               {copied ? "Copied!" : "Copy all"}
             </Button>
           )}
+          <Button variant="ghost" size="sm" onClick={handleDownloadProject} className="gap-1.5 text-xs">
+            <Download className="w-3.5 h-3.5" />
+            Download
+          </Button>
         </div>
       </div>
 
@@ -242,13 +330,22 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
           }}
         >
           {previewUrl ? (
-            <iframe
-              ref={iframeRef}
-              src={previewUrl}
-              className="w-full h-full border-0 bg-white"
-              title="Preview"
-              allow="cross-origin-isolated"
-            />
+            <div className="relative w-full h-full">
+              {!iframeLoaded && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background z-10 gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Loading preview...</p>
+                </div>
+              )}
+              <iframe
+                ref={iframeRef}
+                src={previewUrl}
+                className="w-full h-full border-0"
+                title="Preview"
+                allow="cross-origin-isolated"
+                onLoad={handleIframeLoad}
+              />
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
               {status === "error" ? (
@@ -283,7 +380,7 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
         >
           {isMultiFile && (
             <div className="w-48 shrink-0 border-r overflow-auto bg-muted/30">
-              <FileTreeView files={displayFiles} />
+              <FileTreeView files={displayFiles} selectedFile={selectedFile} onSelectFile={setSelectedFile} />
             </div>
           )}
           <div className="flex-1 flex flex-col overflow-hidden">
