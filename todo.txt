@@ -1,2 +1,0 @@
-arreglar error de que al generar el proyecto, se vuelve a compilar y luego da error cuando en el principio ha ido bien y todo el codigo es correcto, 
-revisar porque en el flujo ocurre, sino quitar que vuelva a compilar el proyecto
