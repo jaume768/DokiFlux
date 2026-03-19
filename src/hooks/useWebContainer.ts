@@ -89,6 +89,32 @@ const INDEX_HTML = `<!DOCTYPE html>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function() {
+        function reportPath() {
+          var p = location.pathname + location.search + location.hash;
+          window.parent.postMessage({ type: 'dokiflux-navigation', path: p }, '*');
+        }
+        var origPush = history.pushState;
+        var origReplace = history.replaceState;
+        history.pushState = function() {
+          origPush.apply(this, arguments);
+          reportPath();
+        };
+        history.replaceState = function() {
+          origReplace.apply(this, arguments);
+          reportPath();
+        };
+        window.addEventListener('popstate', reportPath);
+        window.addEventListener('message', function(e) {
+          if (e.data && e.data.type === 'dokiflux-navigate') {
+            history.pushState({}, '', e.data.path);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }
+        });
+        document.addEventListener('DOMContentLoaded', reportPath);
+      })();
+    </script>
   </body>
 </html>
 `;

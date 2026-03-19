@@ -19,7 +19,7 @@ export function ChatPanel({ messages, isLoading }: ChatPanelProps) {
   }, [messages, isLoading]);
 
   return (
-    <ScrollArea className="flex-1">
+    <ScrollArea className="flex-1 min-h-0 overflow-hidden">
       <div className="p-4 space-y-3">
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center text-muted-foreground">

@@ -167,28 +167,18 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
     setUrlInput("/");
   }, [previewUrl]);
 
-  // Poll iframe URL to detect in-app navigation
+  // Listen for navigation messages from the iframe (postMessage bridge)
   useEffect(() => {
-    if (!previewUrl || !iframeLoaded) return;
-    const interval = setInterval(() => {
-      try {
-        const loc = iframeRef.current?.contentWindow?.location;
-        if (loc && loc.pathname) {
-          const path = loc.pathname + loc.search + loc.hash;
-          setIframePath((prev) => {
-            if (prev !== path) {
-              setUrlInput(path);
-              return path;
-            }
-            return prev;
-          });
-        }
-      } catch {
-        // cross-origin — ignore
+    function handleMessage(e: MessageEvent) {
+      if (e.data && e.data.type === "dokiflux-navigation" && typeof e.data.path === "string") {
+        const path = e.data.path;
+        setIframePath(path);
+        setUrlInput(path);
       }
-    }, 500);
-    return () => clearInterval(interval);
-  }, [previewUrl, iframeLoaded]);
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   // Mount files when generationKey changes
   useEffect(() => {
@@ -222,13 +212,20 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
   }
 
   function handleNavigate(path: string) {
-    if (iframeRef.current && previewUrl) {
-      const cleanPath = path.startsWith("/") ? path : "/" + path;
+    if (!iframeRef.current || !previewUrl) return;
+    const cleanPath = path.startsWith("/") ? path : "/" + path;
+    try {
+      iframeRef.current.contentWindow?.postMessage(
+        { type: "dokiflux-navigate", path: cleanPath },
+        "*"
+      );
+    } catch {
+      // Fallback: full reload if postMessage fails
       setIframeLoaded(false);
       iframeRef.current.src = previewUrl + cleanPath;
-      setIframePath(cleanPath);
-      setUrlInput(cleanPath);
     }
+    setIframePath(cleanPath);
+    setUrlInput(cleanPath);
   }
 
   function handleGoBack() {
