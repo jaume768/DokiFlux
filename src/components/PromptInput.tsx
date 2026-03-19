@@ -3,14 +3,15 @@
 import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { SendHorizonal, Loader2 } from "lucide-react";
+import { SendHorizonal, Loader2, Square } from "lucide-react";
 
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
+  onCancel: () => void;
   isLoading: boolean;
 }
 
-export function PromptInput({ onSubmit, isLoading }: PromptInputProps) {
+export function PromptInput({ onSubmit, onCancel, isLoading }: PromptInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -47,21 +48,28 @@ export function PromptInput({ onSubmit, isLoading }: PromptInputProps) {
           disabled={isLoading}
           rows={2}
         />
-        <Button
-          onClick={handleSubmit}
-          disabled={!value.trim() || isLoading}
-          size="icon"
-          className="shrink-0 h-[60px] w-[60px]"
-        >
-          {isLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
+        {isLoading ? (
+          <Button
+            onClick={onCancel}
+            size="icon"
+            variant="destructive"
+            className="shrink-0 h-[60px] w-[60px]"
+          >
+            <Square className="w-5 h-5" />
+          </Button>
+        ) : (
+          <Button
+            onClick={handleSubmit}
+            disabled={!value.trim()}
+            size="icon"
+            className="shrink-0 h-[60px] w-[60px]"
+          >
             <SendHorizonal className="w-5 h-5" />
-          )}
-        </Button>
+          </Button>
+        )}
       </div>
       <p className="text-xs text-muted-foreground mt-2">
-        Press Enter to send, Shift+Enter for new line
+        {isLoading ? "Click the stop button to cancel generation" : "Press Enter to send, Shift+Enter for new line"}
       </p>
     </div>
   );

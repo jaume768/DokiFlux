@@ -15,6 +15,7 @@ export default function GeneratePage() {
   const [generationKey, setGenerationKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const codeRef = useRef("");
+  const abortRef = useRef<AbortController | null>(null);
   const [sessionStats, setSessionStats] = useState<SessionStats>({
     totalInputTokens: 0,
     totalOutputTokens: 0,
@@ -25,6 +26,8 @@ export default function GeneratePage() {
   const handleSubmit = useCallback(
     async (prompt: string) => {
       setIsLoading(true);
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -46,6 +49,7 @@ export default function GeneratePage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt, history }),
+          signal: controller.signal,
         });
 
         if (!res.ok) {
@@ -117,14 +121,25 @@ export default function GeneratePage() {
           }
         }
       } catch (err) {
-        const errorMessage: Message = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: `Error: ${err instanceof Error ? err.message : "Unknown error"}`,
-          timestamp: Date.now(),
-        };
-        setMessages((prev) => [...prev, errorMessage]);
+        if (err instanceof DOMException && err.name === "AbortError") {
+          const cancelMessage: Message = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "Generation cancelled.",
+            timestamp: Date.now(),
+          };
+          setMessages((prev) => [...prev, cancelMessage]);
+        } else {
+          const errorMessage: Message = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: `Error: ${err instanceof Error ? err.message : "Unknown error"}`,
+            timestamp: Date.now(),
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+        }
       } finally {
+        abortRef.current = null;
         setIsLoading(false);
       }
     },
@@ -158,7 +173,11 @@ export default function GeneratePage() {
             messages={messages}
             isLoading={isLoading}
           />
-          <PromptInput onSubmit={handleSubmit} isLoading={isLoading} />
+          <PromptInput
+            onSubmit={handleSubmit}
+            onCancel={() => abortRef.current?.abort()}
+            isLoading={isLoading}
+          />
         </div>
 
         {/* Right: Preview */}

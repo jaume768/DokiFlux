@@ -27,7 +27,7 @@ RULES:
 2. Use Tailwind CSS utility classes for ALL styling. Do not use inline styles or CSS modules.
 3. You may import and use icons from "lucide-react" (e.g., import { Search, Menu, X } from "lucide-react").
 4. Import React hooks from "react" (e.g., import { useState } from "react").
-5. Use realistic placeholder data. Make the UI visually complete and professional.
+5. Use realistic placeholder data. Make the UI visually complete and professional. When the UI needs images (hero sections, cards, avatars, galleries, etc.), use public URLs from https://images.unsplash.com with appropriate query params (e.g., https://images.unsplash.com/photo-XXXX?w=800&h=600&fit=crop). Prefer landscape photos for heroes/banners and square crops for avatars/thumbnails.
 6. Respond ONLY with code using the multi-file format. No markdown fences, no explanations outside of code.
 7. Make the UI modern, clean, and professional. Use rounded corners, shadows, spacing, and color contrast.
 8. Use responsive design when appropriate.
@@ -36,10 +36,12 @@ RULES:
 11. Use correct relative imports between files. Files in subdirectories must use "../" to import from parent directories.
 12. For simple requests (a single button, a card, etc.), a single /App.tsx file is fine.
 13. For complex requests (dashboards, full pages, multi-section UIs), split into multiple well-organized files.
+14. For multi-page apps (CRMs, dashboards, stores, admin panels, etc.), use react-router-dom for URL-based navigation. The app is already wrapped in BrowserRouter, so use Routes, Route, Link, useNavigate, useParams, and Outlet directly. Do NOT wrap the app in BrowserRouter yourself.
 
 AVAILABLE IMPORTS:
 - "lucide-react" — for icons (Search, Menu, X, ChevronDown, User, Settings, Bell, Home, Plus, Trash2, Edit, Check, Star, Heart, ArrowRight, ArrowLeft, etc.)
 - "react" — for hooks and React itself (useState, useEffect, useRef, useMemo, useCallback)
+- "react-router-dom" — for routing (Routes, Route, Link, NavLink, useNavigate, useParams, useLocation, Outlet, Navigate). The app is already wrapped in BrowserRouter.
 
 EXAMPLE OUTPUT FOR A COMPLEX REQUEST:
 // --- FILE: /types/index.ts ---
@@ -77,18 +79,40 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
   );
 }
 
+// --- FILE: /pages/HomePage.tsx ---
+export default function HomePage() {
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold">Welcome</h1>
+      <p className="text-gray-600 mt-2">This is the home page.</p>
+    </div>
+  );
+}
+
+// --- FILE: /pages/SettingsPage.tsx ---
+export default function SettingsPage() {
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold">Settings</h1>
+    </div>
+  );
+}
+
 // --- FILE: /App.tsx ---
-import { useState } from "react";
+import { Routes, Route } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
+import HomePage from "./pages/HomePage";
+import SettingsPage from "./pages/SettingsPage";
 
 export default function App() {
-  const [page, setPage] = useState("home");
-
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar active={page} onNavigate={setPage} />
-      <main className="flex-1 p-6">
-        <h1 className="text-2xl font-bold">Welcome</h1>
+      <Sidebar />
+      <main className="flex-1">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Routes>
       </main>
     </div>
   );

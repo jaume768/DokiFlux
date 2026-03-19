@@ -17,6 +17,9 @@ import {
   AlertCircle,
   Download,
   FileCode2,
+  Globe,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -142,6 +145,8 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [iframePath, setIframePath] = useState("/");
+  const [urlInput, setUrlInput] = useState("/");
   const { status, previewUrl, error, logs, mountFiles } = useWebContainer();
   const prevGenKeyRef = useRef<number>(-1);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -158,7 +163,32 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
   // Reset iframeLoaded when URL changes
   useEffect(() => {
     setIframeLoaded(false);
+    setIframePath("/");
+    setUrlInput("/");
   }, [previewUrl]);
+
+  // Poll iframe URL to detect in-app navigation
+  useEffect(() => {
+    if (!previewUrl || !iframeLoaded) return;
+    const interval = setInterval(() => {
+      try {
+        const loc = iframeRef.current?.contentWindow?.location;
+        if (loc && loc.pathname) {
+          const path = loc.pathname + loc.search + loc.hash;
+          setIframePath((prev) => {
+            if (prev !== path) {
+              setUrlInput(path);
+              return path;
+            }
+            return prev;
+          });
+        }
+      } catch {
+        // cross-origin — ignore
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [previewUrl, iframeLoaded]);
 
   // Mount files when generationKey changes
   useEffect(() => {
@@ -187,8 +217,30 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
   function handleRefresh() {
     if (iframeRef.current && previewUrl) {
       setIframeLoaded(false);
-      iframeRef.current.src = previewUrl;
+      iframeRef.current.src = previewUrl + iframePath;
     }
+  }
+
+  function handleNavigate(path: string) {
+    if (iframeRef.current && previewUrl) {
+      const cleanPath = path.startsWith("/") ? path : "/" + path;
+      setIframeLoaded(false);
+      iframeRef.current.src = previewUrl + cleanPath;
+      setIframePath(cleanPath);
+      setUrlInput(cleanPath);
+    }
+  }
+
+  function handleGoBack() {
+    try {
+      iframeRef.current?.contentWindow?.history.back();
+    } catch { /* ignore */ }
+  }
+
+  function handleGoForward() {
+    try {
+      iframeRef.current?.contentWindow?.history.forward();
+    } catch { /* ignore */ }
   }
 
   const handleIframeLoad = useCallback(() => {
@@ -210,7 +262,7 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
       private: true,
       type: "module",
       scripts: { dev: "vite", build: "vite build", preview: "vite preview" },
-      dependencies: { react: "^18.3.1", "react-dom": "^18.3.1", "lucide-react": "^0.460.0" },
+      dependencies: { react: "^18.3.1", "react-dom": "^18.3.1", "lucide-react": "^0.460.0", "react-router-dom": "^7.1.1" },
       devDependencies: {
         "@vitejs/plugin-react": "^4.3.4", vite: "^6.0.0",
         "@types/react": "^18.3.0", "@types/react-dom": "^18.3.0",
@@ -222,7 +274,7 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
     zip.file("tailwind.config.js", '/** @type {import(\'tailwindcss\').Config} */\nexport default {\n  content: ["./**/*.{js,ts,jsx,tsx}"],\n  theme: { extend: {} },\n  plugins: [],\n};\n');
     zip.file("postcss.config.js", 'export default {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n};\n');
     zip.file("index.html", '<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>Dokiflux Project</title>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.tsx"></script>\n  </body>\n</html>\n');
-    zip.file("src/main.tsx", 'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport App from "./App";\nimport "./index.css";\n\nReactDOM.createRoot(document.getElementById("root")!).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n);\n');
+    zip.file("src/main.tsx", 'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport { BrowserRouter } from "react-router-dom";\nimport App from "./App";\nimport "./index.css";\n\nReactDOM.createRoot(document.getElementById("root")!).render(\n  <React.StrictMode>\n    <BrowserRouter>\n      <App />\n    </BrowserRouter>\n  </React.StrictMode>\n);\n');
     zip.file("src/index.css", '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n');
     zip.file("tsconfig.json", JSON.stringify({
       compilerOptions: {
@@ -301,11 +353,6 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
         </div>
 
         <div className="flex items-center gap-1">
-          {activeTab === "preview" && previewUrl && (
-            <Button variant="ghost" size="sm" onClick={handleRefresh} className="gap-1.5 text-xs">
-              <RefreshCw className="w-3.5 h-3.5" />
-            </Button>
-          )}
           {activeTab === "code" && (
             <Button variant="ghost" size="sm" onClick={handleCopyAll} className="gap-1.5 text-xs">
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -330,21 +377,49 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
           }}
         >
           {previewUrl ? (
-            <div className="relative w-full h-full">
-              {!iframeLoaded && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background z-10 gap-3">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">Loading preview...</p>
+            <div className="relative w-full h-full flex flex-col">
+              {/* URL Bar */}
+              <div className="flex items-center gap-1.5 px-3 py-1.5 border-b bg-muted/40 shrink-0">
+                <button onClick={handleGoBack} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition">
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={handleGoForward} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition">
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={handleRefresh} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+                <div className="flex-1 flex items-center gap-1.5 bg-background border rounded-md px-2.5 py-1">
+                  <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <input
+                    type="text"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleNavigate(urlInput);
+                    }}
+                    className="flex-1 text-xs font-mono bg-transparent outline-none text-foreground"
+                    spellCheck={false}
+                  />
                 </div>
-              )}
-              <iframe
-                ref={iframeRef}
-                src={previewUrl}
-                className="w-full h-full border-0"
-                title="Preview"
-                allow="cross-origin-isolated"
-                onLoad={handleIframeLoad}
-              />
+              </div>
+              {/* Iframe */}
+              <div className="relative flex-1 min-h-0">
+                {!iframeLoaded && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background z-10 gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">Loading preview...</p>
+                  </div>
+                )}
+                <iframe
+                  ref={iframeRef}
+                  src={previewUrl}
+                  className="absolute inset-0 w-full h-full border-0"
+                  title="Preview"
+                  allow="cross-origin-isolated"
+                  onLoad={handleIframeLoad}
+                />
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">

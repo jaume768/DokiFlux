@@ -81,9 +81,8 @@ export async function POST(req: Request) {
           );
           controller.close();
         } catch (err) {
-          const errorMsg =
-            err instanceof Error ? err.message : "Stream error";
-          const errorData = JSON.stringify({ type: "error", error: errorMsg });
+          console.error("[generate/stream]", err);
+          const errorData = JSON.stringify({ type: "error", error: "Something went wrong while generating. Please try again." });
           controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
           controller.close();
         }
@@ -98,8 +97,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Internal server error";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("[generate/POST]", err);
+    return Response.json({ error: "Internal server error. Please try again." }, { status: 500 });
   }
 }

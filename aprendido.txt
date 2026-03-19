@@ -5,4 +5,8 @@
 5- Separador de archivos para proyectos grandes
 6- Obvio uso de ia para programar el proyecto (hablar un poco de los programadores que no utilizan ia) y como manejar historial de conversaciones
 7- Como hacer que puedas hacer varias iteraciones del mismo proyecto sin que la ia lo regenere de 0
+8- Funcionamiento de los iframe para los webcontainers
+9- Entendimiento de la arquitectura de v0 a la hora de iterar en proyectos grandes con multiples archivos, diff estructurados:
 
+    - La IA devuelve algo como "archivo X cambia estas líneas, archivo Y es nuevo", y el frontend hace el merge. Esto reduce tokens de output, 
+    ahora el MVP funciona pero se puede mejorar muchisimo con estos cambios, seria como el funcionamiento de Cursor o Windsurf

@@ -31,6 +31,7 @@ const VITE_PACKAGE_JSON = {
     react: "^18.3.1",
     "react-dom": "^18.3.1",
     "lucide-react": "^0.460.0",
+    "react-router-dom": "^7.1.1",
   },
   devDependencies: {
     "@vitejs/plugin-react": "^4.3.4",
@@ -94,12 +95,15 @@ const INDEX_HTML = `<!DOCTYPE html>
 
 const MAIN_TSX = `import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );
 `;
