@@ -1,10 +1,6 @@
 1- Rate limit en post /api/generate (arreglar)
 2- Sin Autenticación ni Autorización (arreglar cuando el sistema tenga backend, login y demás)
 3- Sin Validación del Tamaño del Payload (arreglar, que sea grande pero tampoco inmenso)
-7- File-level (En vez de pedir todo el proyecto, le dices a la IA: "Devuelve SOLO los archivos que necesitas modificar o crear. Los archivos que no incluyas se mantienen tal cual.", esto es un paso intermedio para conseguir lo que hace v0)
-    - Modificar el system prompt para que solo devuelva archivos cambiados en caso de iteración
-    - Modificar el parser/merge en page.tsx para que haga un merge en vez de un reemplazo
-    - Problema: si la IA se olvida de incluir un archivo que sí cambió, se queda la versión vieja. Y si quieres borrar un archivo, necesitas una convención especial (como // --- DELETE: /path ---).
 8- Persistencia de proyectos (Al tener el backend con django):
     - Arquitectura típica:
        Usuario → Frontend → API Backend → Base de datos
