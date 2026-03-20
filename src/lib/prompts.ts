@@ -18,9 +18,12 @@ FILE STRUCTURE:
 ITERATION RULES (VERY IMPORTANT):
 - When the conversation history contains your previous code output, the user is asking you to ITERATE on that existing project.
 - You MUST preserve ALL existing files and functionality unless the user explicitly asks to remove something.
-- Add new files or modify existing files as needed to fulfill the new request.
-- Always output the COMPLETE project (all files, including unchanged ones) so the result is self-contained.
+- Output ONLY the files you are creating or modifying. Files you do not include will be kept as-is automatically.
+- If the user asks to remove a file, use this exact marker instead of a FILE marker:
+  // --- DELETE: /path/to/file.tsx ---
+- Always include /App.tsx if you modify it.
 - Keep the same code style, structure, and patterns from the previous version.
+- Make sure all imports in modified files point to the correct paths (including files you did NOT include in your response).
 
 RULES:
 1. Split the project into logical files with a clean, professional structure.

@@ -6,7 +6,7 @@ import { PromptInput } from "@/components/PromptInput";
 import { CodePreview } from "@/components/CodePreview";
 import { SessionStatsBar } from "@/components/TokenUsage";
 import { Message, SessionStats, StreamChunk } from "@/types";
-import { parseMultiFileOutput, type FileMap, getFileCount } from "@/lib/parser";
+import { parseMultiFileOutput, mergeFiles, serializeFileMap, type FileMap, getFileCount } from "@/lib/parser";
 import { Sparkles } from "lucide-react";
 
 export default function GeneratePage() {
@@ -90,18 +90,38 @@ export default function GeneratePage() {
             }
 
             if (chunk.type === "usage" && chunk.usage) {
-              const parsed = parseMultiFileOutput(codeRef.current);
-              setCurrentFiles(parsed);
+              const { files: incomingFiles, deletions } = parseMultiFileOutput(codeRef.current);
+
+              let finalFiles: FileMap;
+              const hasExisting = Object.keys(currentFiles).length > 0;
+              if (hasExisting) {
+                finalFiles = mergeFiles(currentFiles, incomingFiles, deletions);
+              } else {
+                finalFiles = incomingFiles;
+              }
+
+              setCurrentFiles(finalFiles);
               setGenerationKey((k) => k + 1);
 
-              const fileCount = getFileCount(parsed);
+              const fileCount = getFileCount(finalFiles);
+              const changedCount = Object.keys(incomingFiles).length;
+              const deletedCount = deletions.length;
+
+              let summary = `Project generated with ${fileCount} file${fileCount !== 1 ? "s" : ""}`;
+              if (hasExisting) {
+                summary = `Updated ${changedCount} file${changedCount !== 1 ? "s" : ""}`;
+                if (deletedCount > 0) summary += `, deleted ${deletedCount}`;
+                summary += ` (${fileCount} total)`;
+              }
+              summary += " and rendered in preview.";
+
               const assistantMessage: Message = {
                 id: crypto.randomUUID(),
                 role: "assistant",
-                content: `Project generated with ${fileCount} file${fileCount > 1 ? "s" : ""} and rendered in preview.`,
+                content: summary,
                 timestamp: Date.now(),
                 usage: chunk.usage,
-                rawCode: codeRef.current,
+                rawCode: serializeFileMap(finalFiles),
               };
               setMessages((prev) => [...prev, assistantMessage]);
 

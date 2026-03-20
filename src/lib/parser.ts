@@ -1,4 +1,5 @@
 const FILE_MARKER_REGEX = /^\/\/\s*---\s*FILE:\s*(.+?)\s*---\s*$/;
+const DELETE_MARKER_REGEX = /^\/\/\s*---\s*DELETE:\s*(.+?)\s*---\s*$/;
 
 export type FileMap = Record<string, string>;
 
@@ -10,13 +11,32 @@ function flattenIndexPath(filePath: string): string {
   return filePath;
 }
 
-export function parseMultiFileOutput(raw: string): FileMap {
+export interface ParseResult {
+  files: FileMap;
+  deletions: string[];
+}
+
+export function parseMultiFileOutput(raw: string): ParseResult {
   const lines = raw.split("\n");
   const files: FileMap = {};
+  const deletions: string[] = [];
   let currentPath: string | null = null;
   let currentContent: string[] = [];
 
   for (const line of lines) {
+    const deleteMatch = line.match(DELETE_MARKER_REGEX);
+    if (deleteMatch) {
+      if (currentPath) {
+        files[currentPath] = currentContent.join("\n").trim();
+        currentPath = null;
+        currentContent = [];
+      }
+      let delPath = deleteMatch[1].startsWith("/") ? deleteMatch[1] : `/${deleteMatch[1]}`;
+      delPath = flattenIndexPath(delPath);
+      deletions.push(delPath);
+      continue;
+    }
+
     const match = line.match(FILE_MARKER_REGEX);
     if (match) {
       if (currentPath) {
@@ -35,7 +55,7 @@ export function parseMultiFileOutput(raw: string): FileMap {
     files[currentPath] = currentContent.join("\n").trim();
   }
 
-  if (Object.keys(files).length === 0) {
+  if (Object.keys(files).length === 0 && deletions.length === 0) {
     files["/App.tsx"] = raw.trim();
   }
 
@@ -63,7 +83,27 @@ export function parseMultiFileOutput(raw: string): FileMap {
     }
   }
 
-  return files;
+  return { files, deletions };
+}
+
+export function mergeFiles(existing: FileMap, incoming: FileMap, deletions: string[]): FileMap {
+  const merged: FileMap = { ...existing };
+
+  for (const [path, content] of Object.entries(incoming)) {
+    merged[path] = content;
+  }
+
+  for (const path of deletions) {
+    delete merged[path];
+  }
+
+  return merged;
+}
+
+export function serializeFileMap(files: FileMap): string {
+  return Object.entries(files)
+    .map(([path, content]) => `// --- FILE: ${path} ---\n${content}`)
+    .join("\n\n");
 }
 
 export function getFileCount(files: FileMap): number {
