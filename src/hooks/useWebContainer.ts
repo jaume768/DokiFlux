@@ -156,25 +156,59 @@ const TSCONFIG = {
   include: ["src"],
 };
 
-// Singleton: only one WebContainer can exist per browser tab
+// Singleton: only one WebContainer can exist per browser tab.
+// Module-level variables survive HMR but are lost on full page refresh.
+// We teardown the instance on beforeunload so the Service Worker is cleaned up
+// before the page reloads, preventing stale SW conflicts on the next boot.
 let wcInstance: WebContainer | null = null;
 let wcBootPromise: Promise<WebContainer> | null = null;
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    if (wcInstance) {
+      wcInstance.teardown();
+      wcInstance = null;
+      wcBootPromise = null;
+    }
+  });
+}
+
+async function clearServiceWorkers(): Promise<void> {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((r) => r.unregister()));
+  } catch {
+    // ignore
+  }
+}
 
 async function bootWebContainer(): Promise<WebContainer> {
   if (wcInstance) return wcInstance;
   if (wcBootPromise) return wcBootPromise;
 
-  wcBootPromise = WebContainer.boot()
-    .then((instance) => {
+  wcBootPromise = (async () => {
+    try {
+      const instance = await WebContainer.boot();
       wcInstance = instance;
       return instance;
-    })
-    .catch((err) => {
-      // Reset on failure so retry is possible
-      wcBootPromise = null;
-      wcInstance = null;
-      throw err;
-    });
+    } catch (firstErr) {
+      // Boot can fail if a stale Service Worker from a previous session is still
+      // registered. Clear all SWs and retry once.
+      console.warn("[WebContainer] First boot failed, clearing SWs and retrying…", firstErr);
+      await clearServiceWorkers();
+      await new Promise((r) => setTimeout(r, 300));
+      try {
+        const instance = await WebContainer.boot();
+        wcInstance = instance;
+        return instance;
+      } catch (retryErr) {
+        wcBootPromise = null;
+        wcInstance = null;
+        throw retryErr;
+      }
+    }
+  })();
 
   return wcBootPromise;
 }
