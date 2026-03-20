@@ -10,4 +10,7 @@
 10- Entendimiento de la arquitectura de v0 a la hora de iterar en proyectos grandes con multiples archivos, diff estructurados:
 
     - La IA devuelve algo como "archivo X cambia estas líneas, archivo Y es nuevo", y el frontend hace el merge. Esto reduce tokens de output, 
-    ahora el MVP funciona pero se puede mejorar muchisimo con estos cambios, seria como el funcionamiento de Cursor o Windsurf
+    ahora el MVP funciona pero se puede mejorar muchisimo con estos cambios
+
+11- Nivel de dificultad al querer implementar que el usuario al generar un proyecto, pueda incluir base de datos (conectar supabase/firebase), 
+    envio de mails (la manera mas "sencilla" seria con supabase por lo que he investigado), oauth (también con supabase), despliegue automatico a producción (seria posible con vercel o netlify), etc 

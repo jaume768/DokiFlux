@@ -1,8 +1,33 @@
 1- Rate limit en post /api/generate (arreglar)
 2- Sin Autenticación ni Autorización (arreglar cuando el sistema tenga backend, login y demás)
 3- Sin Validación del Tamaño del Payload (arreglar, que sea grande pero tampoco inmenso)
+4- Responsive para movil (revisar si es posible o siempre es mejor desde el pc, seguramente separando chat y preview como v0)
 8- Persistencia de proyectos (Al tener el backend con django):
     - Arquitectura típica:
        Usuario → Frontend → API Backend → Base de datos
                               → Object Storage (S3)
                               → LLM (OpenAI, Anthropic...)
+9- pricing:
+    - Free: $0/mes, incluye $5/mes en créditos (y límites como 7 mensajes/día según pricing page) (badge “Built with Dokiflux” por defecto en free).
+    - Premium: $20/mes, con $20/mes en créditos (documentación + post oficial de pricing).
+    - Business: Personalizado según la empresa.
+    - Comprar Créditos: Poder comprar créditos adicionales.
+    - Créditos no usados roll over y expiran tras 65 días (mensuales) y los comprados expiran a 1 año (shared pool).
+10- Ofrecer diferentes modelos y costes y mirar de incluir modelos gratis:
+    - GPT
+    - Gemiini
+    - Claude
+    - etc.
+11- Ofrecer presupuesto antes de generar 
+12- “Si la generación no modifica archivos o falla sin producir avance, no se cobra (o se cobra 0)” (revisar esta estrategia)
+13- Que hacer cuando el usuario quiere iterar sobre un proyecto grande? Limite de los modelos en el output/input?
+14- Que la ia te de el resultado en el lenguaje que quieras (“no te obligo a Next.js”)
+15- Capacidad de volver al estado anterior
+16- Guarda historial + diffs por acción (no por mensaje)
+17- Estrategia Marketing: 
+    - “iterar sin miedo”: coste controlado, consentimiento, y estabilidad en proyectos largos.
+    - “AI app builder para equipos pequeños/agencias orientado a entregables y mantenimiento, con billing predecible y control de agente”.
+18- ntegraciones mínimas orientadas a valor:
+
+    - Auth + pagos (por ejemplo Stripe), DB provider popular (por ejemplo Supabase) y logging/errores (por ejemplo Sentry), 
+    pero con setup explícito y guardrails. (El objetivo no es “100 integraciones”, es “3 que eviten re‑prompts”).    
