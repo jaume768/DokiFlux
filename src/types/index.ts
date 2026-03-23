@@ -28,6 +28,15 @@ export interface GenerateRequest {
   }>;
 }
 
+export interface CostEstimate {
+  inputTokens: number;
+  inputCost: number;
+  estimatedOutputMin: number;
+  estimatedOutputMax: number;
+  estimatedCostMin: number;
+  estimatedCostMax: number;
+}
+
 export interface StreamChunk {
   type: "text" | "usage" | "error" | "done";
   content?: string;

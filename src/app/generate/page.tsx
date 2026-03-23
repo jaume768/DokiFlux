@@ -197,6 +197,12 @@ export default function GeneratePage() {
             onSubmit={handleSubmit}
             onCancel={() => abortRef.current?.abort()}
             isLoading={isLoading}
+            history={messages
+              .filter((m) => m.role === "user" || m.role === "assistant")
+              .map((m) => ({
+                role: m.role as "user" | "assistant",
+                content: m.rawCode || m.content,
+              }))}
           />
         </div>
 

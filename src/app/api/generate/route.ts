@@ -1,6 +1,6 @@
 import { getOpenAIClient } from "@/lib/openai";
 import { SYSTEM_PROMPT } from "@/lib/prompts";
-import { calculateCost } from "@/lib/pricing";
+import { calculateCost, MAX_OUTPUT_TOKENS } from "@/lib/pricing";
 import { GenerateRequest } from "@/types";
 
 export const maxDuration = 60;
@@ -33,6 +33,7 @@ export async function POST(req: Request) {
       model: "gpt-5.4",
       instructions: SYSTEM_PROMPT,
       input: inputMessages,
+      max_output_tokens: MAX_OUTPUT_TOKENS,
       stream: true,
     });
 
