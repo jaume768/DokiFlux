@@ -6,7 +6,8 @@ import { PromptInput } from "@/components/PromptInput";
 import { CodePreview } from "@/components/CodePreview";
 import { SessionStatsBar } from "@/components/TokenUsage";
 import { Message, SessionStats, StreamChunk } from "@/types";
-import { parseMultiFileOutput, mergeFiles, serializeFileMap, type FileMap, getFileCount } from "@/lib/parser";
+import { parseMultiFileOutput, mergeFiles, serializeFileMap, IncrementalParser, type FileMap, getFileCount } from "@/lib/parser";
+import { useWebContainer } from "@/hooks/useWebContainer";
 import { Sparkles } from "lucide-react";
 
 export default function GeneratePage() {
@@ -16,6 +17,8 @@ export default function GeneratePage() {
   const [isLoading, setIsLoading] = useState(false);
   const codeRef = useRef("");
   const abortRef = useRef<AbortController | null>(null);
+  const incrementalParserRef = useRef(new IncrementalParser());
+  const currentFilesRef = useRef<FileMap>({});
   const [sessionStats, setSessionStats] = useState<SessionStats>({
     totalInputTokens: 0,
     totalOutputTokens: 0,
@@ -23,11 +26,15 @@ export default function GeneratePage() {
     generationCount: 0,
   });
 
+  const { status, previewUrl, error, logs, mountFiles, writeFile, isReady } = useWebContainer();
+
   const handleSubmit = useCallback(
     async (prompt: string) => {
       setIsLoading(true);
       const controller = new AbortController();
       abortRef.current = controller;
+      codeRef.current = "";
+      incrementalParserRef.current.reset();
 
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -43,6 +50,9 @@ export default function GeneratePage() {
           role: m.role as "user" | "assistant",
           content: m.rawCode || m.content,
         }));
+
+      const existingFiles = { ...currentFilesRef.current };
+      const hasExisting = Object.keys(existingFiles).length > 0;
 
       try {
         const res = await fetch("/api/generate", {
@@ -87,19 +97,39 @@ export default function GeneratePage() {
             if (chunk.type === "text" && chunk.content) {
               fullCode += chunk.content;
               codeRef.current = fullCode;
+
+              // Incremental preview: detect newly completed files and write them via HMR
+              const newFiles = incrementalParserRef.current.getNewlyCompletedFiles(fullCode);
+              const newFilePaths = Object.keys(newFiles);
+              if (newFilePaths.length > 0) {
+                // Update React state with the new files for the code view
+                const merged = hasExisting
+                  ? { ...existingFiles, ...currentFilesRef.current, ...newFiles }
+                  : { ...currentFilesRef.current, ...newFiles };
+                currentFilesRef.current = merged;
+                setCurrentFiles(merged);
+
+                // Write each completed file to the WebContainer for HMR
+                if (isReady) {
+                  for (const [path, content] of Object.entries(newFiles)) {
+                    writeFile(path, content);
+                  }
+                }
+              }
             }
 
             if (chunk.type === "usage" && chunk.usage) {
+              // Final parse: get all files including the last one
               const { files: incomingFiles, deletions } = parseMultiFileOutput(codeRef.current);
 
               let finalFiles: FileMap;
-              const hasExisting = Object.keys(currentFiles).length > 0;
               if (hasExisting) {
-                finalFiles = mergeFiles(currentFiles, incomingFiles, deletions);
+                finalFiles = mergeFiles(existingFiles, incomingFiles, deletions);
               } else {
                 finalFiles = incomingFiles;
               }
 
+              currentFilesRef.current = finalFiles;
               setCurrentFiles(finalFiles);
               setGenerationKey((k) => k + 1);
 
@@ -163,7 +193,7 @@ export default function GeneratePage() {
         setIsLoading(false);
       }
     },
-    [messages]
+    [messages, isReady, writeFile]
   );
 
   return (
@@ -208,7 +238,15 @@ export default function GeneratePage() {
 
         {/* Right: Preview */}
         <div className="flex-1 flex flex-col bg-muted/30">
-          <CodePreview files={currentFiles} generationKey={generationKey} />
+          <CodePreview
+            files={currentFiles}
+            generationKey={generationKey}
+            containerStatus={status}
+            previewUrl={previewUrl}
+            containerError={error}
+            containerLogs={logs}
+            mountFiles={mountFiles}
+          />
         </div>
       </div>
     </div>
