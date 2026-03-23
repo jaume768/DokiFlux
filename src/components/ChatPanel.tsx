@@ -78,7 +78,7 @@ export function ChatPanel({ messages, isLoading }: ChatPanelProps) {
             <div className="flex-1 flex items-center gap-2 pt-1">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
-                Generating component...
+                Generating...
               </span>
             </div>
           </div>

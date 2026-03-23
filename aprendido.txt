@@ -1,16 +1,17 @@
 1- Emepeze con un proyecto simple con sandpack y migre a webcontainers por problemas de escalabilidad, poder generar proyectos más grandes y complejos de un solo prompt
 2- Hacer la ui mas intuitiva y amigable para el usuario
-3- Enseñar tokens consumidos y coste estimado
+3- Enseñar tokens consumidos y coste estimado (pre-estimación)
 4- Prompt systems optimizados para generar proyectos completos y funcionales y con buena estetica
 5- Separador de archivos para proyectos grandes
 6- Obvio uso de ia para programar el proyecto (hablar un poco de los programadores que no utilizan ia) y como manejar historial de conversaciones
 7- Como hacer que puedas hacer varias iteraciones del mismo proyecto sin que la ia lo regenere de 0
 8- Funcionamiento de los iframe para los webcontainers
 9- Implementado file-level para optimización de tokens y mejor manejo de proyectos grandes
-10- Entendimiento de la arquitectura de v0 a la hora de iterar en proyectos grandes con multiples archivos, diff estructurados:
+10- Probado diferentes fases de agentes, "base", estetica y funcionalidad, pero no es rentable
+11- Entendimiento de la arquitectura de v0 a la hora de iterar en proyectos grandes con multiples archivos, diff estructurados:
 
     - La IA devuelve algo como "archivo X cambia estas líneas, archivo Y es nuevo", y el frontend hace el merge. Esto reduce tokens de output, 
     ahora el MVP funciona pero se puede mejorar muchisimo con estos cambios
 
-11- Nivel de dificultad al querer implementar que el usuario al generar un proyecto, pueda incluir base de datos (conectar supabase/firebase), 
+12- Nivel de dificultad al querer implementar que el usuario al generar un proyecto, pueda incluir base de datos (conectar supabase/firebase), 
     envio de mails (la manera mas "sencilla" seria con supabase por lo que he investigado), oauth (también con supabase), despliegue automatico a producción (seria posible con vercel o netlify), etc 
