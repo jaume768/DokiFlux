@@ -9,7 +9,7 @@ export type ModelId = keyof typeof PRICING;
 
 export const DEFAULT_MODEL: ModelId = "gpt-5.4";
 
-export const MAX_OUTPUT_TOKENS = 16384;
+export const MAX_OUTPUT_TOKENS = 31000;
 
 export interface CostEstimate {
   inputTokens: number;

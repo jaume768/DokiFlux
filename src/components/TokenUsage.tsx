@@ -32,19 +32,19 @@ export function SessionStatsBar({ stats }: SessionStatsBarProps) {
   if (stats.generationCount === 0) return null;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-muted/50 border-b text-xs text-muted-foreground">
-      <span className="flex items-center gap-1">
+    <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-muted/50 border-b text-xs text-muted-foreground overflow-x-auto">
+      <span className="flex items-center gap-1 shrink-0">
         <Zap className="w-3 h-3" />
-        <span className="font-medium">{stats.generationCount}</span> generaciones
+        <span className="font-medium">{stats.generationCount}</span> <span className="hidden sm:inline">generaciones</span><span className="sm:hidden">gen</span>
       </span>
-      <span className="text-border">|</span>
-      <span>
+      <span className="text-border shrink-0 hidden sm:inline">|</span>
+      <span className="shrink-0 hidden sm:inline">
         {formatTokens(stats.totalInputTokens)} in / {formatTokens(stats.totalOutputTokens)} out
       </span>
-      <span className="text-border">|</span>
-      <span className="flex items-center gap-1 font-medium">
+      <span className="text-border shrink-0">|</span>
+      <span className="flex items-center gap-1 font-medium shrink-0">
         <Coins className="w-3 h-3" />
-        {formatCost(stats.totalCost)} total
+        {formatCost(stats.totalCost)}
       </span>
     </div>
   );

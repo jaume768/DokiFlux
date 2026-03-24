@@ -14,4 +14,10 @@
     ahora el MVP funciona pero se puede mejorar muchisimo con estos cambios
 
 12- Nivel de dificultad al querer implementar que el usuario al generar un proyecto, pueda incluir base de datos (conectar supabase/firebase), 
-    envio de mails (la manera mas "sencilla" seria con supabase por lo que he investigado), oauth (también con supabase), despliegue automatico a producción (seria posible con vercel o netlify), etc 
+    envio de mails (la manera mas "sencilla" seria con supabase por lo que he investigado), oauth (también con supabase), despliegue automatico a producción (seria posible con vercel o netlify), etc
+13- Multi-framework añade complejidad enorme (testing, prompts distintos, scaffolds distintos) 
+14- Estrategias para los providers (openai, anthropic, google):
+    - Multiple API keys / Accounts (Cada key tiene su propio rate limit. Con 5 keys tienes 5x el límite.
+    Implementan un "key pool" que distribuye round-robin.)
+    - Las empresas grandes (v0, bolt.new) están en Tier 5 de OpenAI (10k RPM) o tienen acuerdos enterprise.
+    - Si dos usuarios hacen el mismo prompt (raro pero posible), se cachea la respuesta. (Más útil: cachean el system prompt tokenizado para no re-tokenizarlo.)

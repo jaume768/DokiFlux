@@ -1,7 +1,6 @@
 1- Rate limit en post /api/generate (arreglar)
 2- Sin Autenticación ni Autorización (arreglar cuando el sistema tenga backend, login y demás)
 3- Sin Validación del Tamaño del Payload (arreglar, que sea grande pero tampoco inmenso)
-4- Responsive para movil (revisar si es posible o siempre es mejor desde el pc, seguramente separando chat y preview como v0)
 8- Persistencia de proyectos (Al tener el backend con django):
     - Arquitectura típica:
        Usuario → Frontend → API Backend → Base de datos
@@ -18,12 +17,9 @@
     - Gemiini
     - Claude
     - etc.
-11- Ofrecer presupuesto antes de generar 
 12- “Si la generación no modifica archivos o falla sin producir avance, no se cobra (o se cobra 0)” (revisar esta estrategia)
-13- Que hacer cuando el usuario quiere iterar sobre un proyecto grande? Limite de los modelos en el output/input?
-14- Que la ia te de el resultado en el lenguaje que quieras (“no te obligo a Next.js”)
-15- Capacidad de volver al estado anterior
-16- Guarda historial + diffs por acción (no por mensaje)
+13- Que hacer cuando el usuario quiere iterar sobre un proyecto grande? Limite de los modelos en el output/input? (multi api keys y ir cambiando de uno a otro según el rate limit)
+15- Capacidad de volver al estado anterior (con backend)
 17- Estrategia Marketing: 
     - “iterar sin miedo”: coste controlado, consentimiento, y estabilidad en proyectos largos.
     - “AI app builder para equipos pequeños/agencias orientado a entregables y mantenimiento, con billing predecible y control de agente”.

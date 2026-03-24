@@ -29,6 +29,7 @@ import { useWebContainer, type ContainerStatus } from "@/hooks/useWebContainer";
 interface CodePreviewProps {
   files: FileMap;
   generationKey: number;
+  isIOS?: boolean;
 }
 
 const DEFAULT_FILES: FileMap = {
@@ -140,7 +141,7 @@ function FileTreeView({ files, selectedFile, onSelectFile }: { files: FileMap; s
   );
 }
 
-export function CodePreview({ files, generationKey }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, isIOS = false }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
@@ -303,62 +304,62 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-background">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between px-2 sm:px-4 py-2 border-b bg-background gap-1 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 min-w-0 overflow-x-auto">
+          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
             <Button
               variant={activeTab === "preview" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveTab("preview")}
-              className="gap-1.5 text-xs"
+              className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3"
             >
               <Eye className="w-3.5 h-3.5" />
-              Preview
+              <span className="hidden sm:inline">Preview</span>
             </Button>
             <Button
               variant={activeTab === "code" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveTab("code")}
-              className="gap-1.5 text-xs"
+              className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3"
             >
               <Code2 className="w-3.5 h-3.5" />
-              Code
+              <span className="hidden sm:inline">Code</span>
             </Button>
             <Button
               variant={activeTab === "logs" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveTab("logs")}
-              className="gap-1.5 text-xs"
+              className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3"
             >
               <Terminal className="w-3.5 h-3.5" />
-              Logs
+              <span className="hidden sm:inline">Logs</span>
             </Button>
           </div>
 
           {isMultiFile && (
-            <Badge variant="secondary" className="gap-1 text-xs font-mono">
+            <Badge variant="secondary" className="gap-1 text-xs font-mono shrink-0">
               <FolderTree className="w-3 h-3" />
-              {fileCount} files
+              {fileCount}
             </Badge>
           )}
 
           {/* Status indicator */}
-          <div className={`flex items-center gap-1.5 text-xs ${statusConfig.color}`}>
+          <div className={`flex items-center gap-1 sm:gap-1.5 text-xs shrink-0 ${statusConfig.color}`}>
             {statusConfig.icon}
-            <span>{statusConfig.label}</span>
+            <span className="hidden sm:inline">{statusConfig.label}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
           {activeTab === "code" && (
-            <Button variant="ghost" size="sm" onClick={handleCopyAll} className="gap-1.5 text-xs">
+            <Button variant="ghost" size="sm" onClick={handleCopyAll} className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3">
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? "Copied!" : "Copy all"}
+              <span className="hidden sm:inline">{copied ? "Copied!" : "Copy all"}</span>
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={handleDownloadProject} className="gap-1.5 text-xs">
+          <Button variant="ghost" size="sm" onClick={handleDownloadProject} className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3">
             <Download className="w-3.5 h-3.5" />
-            Download
+            <span className="hidden sm:inline">Download</span>
           </Button>
         </div>
       </div>
@@ -429,7 +430,15 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
               ) : status === "idle" ? (
                 <>
                   <Eye className="w-10 h-10 opacity-30" />
-                  <p className="text-sm">Generate a component to see the preview</p>
+                  <p className="text-sm text-center px-4">Generate a component to see the preview</p>
+                  {isIOS && (
+                    <div className="mt-4 mx-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center max-w-sm">
+                      <p className="text-xs text-amber-600 font-medium">⚠️ iOS Limitation</p>
+                      <p className="text-xs text-amber-600/80 mt-1">
+                        Live preview is not supported on iOS Safari. You can still view and copy the generated code.
+                      </p>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -451,7 +460,7 @@ export function CodePreview({ files, generationKey }: CodePreviewProps) {
           }}
         >
           {isMultiFile && (
-            <div className="w-48 shrink-0 border-r overflow-auto bg-muted/30">
+            <div className="hidden md:block w-48 shrink-0 border-r overflow-auto bg-muted/30">
               <FileTreeView files={displayFiles} selectedFile={selectedFile} onSelectFile={setSelectedFile} />
             </div>
           )}

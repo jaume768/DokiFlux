@@ -7,7 +7,10 @@ import { CodePreview } from "@/components/CodePreview";
 import { SessionStatsBar } from "@/components/TokenUsage";
 import { Message, SessionStats, StreamChunk } from "@/types";
 import { parseMultiFileOutput, mergeFiles, serializeFileMap, type FileMap, getFileCount } from "@/lib/parser";
-import { Sparkles } from "lucide-react";
+import { Sparkles, MessageSquare, Monitor } from "lucide-react";
+import { useIsMobile, useIsIOS } from "@/hooks/useIsMobile";
+
+type MobileView = "chat" | "preview";
 
 export default function GeneratePage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -24,6 +27,10 @@ export default function GeneratePage() {
     totalCost: 0,
     generationCount: 0,
   });
+  const [mobileView, setMobileView] = useState<MobileView>("chat");
+  const [hasNewPreview, setHasNewPreview] = useState(false);
+  const isMobile = useIsMobile();
+  const isIOS = useIsIOS();
 
   // Keep refs in sync with state so the async callback always reads latest values
   currentFilesRef.current = currentFiles;
@@ -140,6 +147,14 @@ export default function GeneratePage() {
           currentFilesRef.current = finalFiles;
           setGenerationKey((k) => k + 1);
 
+          // Auto-switch to preview on mobile after generation
+          if (window.innerWidth < 768) {
+            setMobileView("preview");
+            setHasNewPreview(false);
+          } else {
+            setHasNewPreview(true);
+          }
+
           const fileCount = getFileCount(finalFiles);
           const changedCount = Object.keys(incomingFiles).length;
           const deletedCount = deletions.length;
@@ -198,17 +213,52 @@ export default function GeneratePage() {
   );
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-[100dvh] flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-3 border-b bg-background">
+      <header className="flex items-center justify-between px-4 md:px-6 py-2 md:py-3 border-b bg-background shrink-0">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary" />
-          <h1 className="text-lg font-bold">Dokiflux</h1>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+          <h1 className="text-base md:text-lg font-bold">Dokiflux</h1>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full hidden sm:inline">
             MVP
           </span>
         </div>
-        <div className="text-xs text-muted-foreground">
+
+        {/* Mobile view switcher (top, like v0) */}
+        {isMobile && (
+          <div className="flex items-center bg-muted rounded-lg p-0.5">
+            <button
+              onClick={() => setMobileView("chat")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                mobileView === "chat"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              Chat
+            </button>
+            <button
+              onClick={() => {
+                setMobileView("preview");
+                setHasNewPreview(false);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors relative ${
+                mobileView === "preview"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <Monitor className="w-3.5 h-3.5" />
+              Preview
+              {hasNewPreview && mobileView !== "preview" && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              )}
+            </button>
+          </div>
+        )}
+
+        <div className="text-xs text-muted-foreground hidden sm:block">
           Powered by GPT-5.4
         </div>
       </header>
@@ -217,9 +267,20 @@ export default function GeneratePage() {
       <SessionStatsBar stats={sessionStats} />
 
       {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left: Chat */}
-        <div className="w-[440px] min-w-[360px] border-r flex flex-col">
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Desktop: side-by-side layout */}
+        {/* Mobile: show only active view */}
+
+        {/* Chat panel */}
+        <div
+          className={`flex flex-col border-r bg-background ${
+            isMobile
+              ? mobileView === "chat"
+                ? "w-full"
+                : "hidden"
+              : "w-[440px] min-w-[360px]"
+          }`}
+        >
           <ChatPanel
             messages={messages}
             isLoading={isLoading}
@@ -237,11 +298,20 @@ export default function GeneratePage() {
           />
         </div>
 
-        {/* Right: Preview */}
-        <div className="flex-1 flex flex-col bg-muted/30">
-          <CodePreview files={currentFiles} generationKey={generationKey} />
+        {/* Preview panel */}
+        <div
+          className={`flex flex-col bg-muted/30 ${
+            isMobile
+              ? mobileView === "preview"
+                ? "w-full"
+                : "hidden"
+              : "flex-1"
+          }`}
+        >
+          <CodePreview files={currentFiles} generationKey={generationKey} isIOS={isIOS} />
         </div>
       </div>
+
     </div>
   );
 }
