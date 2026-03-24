@@ -45,3 +45,17 @@ export interface StreamChunk {
   usage?: TokenUsage;
   error?: string;
 }
+
+export type GenerationPhase =
+  | "analyzing"
+  | "writing"
+  | "writing-files"
+  | "mounting"
+  | null;
+
+export interface GenerationProgress {
+  phase: GenerationPhase;
+  filesDetected: number;
+  charsReceived: number;
+  streamingCode: string;
+}

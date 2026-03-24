@@ -24,3 +24,4 @@
 15- Incluido poder chatear y generar:
     El usuario puede decir: "Quiero un CRM para una agencia de marketing" y la IA preguntará: 
     "¿Qué módulos necesitas? ¿Clientes, proyectos, facturación, calendario? ¿Qué estilo visual prefieres?" y LUEGO genera.
+16- Modo Streaming para mostrar la generación en tiempo real, como un editor de código

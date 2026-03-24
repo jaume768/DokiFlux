@@ -23,7 +23,7 @@
 17- Estrategia Marketing: 
     - “iterar sin miedo”: coste controlado, consentimiento, y estabilidad en proyectos largos.
     - “AI app builder para equipos pequeños/agencias orientado a entregables y mantenimiento, con billing predecible y control de agente”.
-18- ntegraciones mínimas orientadas a valor:
+18- Integraciones mínimas orientadas a valor:
 
     - Auth + pagos (por ejemplo Stripe), DB provider popular (por ejemplo Supabase) y logging/errores (por ejemplo Sentry), 
     pero con setup explícito y guardrails. (El objetivo no es “100 integraciones”, es “3 que eviten re‑prompts”).    

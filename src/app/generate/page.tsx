@@ -5,7 +5,7 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { PromptInput } from "@/components/PromptInput";
 import { CodePreview } from "@/components/CodePreview";
 import { SessionStatsBar } from "@/components/TokenUsage";
-import { Message, SessionStats, StreamChunk } from "@/types";
+import { Message, SessionStats, StreamChunk, GenerationProgress } from "@/types";
 import { parseMultiFileOutput, mergeFiles, serializeFileMap, type FileMap, getFileCount } from "@/lib/parser";
 import { MAX_CHAT_HISTORY } from "@/lib/prompts";
 import { Sparkles, MessageSquare, Monitor } from "lucide-react";
@@ -33,6 +33,12 @@ export default function GeneratePage() {
   });
   const [mobileView, setMobileView] = useState<MobileView>("chat");
   const [hasNewPreview, setHasNewPreview] = useState(false);
+  const [genProgress, setGenProgress] = useState<GenerationProgress>({
+    phase: null,
+    filesDetected: 0,
+    charsReceived: 0,
+    streamingCode: "",
+  });
   const isMobile = useIsMobile();
   const isIOS = useIsIOS();
 
@@ -61,9 +67,26 @@ export default function GeneratePage() {
     return { prompt, currentProject, chatHistory };
   }, []);
 
+  // Unescape raw function call argument JSON for streaming display
+  function unescapeStreamingCode(raw: string): string {
+    let s = raw;
+    // Strip the JSON wrapper: {"code":"..."}
+    s = s.replace(/^\s*\{\s*"code"\s*:\s*"/, "");
+    // Remove trailing "} if the JSON object is complete
+    s = s.replace(/"\s*\}\s*$/, "");
+    // Unescape JSON string sequences
+    s = s
+      .replace(/\\n/g, "\n")
+      .replace(/\\t/g, "\t")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\");
+    return s;
+  }
+
   const handleSubmit = useCallback(
     async (prompt: string) => {
       setIsLoading(true);
+      setGenProgress({ phase: "analyzing", filesDetected: 0, charsReceived: 0, streamingCode: "" });
       const controller = new AbortController();
       abortRef.current = controller;
 
@@ -122,6 +145,18 @@ export default function GeneratePage() {
             hasCode = true;
             fullCode += chunk.content;
             codeRef.current = fullCode;
+
+            // Track streaming progress for UX
+            const unescaped = unescapeStreamingCode(fullCode);
+            const fileMatches = unescaped.match(/--- FILE: [^\n]+/g);
+            const filesDetected = fileMatches?.length || 0;
+            const phase = filesDetected > 0 ? "writing-files" as const : "writing" as const;
+            setGenProgress({
+              phase,
+              filesDetected,
+              charsReceived: fullCode.length,
+              streamingCode: unescaped,
+            });
           }
 
           // Chat text (conversation mode)
@@ -199,6 +234,7 @@ export default function GeneratePage() {
             finalFiles = incomingFiles;
           }
 
+          setGenProgress((prev) => ({ ...prev, phase: "mounting" }));
           setCurrentFiles(finalFiles);
           currentFilesRef.current = finalFiles;
           setGenerationKey((k) => k + 1);
@@ -287,6 +323,7 @@ export default function GeneratePage() {
         codeRef.current = "";
         abortRef.current = null;
         setIsLoading(false);
+        setGenProgress({ phase: null, filesDetected: 0, charsReceived: 0, streamingCode: "" });
       }
     },
     [buildCompressedPayload]
@@ -414,6 +451,7 @@ export default function GeneratePage() {
           <ChatPanel
             messages={messages}
             isLoading={isLoading}
+            genProgress={genProgress}
           />
           <PromptInput
             onSubmit={handleSubmit}
@@ -445,6 +483,7 @@ export default function GeneratePage() {
             generationKey={generationKey}
             isIOS={isIOS}
             onBuildError={handleBuildError}
+            genProgress={genProgress}
           />
         </div>
       </div>

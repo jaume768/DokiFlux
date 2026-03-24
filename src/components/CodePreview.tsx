@@ -25,12 +25,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { FileMap } from "@/lib/parser";
 import { useWebContainer, type ContainerStatus } from "@/hooks/useWebContainer";
+import type { GenerationProgress } from "@/types";
+import { StreamingFileView } from "@/components/StreamingFileView";
 
 interface CodePreviewProps {
   files: FileMap;
   generationKey: number;
   isIOS?: boolean;
   onBuildError?: (error: string) => void;
+  genProgress?: GenerationProgress;
 }
 
 const DEFAULT_FILES: FileMap = {
@@ -142,7 +145,7 @@ function FileTreeView({ files, selectedFile, onSelectFile }: { files: FileMap; s
   );
 }
 
-export function CodePreview({ files, generationKey, isIOS = false, onBuildError }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, isIOS = false, onBuildError, genProgress }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
@@ -154,6 +157,32 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError 
   const logsEndRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const reportedErrorRef = useRef<string | null>(null);
+  const prevPhaseRef = useRef<string | null>(null);
+
+  // Auto-switch to code tab when code starts streaming
+  useEffect(() => {
+    const phase = genProgress?.phase ?? null;
+    const prevPhase = prevPhaseRef.current;
+
+    // Entering a code-writing phase → switch to code tab
+    if (
+      (phase === "writing" || phase === "writing-files") &&
+      prevPhase !== "writing" &&
+      prevPhase !== "writing-files"
+    ) {
+      setActiveTab("code");
+    }
+
+    // Phase ended (went to null) and we were writing → switch to preview
+    if (
+      phase === null &&
+      (prevPhase === "writing" || prevPhase === "writing-files" || prevPhase === "mounting")
+    ) {
+      setActiveTab("preview");
+    }
+
+    prevPhaseRef.current = phase;
+  }, [genProgress?.phase]);
 
   // Fire onBuildError callback when a new build error is detected
   useEffect(() => {
@@ -475,30 +504,39 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError 
               <FileTreeView files={displayFiles} selectedFile={selectedFile} onSelectFile={setSelectedFile} />
             </div>
           )}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {isMultiFile && (
-              <div className="flex items-center gap-1 px-2 py-1 border-b bg-muted/50 overflow-x-auto">
-                {fileList.map((path) => (
-                  <button
-                    key={path}
-                    onClick={() => setSelectedFile(path)}
-                    className={`px-3 py-1.5 text-xs font-mono rounded-md whitespace-nowrap transition ${
-                      selectedFile === path
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                    }`}
-                  >
-                    {path.split("/").pop()}
-                  </button>
-                ))}
+          {/* Show streaming file view when generating code, otherwise show normal file tabs + content */}
+          {genProgress?.phase && (genProgress.phase === "writing" || genProgress.phase === "writing-files") && genProgress.streamingCode ? (
+            <StreamingFileView
+              streamingCode={genProgress.streamingCode}
+              filesDetected={genProgress.filesDetected}
+              charsReceived={genProgress.charsReceived}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {isMultiFile && (
+                <div className="flex items-center gap-1 px-2 py-1 border-b bg-muted/50 overflow-x-auto">
+                  {fileList.map((path) => (
+                    <button
+                      key={path}
+                      onClick={() => setSelectedFile(path)}
+                      className={`px-3 py-1.5 text-xs font-mono rounded-md whitespace-nowrap transition ${
+                        selectedFile === path
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                      }`}
+                    >
+                      {path.split("/").pop()}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex-1 overflow-auto">
+                <pre className="p-4 text-sm font-mono leading-relaxed text-foreground">
+                  <code>{displayFiles[selectedFile] || "// Select a file"}</code>
+                </pre>
               </div>
-            )}
-            <div className="flex-1 overflow-auto">
-              <pre className="p-4 text-sm font-mono leading-relaxed text-foreground">
-                <code>{displayFiles[selectedFile] || "// Select a file"}</code>
-              </pre>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Logs Tab */}
