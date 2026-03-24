@@ -86,12 +86,19 @@ export function StreamingFileView({
   const files = useMemo(() => parseStreamingFiles(streamingCode), [streamingCode]);
   const folderTree = useMemo(() => buildFolderTree(files), [files]);
   const [selectedIdx, setSelectedIdx] = useState<number>(-1);
+  const userSelectedRef = useRef(false);
   const codeEndRef = useRef<HTMLDivElement>(null);
   const treeEndRef = useRef<HTMLDivElement>(null);
 
   const activeFileIdx = files.length - 1;
   const viewIdx = selectedIdx >= 0 && selectedIdx < files.length ? selectedIdx : activeFileIdx;
   const viewFile = files[viewIdx] ?? null;
+
+  // Handle manual file selection
+  function handleSelectFile(idx: number) {
+    userSelectedRef.current = true;
+    setSelectedIdx(idx);
+  }
 
   // Auto-scroll code to bottom when streaming the active file
   useEffect(() => {
@@ -105,9 +112,11 @@ export function StreamingFileView({
     treeEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [files.length]);
 
-  // Auto-select latest file when a new one starts
+  // Only auto-select latest file if user hasn't manually picked one
   useEffect(() => {
-    setSelectedIdx(-1);
+    if (!userSelectedRef.current) {
+      setSelectedIdx(-1);
+    }
   }, [files.length]);
 
   if (files.length === 0) {
@@ -120,7 +129,7 @@ export function StreamingFileView({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 h-full">
       {/* Header bar */}
       <div className="flex items-center gap-2 px-3 py-1.5 border-b bg-muted/50 shrink-0">
         <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
@@ -142,10 +151,10 @@ export function StreamingFileView({
             {Array.from(folderTree.entries()).map(([dir, dirFiles]) => (
               <div key={dir}>
                 {dir !== "(root)" && (
-                  <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-gray-500">
-                    <ChevronDown className="w-3 h-3 opacity-60" />
-                    <FolderOpen className="w-3 h-3 text-amber-400/70" />
-                    <span className="font-medium">{dir}</span>
+                  <div className="flex items-center gap-1.5 px-2 py-1.5 text-gray-400">
+                    <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                    <FolderOpen className="w-4 h-4 text-sky-400" />
+                    <span className="text-[13px] font-semibold">{dir}</span>
                   </div>
                 )}
                 <div className={dir !== "(root)" ? "ml-3" : ""}>
@@ -157,7 +166,7 @@ export function StreamingFileView({
                     return (
                       <button
                         key={file.path}
-                        onClick={() => setSelectedIdx(globalIdx)}
+                        onClick={() => handleSelectFile(globalIdx)}
                         className={`flex items-center gap-1.5 w-full px-2 py-[3px] rounded text-[12px] transition-colors duration-150 ${
                           isActive
                             ? "bg-white/10 text-gray-100"

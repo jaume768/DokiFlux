@@ -1,7 +1,7 @@
 1- Emepeze con un proyecto simple con sandpack y migre a webcontainers por problemas de escalabilidad, poder generar proyectos más grandes y complejos de un solo prompt
 2- Hacer la ui mas intuitiva y amigable para el usuario
 3- Enseñar tokens consumidos y coste estimado (pre-estimación)
-4- Prompt systems optimizados para generar proyectos completos y funcionales y con buena estetica
+4- Prompt systems optimizados para generar proyectos completos y funcionales y con buena estetica (aunque el modelo suele ir a su bola a la hora de la estetica, de un modelo a otro se nota la diferencia)
 5- Separador de archivos para proyectos grandes
 6- Obvio uso de ia para programar el proyecto (hablar un poco de los programadores que no utilizan ia) y como manejar historial de conversaciones
 7- Como hacer que puedas hacer varias iteraciones del mismo proyecto sin que la ia lo regenere de 0

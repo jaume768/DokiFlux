@@ -6,6 +6,7 @@ import {
   Code2,
   Copy,
   Check,
+  FolderOpen,
   FolderTree,
   Loader2,
   Package,
@@ -92,20 +93,29 @@ function FileTreeView({ files, selectedFile, onSelectFile }: { files: FileMap; s
 
   const selectedClean = selectedFile.startsWith("/") ? selectedFile.slice(1) : selectedFile;
 
+  function getFileColor(name: string): string {
+    if (name.endsWith(".tsx") || name.endsWith(".jsx")) return "text-blue-400";
+    if (name.endsWith(".ts") || name.endsWith(".js")) return "text-yellow-400";
+    if (name.endsWith(".css")) return "text-pink-400";
+    if (name.endsWith(".json")) return "text-green-400";
+    return "text-gray-400";
+  }
+
   return (
     <div className="p-2 text-xs font-mono space-y-0.5">
       {Object.entries(tree.dirs).map(([dir, children]) => (
         <div key={dir}>
           <button
             onClick={() => toggleDir(dir)}
-            className="flex items-center gap-1 w-full px-2 py-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1.5 w-full px-2 py-1.5 rounded text-gray-400 hover:bg-white/5 hover:text-gray-200"
           >
             {expandedDirs.has(dir) ? (
-              <ChevronDown className="w-3 h-3 shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 shrink-0 opacity-70" />
             ) : (
-              <ChevronRight className="w-3 h-3 shrink-0" />
+              <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-70" />
             )}
-            <span>{dir}/</span>
+            <FolderOpen className="w-4 h-4 shrink-0 text-sky-400" />
+            <span className="text-[13px] font-semibold">{dir}</span>
           </button>
           {expandedDirs.has(dir) && (
             <div className="ml-4 space-y-0.5">
@@ -113,14 +123,14 @@ function FileTreeView({ files, selectedFile, onSelectFile }: { files: FileMap; s
                 <button
                   key={child.fullPath}
                   onClick={() => onSelectFile(child.fullPath)}
-                  className={`flex items-center gap-1.5 w-full px-2 py-1 rounded truncate transition ${
+                  className={`flex items-center gap-1.5 w-full px-2 py-[3px] rounded truncate transition-colors duration-150 ${
                     selectedClean === child.fullPath.replace(/^\//, "")
-                      ? "bg-primary/10 text-foreground font-medium"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-white/10 text-gray-100"
+                      : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
                   }`}
                 >
-                  <FileCode2 className="w-3 h-3 shrink-0 opacity-50" />
-                  {child.name}
+                  <FileCode2 className={`w-3 h-3 shrink-0 ${getFileColor(child.name)}`} />
+                  <span className={getFileColor(child.name)}>{child.name}</span>
                 </button>
               ))}
             </div>
@@ -131,14 +141,14 @@ function FileTreeView({ files, selectedFile, onSelectFile }: { files: FileMap; s
         <button
           key={file.fullPath}
           onClick={() => onSelectFile(file.fullPath)}
-          className={`flex items-center gap-1.5 w-full px-2 py-1 rounded truncate transition ${
+          className={`flex items-center gap-1.5 w-full px-2 py-[3px] rounded truncate transition-colors duration-150 ${
             selectedClean === file.name
-              ? "bg-primary/10 text-foreground font-medium"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              ? "bg-white/10 text-gray-100"
+              : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
           }`}
         >
-          <FileCode2 className="w-3 h-3 shrink-0 opacity-50" />
-          {file.name}
+          <FileCode2 className={`w-3 h-3 shrink-0 ${getFileColor(file.name)}`} />
+          <span className={getFileColor(file.name)}>{file.name}</span>
         </button>
       ))}
     </div>
@@ -499,12 +509,7 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
             pointerEvents: activeTab === "code" ? "auto" : "none",
           }}
         >
-          {isMultiFile && (
-            <div className="hidden md:block w-48 shrink-0 border-r overflow-auto bg-muted/30">
-              <FileTreeView files={displayFiles} selectedFile={selectedFile} onSelectFile={setSelectedFile} />
-            </div>
-          )}
-          {/* Show streaming file view when generating code, otherwise show normal file tabs + content */}
+          {/* Show streaming file view when generating code, otherwise show dark IDE static view */}
           {genProgress?.phase && (genProgress.phase === "writing" || genProgress.phase === "writing-files") && genProgress.streamingCode ? (
             <StreamingFileView
               streamingCode={genProgress.streamingCode}
@@ -512,30 +517,44 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
               charsReceived={genProgress.charsReceived}
             />
           ) : (
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <>
+              {/* File tree sidebar – dark IDE style */}
               {isMultiFile && (
-                <div className="flex items-center gap-1 px-2 py-1 border-b bg-muted/50 overflow-x-auto">
-                  {fileList.map((path) => (
-                    <button
-                      key={path}
-                      onClick={() => setSelectedFile(path)}
-                      className={`px-3 py-1.5 text-xs font-mono rounded-md whitespace-nowrap transition ${
-                        selectedFile === path
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                      }`}
-                    >
-                      {path.split("/").pop()}
-                    </button>
-                  ))}
+                <div className="hidden md:block w-48 shrink-0 border-r border-white/10 bg-[#181825] overflow-auto">
+                  <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-gray-500 font-semibold">
+                    Explorer
+                  </div>
+                  <FileTreeView files={displayFiles} selectedFile={selectedFile} onSelectFile={setSelectedFile} />
                 </div>
               )}
-              <div className="flex-1 overflow-auto">
-                <pre className="p-4 text-sm font-mono leading-relaxed text-foreground">
-                  <code>{displayFiles[selectedFile] || "// Select a file"}</code>
-                </pre>
+              <div className="flex-1 flex flex-col overflow-hidden bg-[#1e1e2e]">
+                {/* File tab bar */}
+                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/10 bg-[#252536] shrink-0">
+                  <FileCode2 className={`w-3.5 h-3.5 shrink-0 ${
+                    selectedFile.endsWith(".tsx") || selectedFile.endsWith(".jsx") ? "text-blue-400" :
+                    selectedFile.endsWith(".ts") || selectedFile.endsWith(".js") ? "text-yellow-400" :
+                    selectedFile.endsWith(".css") ? "text-pink-400" :
+                    selectedFile.endsWith(".json") ? "text-green-400" : "text-gray-400"
+                  }`} />
+                  <span className="text-xs font-mono text-gray-300 truncate">
+                    {selectedFile.startsWith("/") ? selectedFile.slice(1) : selectedFile}
+                  </span>
+                </div>
+                {/* Code content with line numbers */}
+                <div className="flex-1 overflow-auto">
+                  <pre className="p-4 text-[13px] font-mono leading-relaxed whitespace-pre-wrap">
+                    {(displayFiles[selectedFile] || "// Select a file").split("\n").map((line, i) => (
+                      <div key={i} className="flex">
+                        <span className="inline-block w-8 shrink-0 text-right pr-4 text-gray-600 select-none text-[11px] leading-relaxed">
+                          {i + 1}
+                        </span>
+                        <span className="text-gray-200 flex-1">{line}</span>
+                      </div>
+                    ))}
+                  </pre>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
