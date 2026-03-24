@@ -18,8 +18,6 @@ interface UseWebContainerReturn {
   error: string | null;
   logs: string[];
   mountFiles: (files: FileMap) => Promise<void>;
-  writeFile: (path: string, content: string) => Promise<void>;
-  isReady: boolean;
 }
 
 const VITE_PACKAGE_JSON = {
@@ -409,33 +407,5 @@ export function useWebContainer(): UseWebContainerReturn {
     [addLog]
   );
 
-  const writeFile = useCallback(
-    async (filePath: string, content: string) => {
-      const container = containerRef.current;
-      if (!container) return;
-      try {
-        const cleanPath = filePath.startsWith("/") ? filePath.slice(1) : filePath;
-        const fullPath = `/src/${cleanPath}`;
-        // Ensure parent directories exist
-        const parts = fullPath.split("/");
-        for (let i = 2; i < parts.length; i++) {
-          const dir = parts.slice(0, i).join("/");
-          try {
-            await container.fs.mkdir(dir, { recursive: true });
-          } catch {
-            // directory may already exist
-          }
-        }
-        await container.fs.writeFile(fullPath, content);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        addLog(`writeFile error (${filePath}): ${msg}`);
-      }
-    },
-    [addLog]
-  );
-
-  const isReady = status === "ready";
-
-  return { status, previewUrl, error, logs, mountFiles, writeFile, isReady };
+  return { status, previewUrl, error, logs, mountFiles };
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { SendHorizonal, Loader2, Square, Coins } from "lucide-react";
 import { CostEstimate } from "@/types";
@@ -99,61 +98,70 @@ export function PromptInput({ onSubmit, onCancel, isLoading, history }: PromptIn
     }
   }
 
+  // Auto-resize textarea to fit content
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 300)}px`;
+  }, []);
+
+  useEffect(() => {
+    autoResize();
+  }, [value, autoResize]);
+
   return (
     <div className="border-t bg-background p-4">
-      <div className="flex gap-2 items-end">
-        <Textarea
+      <div className="relative rounded-xl border bg-muted/40 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 transition-colors">
+        <textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Describe the UI you want to generate..."
-          className="min-h-[60px] max-h-[160px] resize-none"
+          className="w-full resize-none bg-transparent px-4 pt-3 pb-12 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isLoading}
-          rows={2}
+          rows={1}
+          style={{ minHeight: "44px", maxHeight: "300px" }}
         />
-        {isLoading ? (
-          <Button
-            onClick={onCancel}
-            size="icon"
-            variant="destructive"
-            className="shrink-0 h-[60px] w-[60px]"
-          >
-            <Square className="w-5 h-5" />
-          </Button>
-        ) : (
-          <Button
-            onClick={handleSubmit}
-            disabled={!value.trim()}
-            size="icon"
-            className="shrink-0 h-[60px] w-[60px]"
-          >
-            <SendHorizonal className="w-5 h-5" />
-          </Button>
-        )}
+        <div className="absolute bottom-2 right-2 flex items-center gap-2">
+          {!isLoading && estimate && (
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full border">
+              <Coins className="w-3 h-3" />
+              <span>
+                Est. {formatCost(estimate.estimatedCostMin)} – {formatCost(estimate.estimatedCostMax)}
+              </span>
+            </div>
+          )}
+          {!isLoading && estimateLoading && (
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Loader2 className="w-3 h-3 animate-spin" />
+            </div>
+          )}
+          {isLoading ? (
+            <Button
+              onClick={onCancel}
+              size="icon"
+              variant="destructive"
+              className="h-8 w-8 rounded-lg"
+            >
+              <Square className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              disabled={!value.trim()}
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+            >
+              <SendHorizonal className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </div>
-      <div className="flex items-center justify-between mt-2">
-        <p className="text-xs text-muted-foreground">
-          {isLoading ? "Click the stop button to cancel generation" : "Press Enter to send, Shift+Enter for new line"}
-        </p>
-        {!isLoading && estimate && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-            <Coins className="w-3 h-3" />
-            <span>
-              Est. {formatCost(estimate.estimatedCostMin)} – {formatCost(estimate.estimatedCostMax)}
-            </span>
-            <span className="text-muted-foreground/60">
-              ({estimate.inputTokens.toLocaleString()} input tokens)
-            </span>
-          </div>
-        )}
-        {!isLoading && estimateLoading && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            <span>Estimating...</span>
-          </div>
-        )}
-      </div>
+      <p className="text-[11px] text-muted-foreground mt-1.5 text-center">
+        {isLoading ? "Click stop to cancel" : "Enter to send · Shift+Enter for new line"}
+      </p>
     </div>
   );
 }

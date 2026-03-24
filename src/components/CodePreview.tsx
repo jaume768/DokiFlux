@@ -24,17 +24,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { FileMap } from "@/lib/parser";
-import type { ContainerStatus } from "@/hooks/useWebContainer";
+import { useWebContainer, type ContainerStatus } from "@/hooks/useWebContainer";
 
 interface CodePreviewProps {
   files: FileMap;
   generationKey: number;
-  // WebContainer state passed from parent
-  containerStatus: ContainerStatus;
-  previewUrl: string | null;
-  containerError: string | null;
-  containerLogs: string[];
-  mountFiles: (files: FileMap) => Promise<void>;
 }
 
 const DEFAULT_FILES: FileMap = {
@@ -146,13 +140,14 @@ function FileTreeView({ files, selectedFile, onSelectFile }: { files: FileMap; s
   );
 }
 
-export function CodePreview({ files, generationKey, containerStatus: status, previewUrl, containerError: error, containerLogs: logs, mountFiles }: CodePreviewProps) {
+export function CodePreview({ files, generationKey }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframePath, setIframePath] = useState("/");
   const [urlInput, setUrlInput] = useState("/");
+  const { status, previewUrl, error, logs, mountFiles } = useWebContainer();
   const prevGenKeyRef = useRef<number>(-1);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);

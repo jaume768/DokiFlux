@@ -6,8 +6,7 @@ import { PromptInput } from "@/components/PromptInput";
 import { CodePreview } from "@/components/CodePreview";
 import { SessionStatsBar } from "@/components/TokenUsage";
 import { Message, SessionStats, StreamChunk } from "@/types";
-import { parseMultiFileOutput, mergeFiles, serializeFileMap, IncrementalParser, type FileMap, getFileCount } from "@/lib/parser";
-import { useWebContainer } from "@/hooks/useWebContainer";
+import { parseMultiFileOutput, mergeFiles, serializeFileMap, type FileMap, getFileCount } from "@/lib/parser";
 import { Sparkles } from "lucide-react";
 
 export default function GeneratePage() {
@@ -17,8 +16,8 @@ export default function GeneratePage() {
   const [isLoading, setIsLoading] = useState(false);
   const codeRef = useRef("");
   const abortRef = useRef<AbortController | null>(null);
-  const incrementalParserRef = useRef(new IncrementalParser());
   const currentFilesRef = useRef<FileMap>({});
+  const messagesRef = useRef<Message[]>([]);
   const [sessionStats, setSessionStats] = useState<SessionStats>({
     totalInputTokens: 0,
     totalOutputTokens: 0,
@@ -26,15 +25,15 @@ export default function GeneratePage() {
     generationCount: 0,
   });
 
-  const { status, previewUrl, error, logs, mountFiles, writeFile, isReady } = useWebContainer();
+  // Keep refs in sync with state so the async callback always reads latest values
+  currentFilesRef.current = currentFiles;
+  messagesRef.current = messages;
 
   const handleSubmit = useCallback(
     async (prompt: string) => {
       setIsLoading(true);
       const controller = new AbortController();
       abortRef.current = controller;
-      codeRef.current = "";
-      incrementalParserRef.current.reset();
 
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -44,15 +43,12 @@ export default function GeneratePage() {
       };
       setMessages((prev) => [...prev, userMessage]);
 
-      const history = messages
+      const history = messagesRef.current
         .filter((m) => m.role === "user" || m.role === "assistant")
         .map((m) => ({
           role: m.role as "user" | "assistant",
           content: m.rawCode || m.content,
         }));
-
-      const existingFiles = { ...currentFilesRef.current };
-      const hasExisting = Object.keys(existingFiles).length > 0;
 
       try {
         const res = await fetch("/api/generate", {
@@ -73,7 +69,36 @@ export default function GeneratePage() {
         const decoder = new TextDecoder();
         let fullCode = "";
         let buffer = "";
+        let receivedUsage: { inputTokens: number; outputTokens: number; cost: number } | null = null;
 
+        // Helper to process a single SSE line
+        function processLine(line: string) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data: ")) return;
+
+          const jsonStr = trimmed.slice(6);
+          let chunk: StreamChunk;
+          try {
+            chunk = JSON.parse(jsonStr);
+          } catch {
+            return;
+          }
+
+          if (chunk.type === "text" && chunk.content) {
+            fullCode += chunk.content;
+            codeRef.current = fullCode;
+          }
+
+          if (chunk.type === "usage" && chunk.usage) {
+            receivedUsage = chunk.usage;
+          }
+
+          if (chunk.type === "error") {
+            throw new Error(chunk.error || "Generation error");
+          }
+        }
+
+        // Stream loop — only accumulates text and tracks usage
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -83,91 +108,67 @@ export default function GeneratePage() {
           buffer = lines.pop() || "";
 
           for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed.startsWith("data: ")) continue;
+            processLine(line);
+          }
+        }
 
-            const jsonStr = trimmed.slice(6);
-            let chunk: StreamChunk;
-            try {
-              chunk = JSON.parse(jsonStr);
-            } catch {
-              continue;
-            }
+        // Flush: decode any remaining bytes held by TextDecoder
+        buffer += decoder.decode();
 
-            if (chunk.type === "text" && chunk.content) {
-              fullCode += chunk.content;
-              codeRef.current = fullCode;
+        // Process any events remaining in buffer
+        if (buffer.trim()) {
+          const remaining = buffer.split("\n\n");
+          for (const line of remaining) {
+            processLine(line);
+          }
+        }
 
-              // Incremental preview: detect newly completed files and write them via HMR
-              const newFiles = incrementalParserRef.current.getNewlyCompletedFiles(fullCode);
-              const newFilePaths = Object.keys(newFiles);
-              if (newFilePaths.length > 0) {
-                // Update React state with the new files for the code view
-                const merged = hasExisting
-                  ? { ...existingFiles, ...currentFilesRef.current, ...newFiles }
-                  : { ...currentFilesRef.current, ...newFiles };
-                currentFilesRef.current = merged;
-                setCurrentFiles(merged);
+        // --- Always create assistant message after stream ends ---
+        if (codeRef.current.trim()) {
+          const { files: incomingFiles, deletions } = parseMultiFileOutput(codeRef.current);
+          const existingFiles = currentFilesRef.current;
+          const hasExisting = Object.keys(existingFiles).length > 0;
 
-                // Write each completed file to the WebContainer for HMR
-                if (isReady) {
-                  for (const [path, content] of Object.entries(newFiles)) {
-                    writeFile(path, content);
-                  }
-                }
-              }
-            }
+          let finalFiles: FileMap;
+          if (hasExisting) {
+            finalFiles = mergeFiles(existingFiles, incomingFiles, deletions);
+          } else {
+            finalFiles = incomingFiles;
+          }
 
-            if (chunk.type === "usage" && chunk.usage) {
-              // Final parse: get all files including the last one
-              const { files: incomingFiles, deletions } = parseMultiFileOutput(codeRef.current);
+          setCurrentFiles(finalFiles);
+          currentFilesRef.current = finalFiles;
+          setGenerationKey((k) => k + 1);
 
-              let finalFiles: FileMap;
-              if (hasExisting) {
-                finalFiles = mergeFiles(existingFiles, incomingFiles, deletions);
-              } else {
-                finalFiles = incomingFiles;
-              }
+          const fileCount = getFileCount(finalFiles);
+          const changedCount = Object.keys(incomingFiles).length;
+          const deletedCount = deletions.length;
 
-              currentFilesRef.current = finalFiles;
-              setCurrentFiles(finalFiles);
-              setGenerationKey((k) => k + 1);
+          let summary = `Project generated with ${fileCount} file${fileCount !== 1 ? "s" : ""}`;
+          if (hasExisting) {
+            summary = `Updated ${changedCount} file${changedCount !== 1 ? "s" : ""}`;
+            if (deletedCount > 0) summary += `, deleted ${deletedCount}`;
+            summary += ` (${fileCount} total)`;
+          }
+          summary += " and rendered in preview.";
 
-              const fileCount = getFileCount(finalFiles);
-              const changedCount = Object.keys(incomingFiles).length;
-              const deletedCount = deletions.length;
+          const assistantMessage: Message = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: summary,
+            timestamp: Date.now(),
+            usage: receivedUsage ?? undefined,
+            rawCode: serializeFileMap(finalFiles),
+          };
+          setMessages((prev) => [...prev, assistantMessage]);
 
-              let summary = `Project generated with ${fileCount} file${fileCount !== 1 ? "s" : ""}`;
-              if (hasExisting) {
-                summary = `Updated ${changedCount} file${changedCount !== 1 ? "s" : ""}`;
-                if (deletedCount > 0) summary += `, deleted ${deletedCount}`;
-                summary += ` (${fileCount} total)`;
-              }
-              summary += " and rendered in preview.";
-
-              const assistantMessage: Message = {
-                id: crypto.randomUUID(),
-                role: "assistant",
-                content: summary,
-                timestamp: Date.now(),
-                usage: chunk.usage,
-                rawCode: serializeFileMap(finalFiles),
-              };
-              setMessages((prev) => [...prev, assistantMessage]);
-
-              setSessionStats((prev) => ({
-                totalInputTokens:
-                  prev.totalInputTokens + chunk.usage!.inputTokens,
-                totalOutputTokens:
-                  prev.totalOutputTokens + chunk.usage!.outputTokens,
-                totalCost: prev.totalCost + chunk.usage!.cost,
-                generationCount: prev.generationCount + 1,
-              }));
-            }
-
-            if (chunk.type === "error") {
-              throw new Error(chunk.error || "Generation error");
-            }
+          if (receivedUsage) {
+            setSessionStats((prev) => ({
+              totalInputTokens: prev.totalInputTokens + receivedUsage!.inputTokens,
+              totalOutputTokens: prev.totalOutputTokens + receivedUsage!.outputTokens,
+              totalCost: prev.totalCost + receivedUsage!.cost,
+              generationCount: prev.generationCount + 1,
+            }));
           }
         }
       } catch (err) {
@@ -193,7 +194,7 @@ export default function GeneratePage() {
         setIsLoading(false);
       }
     },
-    [messages, isReady, writeFile]
+    [] // no deps needed — uses refs for latest state
   );
 
   return (
@@ -238,15 +239,7 @@ export default function GeneratePage() {
 
         {/* Right: Preview */}
         <div className="flex-1 flex flex-col bg-muted/30">
-          <CodePreview
-            files={currentFiles}
-            generationKey={generationKey}
-            containerStatus={status}
-            previewUrl={previewUrl}
-            containerError={error}
-            containerLogs={logs}
-            mountFiles={mountFiles}
-          />
+          <CodePreview files={currentFiles} generationKey={generationKey} />
         </div>
       </div>
     </div>
