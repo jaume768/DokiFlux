@@ -5,7 +5,8 @@ import { encode } from "gpt-tokenizer";
 
 export async function POST(req: Request) {
   try {
-    const { prompt, history } = (await req.json()) as GenerateRequest;
+    const { prompt, currentProject, chatHistory } =
+      (await req.json()) as GenerateRequest;
 
     if (!prompt || typeof prompt !== "string") {
       return Response.json({ error: "Prompt is required" }, { status: 400 });
@@ -14,11 +15,13 @@ export async function POST(req: Request) {
     // Build the full text that will be sent as input to the model
     let fullText = SYSTEM_PROMPT + "\n";
 
-    if (history && history.length > 0) {
-      for (const msg of history) {
-        if (msg.role === "user" || msg.role === "assistant") {
-          fullText += msg.content + "\n";
-        }
+    if (currentProject) {
+      fullText += currentProject + "\n";
+    }
+
+    if (chatHistory && chatHistory.length > 0) {
+      for (const msg of chatHistory) {
+        fullText += msg.content + "\n";
       }
     }
 
@@ -27,7 +30,7 @@ export async function POST(req: Request) {
     // Count tokens with gpt-tokenizer (pure JS, no WASM)
     const inputTokens = encode(fullText).length;
 
-    const hasHistory = !!(history && history.length > 0);
+    const hasHistory = !!(chatHistory && chatHistory.length > 0) || !!currentProject;
     const estimate = estimateCost(inputTokens, hasHistory);
 
     return Response.json({ estimate });

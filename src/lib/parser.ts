@@ -17,7 +17,18 @@ export interface ParseResult {
 }
 
 export function parseMultiFileOutput(raw: string): ParseResult {
-  const lines = raw.split("\n");
+  // Unwrap JSON-wrapped function call arguments (e.g. {"code":"..."})
+  let code = raw;
+  try {
+    const parsed = JSON.parse(raw.trim());
+    if (typeof parsed === "object" && parsed !== null && typeof parsed.code === "string") {
+      code = parsed.code;
+    }
+  } catch {
+    // Not JSON, use raw as-is
+  }
+
+  const lines = code.split("\n");
   const files: FileMap = {};
   const deletions: string[] = [];
   let currentPath: string | null = null;

@@ -30,6 +30,7 @@ interface CodePreviewProps {
   files: FileMap;
   generationKey: number;
   isIOS?: boolean;
+  onBuildError?: (error: string) => void;
 }
 
 const DEFAULT_FILES: FileMap = {
@@ -141,17 +142,27 @@ function FileTreeView({ files, selectedFile, onSelectFile }: { files: FileMap; s
   );
 }
 
-export function CodePreview({ files, generationKey, isIOS = false }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, isIOS = false, onBuildError }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframePath, setIframePath] = useState("/");
   const [urlInput, setUrlInput] = useState("/");
-  const { status, previewUrl, error, logs, mountFiles } = useWebContainer();
+  const { status, previewUrl, error, logs, lastBuildError, clearBuildError, mountFiles } = useWebContainer();
   const prevGenKeyRef = useRef<number>(-1);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const reportedErrorRef = useRef<string | null>(null);
+
+  // Fire onBuildError callback when a new build error is detected
+  useEffect(() => {
+    if (lastBuildError && lastBuildError !== reportedErrorRef.current && onBuildError) {
+      reportedErrorRef.current = lastBuildError;
+      onBuildError(lastBuildError);
+      clearBuildError();
+    }
+  }, [lastBuildError, onBuildError, clearBuildError]);
 
   const displayFiles = useMemo(() => {
     return Object.keys(files).length > 0 ? files : DEFAULT_FILES;

@@ -5,6 +5,7 @@ export interface Message {
   timestamp: number;
   usage?: TokenUsage;
   rawCode?: string;
+  type?: "chat" | "code" | "error";
 }
 
 export interface TokenUsage {
@@ -22,8 +23,9 @@ export interface SessionStats {
 
 export interface GenerateRequest {
   prompt: string;
-  history: Array<{
-    role: "developer" | "user" | "assistant";
+  currentProject?: string;
+  chatHistory: Array<{
+    role: "user" | "assistant";
     content: string;
   }>;
 }
@@ -38,7 +40,7 @@ export interface CostEstimate {
 }
 
 export interface StreamChunk {
-  type: "text" | "usage" | "error" | "done";
+  type: "text" | "chat" | "usage" | "error" | "done";
   content?: string;
   usage?: TokenUsage;
   error?: string;

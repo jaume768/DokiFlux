@@ -10,10 +10,11 @@ interface PromptInputProps {
   onSubmit: (prompt: string) => void;
   onCancel: () => void;
   isLoading: boolean;
-  history: Array<{ role: "user" | "assistant"; content: string }>;
+  currentProject?: string;
+  chatHistory: Array<{ role: "user" | "assistant"; content: string }>;
 }
 
-export function PromptInput({ onSubmit, onCancel, isLoading, history }: PromptInputProps) {
+export function PromptInput({ onSubmit, onCancel, isLoading, currentProject, chatHistory }: PromptInputProps) {
   const [value, setValue] = useState("");
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
@@ -47,7 +48,7 @@ export function PromptInput({ onSubmit, onCancel, isLoading, history }: PromptIn
         const res = await fetch("/api/estimate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: trimmed, history }),
+          body: JSON.stringify({ prompt: trimmed, currentProject, chatHistory }),
           signal: controller.signal,
         });
 
@@ -61,7 +62,7 @@ export function PromptInput({ onSubmit, onCancel, isLoading, history }: PromptIn
         setEstimateLoading(false);
       }
     },
-    [history]
+    [currentProject, chatHistory]
   );
 
   function handleChange(newValue: string) {

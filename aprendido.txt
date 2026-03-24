@@ -21,3 +21,6 @@
     Implementan un "key pool" que distribuye round-robin.)
     - Las empresas grandes (v0, bolt.new) están en Tier 5 de OpenAI (10k RPM) o tienen acuerdos enterprise.
     - Si dos usuarios hacen el mismo prompt (raro pero posible), se cachea la respuesta. (Más útil: cachean el system prompt tokenizado para no re-tokenizarlo.)
+15- Incluido poder chatear y generar:
+    El usuario puede decir: "Quiero un CRM para una agencia de marketing" y la IA preguntará: 
+    "¿Qué módulos necesitas? ¿Clientes, proyectos, facturación, calendario? ¿Qué estilo visual prefieres?" y LUEGO genera.

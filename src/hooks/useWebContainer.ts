@@ -17,6 +17,8 @@ interface UseWebContainerReturn {
   previewUrl: string | null;
   error: string | null;
   logs: string[];
+  lastBuildError: string | null;
+  clearBuildError: () => void;
   mountFiles: (files: FileMap) => Promise<void>;
 }
 
@@ -260,20 +262,80 @@ function buildFileTree(files: FileMap) {
   return fileTree;
 }
 
+// Patterns that indicate a build/compile error in Vite dev server output
+const BUILD_ERROR_PATTERNS = [
+  /\[plugin:vite:/,
+  /SyntaxError:/,
+  /TypeError:/,
+  /ReferenceError:/,
+  /error TS\d+/,
+  /✘ \[ERROR\]/,
+  /Transform failed/,
+  /Build failed/,
+  /Could not resolve/,
+  /Module not found/,
+  /Failed to resolve import/,
+];
+
+function isBuildErrorLine(line: string): boolean {
+  return BUILD_ERROR_PATTERNS.some((p) => p.test(line));
+}
+
 export function useWebContainer(): UseWebContainerReturn {
   const [status, setStatus] = useState<ContainerStatus>("idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [lastBuildError, setLastBuildError] = useState<string | null>(null);
   const containerRef = useRef<WebContainer | null>(null);
   const serverProcessRef = useRef<any>(null);
   const isInstalledRef = useRef(false);
   const isMountedRef = useRef(true);
+  const errorBufferRef = useRef<string[]>([]);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDevServerRef = useRef(false);
+
+  const clearBuildError = useCallback(() => {
+    setLastBuildError(null);
+    errorBufferRef.current = [];
+    if (errorTimerRef.current) {
+      clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = null;
+    }
+  }, []);
+
+  const flushErrorBuffer = useCallback(() => {
+    if (errorBufferRef.current.length > 0 && isMountedRef.current) {
+      const fullError = errorBufferRef.current.join("\n").trim();
+      if (fullError) {
+        setLastBuildError(fullError);
+      }
+      errorBufferRef.current = [];
+    }
+    errorTimerRef.current = null;
+  }, []);
 
   const addLog = useCallback((msg: string) => {
     if (!isMountedRef.current) return;
     setLogs((prev) => [...prev.slice(-150), msg]);
-  }, []);
+
+    // Only detect build errors from the dev server phase
+    if (!isDevServerRef.current) return;
+
+    // If this line looks like an error start, begin collecting
+    if (isBuildErrorLine(msg)) {
+      errorBufferRef.current = [msg];
+      // Debounce: wait for more lines to arrive before reporting
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(flushErrorBuffer, 2000);
+    } else if (errorBufferRef.current.length > 0) {
+      // Continue collecting lines after an error start (context lines)
+      errorBufferRef.current.push(msg);
+      // Reset the debounce timer
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(flushErrorBuffer, 2000);
+    }
+  }, [flushErrorBuffer]);
 
   // Track component mount state
   useEffect(() => {
@@ -376,6 +438,8 @@ export function useWebContainer(): UseWebContainerReturn {
 
         // --- 5. Start dev server ---
         setStatus("starting");
+        isDevServerRef.current = true;
+        clearBuildError();
         addLog("Starting Vite dev server...");
 
         const devProcess = await container.spawn("npm", ["run", "dev"], {
@@ -407,5 +471,5 @@ export function useWebContainer(): UseWebContainerReturn {
     [addLog]
   );
 
-  return { status, previewUrl, error, logs, mountFiles };
+  return { status, previewUrl, error, logs, lastBuildError, clearBuildError, mountFiles };
 }

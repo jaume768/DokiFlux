@@ -1,28 +1,56 @@
 import { getOpenAIClient } from "@/lib/openai";
-import { SYSTEM_PROMPT } from "@/lib/prompts";
+import { SYSTEM_PROMPT, CODEGEN_RULES } from "@/lib/prompts";
 import { calculateCost, MAX_OUTPUT_TOKENS } from "@/lib/pricing";
 import { GenerateRequest } from "@/types";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
+
+const GENERATE_UI_TOOL = {
+  type: "function" as const,
+  name: "generate_ui",
+  description: CODEGEN_RULES,
+  parameters: {
+    type: "object" as const,
+    properties: {
+      code: {
+        type: "string" as const,
+        description:
+          "The complete multi-file code output using // --- FILE: /path --- markers. Must follow all code generation rules exactly.",
+      },
+    },
+    required: ["code"],
+    additionalProperties: false,
+  },
+  strict: true,
+};
 
 export async function POST(req: Request) {
   try {
-    const { prompt, history } = (await req.json()) as GenerateRequest;
+    const { prompt, currentProject, chatHistory } =
+      (await req.json()) as GenerateRequest;
 
     if (!prompt || typeof prompt !== "string") {
       return Response.json({ error: "Prompt is required" }, { status: 400 });
     }
 
+    // --- Compressed history: project state + last N chat messages ---
     const inputMessages: Array<{
       role: "developer" | "user" | "assistant";
       content: string;
     }> = [];
 
-    if (history && history.length > 0) {
-      for (const msg of history) {
-        if (msg.role === "user" || msg.role === "assistant") {
-          inputMessages.push({ role: msg.role, content: msg.content });
-        }
+    // Inject current project state as a single context message
+    if (currentProject) {
+      inputMessages.push({
+        role: "developer",
+        content: `Current project state (all files):\n${currentProject}`,
+      });
+    }
+
+    // Add only the last N chat messages for conversation context
+    if (chatHistory && chatHistory.length > 0) {
+      for (const msg of chatHistory) {
+        inputMessages.push({ role: msg.role, content: msg.content });
       }
     }
 
@@ -33,6 +61,7 @@ export async function POST(req: Request) {
       model: "gpt-5.4",
       instructions: SYSTEM_PROMPT,
       input: inputMessages,
+      tools: [GENERATE_UI_TOOL],
       max_output_tokens: MAX_OUTPUT_TOKENS,
       stream: true,
     });
@@ -46,8 +75,21 @@ export async function POST(req: Request) {
           let outputTokens = 0;
 
           for await (const event of stream) {
+            // Text output (conversation mode)
             if (
               event.type === "response.output_text.delta" &&
+              "delta" in event
+            ) {
+              const data = JSON.stringify({
+                type: "chat",
+                content: event.delta,
+              });
+              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+            }
+
+            // Function call arguments (code generation mode)
+            if (
+              event.type === "response.function_call_arguments.delta" &&
               "delta" in event
             ) {
               const data = JSON.stringify({
@@ -83,7 +125,11 @@ export async function POST(req: Request) {
           controller.close();
         } catch (err) {
           console.error("[generate/stream]", err);
-          const errorData = JSON.stringify({ type: "error", error: "Something went wrong while generating. Please try again." });
+          const errorData = JSON.stringify({
+            type: "error",
+            error:
+              "Something went wrong while generating. Please try again.",
+          });
           controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
           controller.close();
         }
@@ -99,6 +145,9 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("[generate/POST]", err);
-    return Response.json({ error: "Internal server error. Please try again." }, { status: 500 });
+    return Response.json(
+      { error: "Internal server error. Please try again." },
+      { status: 500 }
+    );
   }
 }

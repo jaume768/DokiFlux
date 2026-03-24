@@ -7,6 +7,7 @@ import { CodePreview } from "@/components/CodePreview";
 import { SessionStatsBar } from "@/components/TokenUsage";
 import { Message, SessionStats, StreamChunk } from "@/types";
 import { parseMultiFileOutput, mergeFiles, serializeFileMap, type FileMap, getFileCount } from "@/lib/parser";
+import { MAX_CHAT_HISTORY } from "@/lib/prompts";
 import { Sparkles, MessageSquare, Monitor } from "lucide-react";
 import { useIsMobile, useIsIOS } from "@/hooks/useIsMobile";
 
@@ -21,6 +22,9 @@ export default function GeneratePage() {
   const abortRef = useRef<AbortController | null>(null);
   const currentFilesRef = useRef<FileMap>({});
   const messagesRef = useRef<Message[]>([]);
+  const autoFixCountRef = useRef(0);
+  const MAX_AUTO_FIX_RETRIES = 3;
+  const isLoadingRef = useRef(false);
   const [sessionStats, setSessionStats] = useState<SessionStats>({
     totalInputTokens: 0,
     totalOutputTokens: 0,
@@ -35,6 +39,27 @@ export default function GeneratePage() {
   // Keep refs in sync with state so the async callback always reads latest values
   currentFilesRef.current = currentFiles;
   messagesRef.current = messages;
+  isLoadingRef.current = isLoading;
+
+  // Build compressed history: currentProject + last N chat messages
+  const buildCompressedPayload = useCallback((prompt: string) => {
+    const files = currentFilesRef.current;
+    const currentProject = Object.keys(files).length > 0
+      ? serializeFileMap(files)
+      : undefined;
+
+    // Take last N messages (content only, no rawCode) for conversation context
+    const allMsgs = messagesRef.current.filter(
+      (m) => m.role === "user" || m.role === "assistant"
+    );
+    const recentMsgs = allMsgs.slice(-MAX_CHAT_HISTORY);
+    const chatHistory = recentMsgs.map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    }));
+
+    return { prompt, currentProject, chatHistory };
+  }, []);
 
   const handleSubmit = useCallback(
     async (prompt: string) => {
@@ -50,18 +75,16 @@ export default function GeneratePage() {
       };
       setMessages((prev) => [...prev, userMessage]);
 
-      const history = messagesRef.current
-        .filter((m) => m.role === "user" || m.role === "assistant")
-        .map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.rawCode || m.content,
-        }));
+      const payload = buildCompressedPayload(prompt);
+
+      // Streaming message ID for live chat updates
+      const streamingMsgId = crypto.randomUUID();
 
       try {
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, history }),
+          body: JSON.stringify(payload),
           signal: controller.signal,
         });
 
@@ -75,8 +98,11 @@ export default function GeneratePage() {
 
         const decoder = new TextDecoder();
         let fullCode = "";
+        let chatText = "";
         let buffer = "";
         let receivedUsage: { inputTokens: number; outputTokens: number; cost: number } | null = null;
+        let hasCode = false;
+        let hasChat = false;
 
         // Helper to process a single SSE line
         function processLine(line: string) {
@@ -91,9 +117,39 @@ export default function GeneratePage() {
             return;
           }
 
+          // Code generation via function call
           if (chunk.type === "text" && chunk.content) {
+            hasCode = true;
             fullCode += chunk.content;
             codeRef.current = fullCode;
+          }
+
+          // Chat text (conversation mode)
+          if (chunk.type === "chat" && chunk.content) {
+            hasChat = true;
+            chatText += chunk.content;
+            // Update streaming message in real-time
+            setMessages((prev) => {
+              const existing = prev.find((m) => m.id === streamingMsgId);
+              if (existing) {
+                return prev.map((m) =>
+                  m.id === streamingMsgId
+                    ? { ...m, content: chatText }
+                    : m
+                );
+              } else {
+                return [
+                  ...prev,
+                  {
+                    id: streamingMsgId,
+                    role: "assistant" as const,
+                    content: chatText,
+                    timestamp: Date.now(),
+                    type: "chat" as const,
+                  },
+                ];
+              }
+            });
           }
 
           if (chunk.type === "usage" && chunk.usage) {
@@ -105,7 +161,7 @@ export default function GeneratePage() {
           }
         }
 
-        // Stream loop — only accumulates text and tracks usage
+        // Stream loop
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -119,10 +175,8 @@ export default function GeneratePage() {
           }
         }
 
-        // Flush: decode any remaining bytes held by TextDecoder
+        // Flush remaining bytes
         buffer += decoder.decode();
-
-        // Process any events remaining in buffer
         if (buffer.trim()) {
           const remaining = buffer.split("\n\n");
           for (const line of remaining) {
@@ -130,8 +184,10 @@ export default function GeneratePage() {
           }
         }
 
-        // --- Always create assistant message after stream ends ---
-        if (codeRef.current.trim()) {
+        // --- Finalize: create appropriate messages ---
+
+        // If AI generated code via function call
+        if (hasCode && codeRef.current.trim()) {
           const { files: incomingFiles, deletions } = parseMultiFileOutput(codeRef.current);
           const existingFiles = currentFilesRef.current;
           const hasExisting = Object.keys(existingFiles).length > 0;
@@ -167,49 +223,123 @@ export default function GeneratePage() {
           }
           summary += " and rendered in preview.";
 
-          const assistantMessage: Message = {
+          const codeMessage: Message = {
             id: crypto.randomUUID(),
             role: "assistant",
             content: summary,
             timestamp: Date.now(),
             usage: receivedUsage ?? undefined,
             rawCode: serializeFileMap(finalFiles),
+            type: "code",
           };
-          setMessages((prev) => [...prev, assistantMessage]);
+          setMessages((prev) => [...prev, codeMessage]);
 
-          if (receivedUsage) {
-            setSessionStats((prev) => ({
-              totalInputTokens: prev.totalInputTokens + receivedUsage!.inputTokens,
-              totalOutputTokens: prev.totalOutputTokens + receivedUsage!.outputTokens,
-              totalCost: prev.totalCost + receivedUsage!.cost,
-              generationCount: prev.generationCount + 1,
-            }));
-          }
+          // Reset auto-fix counter on successful generation
+          autoFixCountRef.current = 0;
+        }
+
+        // If AI only chatted (no code), finalize the streaming message with usage
+        if (hasChat && !hasCode && receivedUsage) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === streamingMsgId
+                ? { ...m, usage: receivedUsage ?? undefined }
+                : m
+            )
+          );
+        }
+
+        // Update session stats
+        if (receivedUsage) {
+          setSessionStats((prev) => ({
+            totalInputTokens: prev.totalInputTokens + receivedUsage!.inputTokens,
+            totalOutputTokens: prev.totalOutputTokens + receivedUsage!.outputTokens,
+            totalCost: prev.totalCost + receivedUsage!.cost,
+            generationCount: prev.generationCount + 1,
+          }));
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
-          const cancelMessage: Message = {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: "Generation cancelled.",
-            timestamp: Date.now(),
-          };
-          setMessages((prev) => [...prev, cancelMessage]);
+          // Remove any streaming message and add cancel message
+          setMessages((prev) => [
+            ...prev.filter((m) => m.id !== streamingMsgId),
+            {
+              id: crypto.randomUUID(),
+              role: "assistant" as const,
+              content: "Generation cancelled.",
+              timestamp: Date.now(),
+              type: "error" as const,
+            },
+          ]);
         } else {
-          const errorMessage: Message = {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: `Error: ${err instanceof Error ? err.message : "Unknown error"}`,
-            timestamp: Date.now(),
-          };
-          setMessages((prev) => [...prev, errorMessage]);
+          setMessages((prev) => [
+            ...prev.filter((m) => m.id !== streamingMsgId),
+            {
+              id: crypto.randomUUID(),
+              role: "assistant" as const,
+              content: `Error: ${err instanceof Error ? err.message : "Unknown error"}`,
+              timestamp: Date.now(),
+              type: "error" as const,
+            },
+          ]);
         }
       } finally {
+        codeRef.current = "";
         abortRef.current = null;
         setIsLoading(false);
       }
     },
-    [] // no deps needed — uses refs for latest state
+    [buildCompressedPayload]
+  );
+
+  // Auto-fix: when a build error is detected from the WebContainer, automatically
+  // re-submit with the error as context so the AI can fix it (up to N retries)
+  const handleBuildError = useCallback(
+    (errorText: string) => {
+      // Don't auto-fix if already loading or exceeded max retries
+      if (isLoadingRef.current) return;
+      if (autoFixCountRef.current >= MAX_AUTO_FIX_RETRIES) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant" as const,
+            content: `Auto-fix failed after ${MAX_AUTO_FIX_RETRIES} attempts. The build error persists:\n\n\`\`\`\n${errorText}\n\`\`\`\n\nPlease describe the fix you'd like or try a different approach.`,
+            timestamp: Date.now(),
+            type: "error" as const,
+          },
+        ]);
+        autoFixCountRef.current = 0;
+        return;
+      }
+
+      autoFixCountRef.current += 1;
+      const attempt = autoFixCountRef.current;
+
+      // Truncate error to avoid sending huge payloads
+      const truncatedError = errorText.length > 1500
+        ? errorText.slice(0, 1500) + "\n... (truncated)"
+        : errorText;
+
+      const fixPrompt = `The preview has a build error (auto-fix attempt ${attempt}/${MAX_AUTO_FIX_RETRIES}):\n\n\`\`\`\n${truncatedError}\n\`\`\`\n\nFix this error. Only modify the files that need changes.`;
+
+      // Add a system-like message indicating auto-fix is happening
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "user" as const,
+          content: `🔧 Auto-fix (attempt ${attempt}/${MAX_AUTO_FIX_RETRIES}): Build error detected, requesting fix...`,
+          timestamp: Date.now(),
+        },
+      ]);
+
+      // Small delay to let the UI update before starting the generation
+      setTimeout(() => {
+        handleSubmit(fixPrompt);
+      }, 500);
+    },
+    [handleSubmit]
   );
 
   return (
@@ -289,11 +419,13 @@ export default function GeneratePage() {
             onSubmit={handleSubmit}
             onCancel={() => abortRef.current?.abort()}
             isLoading={isLoading}
-            history={messages
+            currentProject={Object.keys(currentFiles).length > 0 ? serializeFileMap(currentFiles) : undefined}
+            chatHistory={messages
               .filter((m) => m.role === "user" || m.role === "assistant")
+              .slice(-MAX_CHAT_HISTORY)
               .map((m) => ({
                 role: m.role as "user" | "assistant",
-                content: m.rawCode || m.content,
+                content: m.content,
               }))}
           />
         </div>
@@ -308,7 +440,12 @@ export default function GeneratePage() {
               : "flex-1"
           }`}
         >
-          <CodePreview files={currentFiles} generationKey={generationKey} isIOS={isIOS} />
+          <CodePreview
+            files={currentFiles}
+            generationKey={generationKey}
+            isIOS={isIOS}
+            onBuildError={handleBuildError}
+          />
         </div>
       </div>
 
