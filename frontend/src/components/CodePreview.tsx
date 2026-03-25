@@ -21,6 +21,8 @@ import {
   Globe,
   ArrowLeft,
   ArrowRight,
+  Plus,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +30,46 @@ import type { FileMap } from "@/lib/parser";
 import { useWebContainer, type ContainerStatus } from "@/hooks/useWebContainer";
 import type { GenerationProgress } from "@/types";
 import { StreamingFileView } from "@/components/StreamingFileView";
+
+// ── Helpers for inline iteration streaming ──
+
+interface StreamingFile {
+  path: string;
+  content: string;
+  isComplete: boolean;
+}
+
+function parseStreamingFiles(code: string): StreamingFile[] {
+  const files: StreamingFile[] = [];
+  const marker = "// --- FILE:";
+  const parts = code.split(marker);
+  for (let i = 1; i < parts.length; i++) {
+    const part = parts[i];
+    const nl = part.indexOf("\n");
+    if (nl === -1) {
+      const p = part.replace(/\s*---\s*$/, "").trim();
+      if (p) files.push({ path: p, content: "", isComplete: false });
+      continue;
+    }
+    const path = part.slice(0, nl).replace(/\s*---\s*$/, "").trim();
+    const content = part.slice(nl + 1);
+    files.push({ path, content, isComplete: i < parts.length - 1 });
+  }
+  return files;
+}
+
+type LineStatus = "unchanged" | "added" | "modified";
+
+function computeLineDiff(newContent: string, oldContent: string | undefined): LineStatus[] {
+  if (!oldContent) return newContent.split("\n").map(() => "added");
+  const newLines = newContent.split("\n");
+  const oldLines = oldContent.split("\n");
+  return newLines.map((line, i) => {
+    if (i >= oldLines.length) return "added";
+    if (line !== oldLines[i]) return "modified";
+    return "unchanged";
+  });
+}
 
 interface CodePreviewProps {
   files: FileMap;
@@ -61,7 +103,16 @@ const STATUS_CONFIG: Record<ContainerStatus, { label: string; icon: React.ReactN
   error: { label: "Error", icon: <AlertCircle className="w-3.5 h-3.5" />, color: "text-destructive" },
 };
 
-function FileTreeView({ files, selectedFile, onSelectFile }: { files: FileMap; selectedFile: string; onSelectFile: (path: string) => void }) {
+interface FileTreeViewProps {
+  files: FileMap;
+  selectedFile: string;
+  onSelectFile: (path: string) => void;
+  streamingMap?: Map<string, StreamingFile>;
+  activeStreamingPath?: string | null;
+  originalFiles?: FileMap;
+}
+
+function FileTreeView({ files, selectedFile, onSelectFile, streamingMap, activeStreamingPath, originalFiles }: FileTreeViewProps) {
   const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set(["components", "pages", "hooks", "utils", "types", "data", "lib"]));
 
   const tree = useMemo(() => {
@@ -101,6 +152,51 @@ function FileTreeView({ files, selectedFile, onSelectFile }: { files: FileMap; s
     return "text-gray-400";
   }
 
+  function renderFileButton(fullPath: string, displayName: string) {
+    const isSelected = selectedClean === fullPath.replace(/^\//, "");
+    const sf = streamingMap?.get(fullPath);
+    const isStreaming = !!sf;
+    const isWritingNow = fullPath === activeStreamingPath;
+    const isNewFile = isStreaming && originalFiles && !originalFiles[fullPath];
+    const isModFile = isStreaming && originalFiles && !!originalFiles[fullPath];
+    const isDone = sf?.isComplete;
+
+    return (
+      <button
+        key={fullPath}
+        onClick={() => onSelectFile(fullPath)}
+        className={`flex items-center gap-1.5 w-full px-2 py-[3px] rounded truncate transition-colors duration-150 ${
+          isSelected
+            ? "bg-white/10 text-gray-100"
+            : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
+        }`}
+      >
+        {isWritingNow ? (
+          <Loader2 className="w-3 h-3 animate-spin text-amber-400 shrink-0" />
+        ) : isDone ? (
+          <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+        ) : (
+          <FileCode2 className={`w-3 h-3 shrink-0 ${getFileColor(displayName)}`} />
+        )}
+        <span className={getFileColor(displayName)}>{displayName}</span>
+        {isWritingNow && (
+          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+        )}
+        {isStreaming && !isWritingNow && (
+          isNewFile ? (
+            <span className="ml-auto flex items-center gap-0.5 text-[9px] font-semibold text-emerald-400 bg-emerald-400/10 px-1 py-0.5 rounded-full shrink-0">
+              <Plus className="w-2.5 h-2.5" />N
+            </span>
+          ) : isModFile ? (
+            <span className="ml-auto flex items-center gap-0.5 text-[9px] font-semibold text-sky-400 bg-sky-400/10 px-1 py-0.5 rounded-full shrink-0">
+              <Pencil className="w-2.5 h-2.5" />M
+            </span>
+          ) : null
+        )}
+      </button>
+    );
+  }
+
   return (
     <div className="p-2 text-xs font-mono space-y-0.5">
       {Object.entries(tree.dirs).map(([dir, children]) => (
@@ -119,39 +215,78 @@ function FileTreeView({ files, selectedFile, onSelectFile }: { files: FileMap; s
           </button>
           {expandedDirs.has(dir) && (
             <div className="ml-4 space-y-0.5">
-              {children.map((child) => (
-                <button
-                  key={child.fullPath}
-                  onClick={() => onSelectFile(child.fullPath)}
-                  className={`flex items-center gap-1.5 w-full px-2 py-[3px] rounded truncate transition-colors duration-150 ${
-                    selectedClean === child.fullPath.replace(/^\//, "")
-                      ? "bg-white/10 text-gray-100"
-                      : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
-                  }`}
-                >
-                  <FileCode2 className={`w-3 h-3 shrink-0 ${getFileColor(child.name)}`} />
-                  <span className={getFileColor(child.name)}>{child.name}</span>
-                </button>
-              ))}
+              {children.map((child) => renderFileButton(child.fullPath, child.name))}
             </div>
           )}
         </div>
       ))}
-      {tree.rootFiles.map((file) => (
-        <button
-          key={file.fullPath}
-          onClick={() => onSelectFile(file.fullPath)}
-          className={`flex items-center gap-1.5 w-full px-2 py-[3px] rounded truncate transition-colors duration-150 ${
-            selectedClean === file.name
-              ? "bg-white/10 text-gray-100"
-              : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
-          }`}
-        >
-          <FileCode2 className={`w-3 h-3 shrink-0 ${getFileColor(file.name)}`} />
-          <span className={getFileColor(file.name)}>{file.name}</span>
-        </button>
-      ))}
+      {tree.rootFiles.map((file) => renderFileButton(file.fullPath, file.name))}
     </div>
+  );
+}
+
+interface IterationDiffViewProps {
+  content: string;
+  oldContent: string | undefined;
+  isStreaming: boolean;
+  codeEndRef: React.RefObject<HTMLDivElement | null>;
+}
+
+function IterationDiffView({ content, oldContent, isStreaming, codeEndRef }: IterationDiffViewProps) {
+  const lines = content.split("\n");
+  const lineStatuses = useMemo(
+    () => computeLineDiff(content, oldContent),
+    [content, oldContent]
+  );
+  const hasOld = oldContent !== undefined;
+
+  return (
+    <pre className="p-4 text-[13px] font-mono leading-relaxed whitespace-pre-wrap">
+      {lines.map((line, i) => {
+        const status = lineStatuses[i] ?? "unchanged";
+        const isChanged = hasOld && status !== "unchanged";
+
+        let bgClass = "";
+        let gutterClass = "";
+        let gutterChar = " ";
+
+        if (isChanged) {
+          if (status === "added") {
+            bgClass = "bg-emerald-500/8";
+            gutterClass = "text-emerald-500";
+            gutterChar = "+";
+          } else if (status === "modified") {
+            bgClass = "bg-sky-500/8";
+            gutterClass = "text-sky-500";
+            gutterChar = "~";
+          }
+        }
+
+        return (
+          <div key={i} className={`flex ${bgClass}`}>
+            {hasOld && (
+              <span className={`inline-block w-4 shrink-0 text-center text-[11px] leading-relaxed select-none ${gutterClass}`}>
+                {gutterChar}
+              </span>
+            )}
+            <span className="inline-block w-8 shrink-0 text-right pr-4 text-gray-600 select-none text-[11px] leading-relaxed">
+              {i + 1}
+            </span>
+            <span className={`flex-1 ${isChanged ? (status === "added" ? "text-emerald-300" : "text-sky-200") : "text-gray-200"}`}>
+              {line}
+            </span>
+          </div>
+        );
+      })}
+      {isStreaming && (
+        <div className="flex">
+          {hasOld && <span className="inline-block w-4 shrink-0" />}
+          <span className="inline-block w-8 shrink-0" />
+          <span className="inline-block w-[2px] h-[1.2em] bg-amber-400 animate-pulse" />
+        </div>
+      )}
+      <div ref={codeEndRef} />
+    </pre>
   );
 }
 
@@ -168,6 +303,70 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const reportedErrorRef = useRef<string | null>(null);
   const prevPhaseRef = useRef<string | null>(null);
+  const userPickedFileRef = useRef(false);
+  const streamingCodeEndRef = useRef<HTMLDivElement>(null);
+
+  const displayFiles = useMemo(() => {
+    return Object.keys(files).length > 0 ? files : DEFAULT_FILES;
+  }, [files]);
+
+  // ── Inline iteration streaming state ──
+  const isWritingCode = !!(genProgress?.phase && (genProgress.phase === "writing" || genProgress.phase === "writing-files") && genProgress.streamingCode);
+  const hasExistingFiles = Object.keys(files).length > 0;
+  const isIterationStreaming = isWritingCode && hasExistingFiles;
+  const isFirstGenStreaming = isWritingCode && !hasExistingFiles;
+
+  // Parse streaming files for iteration mode
+  const streamingFiles = useMemo(() => {
+    if (!isIterationStreaming || !genProgress?.streamingCode) return [];
+    return parseStreamingFiles(genProgress.streamingCode);
+  }, [isIterationStreaming, genProgress?.streamingCode]);
+
+  // Map path -> StreamingFile for quick lookup
+  const streamingMap = useMemo(() => {
+    const m = new Map<string, StreamingFile>();
+    for (const f of streamingFiles) m.set(f.path, f);
+    return m;
+  }, [streamingFiles]);
+
+  // The file currently being written (last incomplete file)
+  const activeStreamingPath = useMemo(() => {
+    if (streamingFiles.length === 0) return null;
+    const last = streamingFiles[streamingFiles.length - 1];
+    return last.isComplete ? null : last.path;
+  }, [streamingFiles]);
+
+  // Merged file map for the tree: existing files + any NEW streaming files not yet in displayFiles
+  const mergedTreeFiles = useMemo(() => {
+    if (!isIterationStreaming) return displayFiles;
+    const merged = { ...displayFiles };
+    for (const sf of streamingFiles) {
+      if (!merged[sf.path]) {
+        merged[sf.path] = ""; // placeholder — content comes from streaming
+      }
+    }
+    return merged;
+  }, [displayFiles, streamingFiles, isIterationStreaming]);
+
+  // Auto-select the file being written during iteration (unless user picked manually)
+  useEffect(() => {
+    if (!isIterationStreaming) {
+      userPickedFileRef.current = false;
+      return;
+    }
+    if (userPickedFileRef.current) return;
+    if (streamingFiles.length > 0) {
+      const last = streamingFiles[streamingFiles.length - 1];
+      setSelectedFile(last.path);
+    }
+  }, [isIterationStreaming, streamingFiles]);
+
+  // Auto-scroll code to bottom when streaming the active file
+  useEffect(() => {
+    if (isIterationStreaming && activeStreamingPath === selectedFile) {
+      streamingCodeEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [isIterationStreaming, activeStreamingPath, selectedFile, genProgress?.streamingCode]);
 
   // Auto-switch to code tab when code starts streaming
   useEffect(() => {
@@ -202,10 +401,6 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
       clearBuildError();
     }
   }, [lastBuildError, onBuildError, clearBuildError]);
-
-  const displayFiles = useMemo(() => {
-    return Object.keys(files).length > 0 ? files : DEFAULT_FILES;
-  }, [files]);
 
   const fileCount = Object.keys(displayFiles).length;
   const isMultiFile = fileCount > 1;
@@ -503,58 +698,130 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
 
         {/* Code Tab */}
         <div
-          className="absolute inset-0 flex overflow-hidden"
+          className="absolute inset-0 flex flex-col overflow-hidden"
           style={{
             visibility: activeTab === "code" ? "visible" : "hidden",
             pointerEvents: activeTab === "code" ? "auto" : "none",
           }}
         >
-          {/* Show streaming file view when generating code, otherwise show dark IDE static view */}
-          {genProgress?.phase && (genProgress.phase === "writing" || genProgress.phase === "writing-files") && genProgress.streamingCode ? (
+          {/* Iteration streaming status bar */}
+          {isIterationStreaming && (
+            <div className="flex items-center gap-2 px-3 py-1.5 border-b bg-muted/50 shrink-0">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+              <span className="text-xs font-medium text-amber-500">
+                Updating · {streamingFiles.length} file{streamingFiles.length !== 1 ? "s" : ""}...
+              </span>
+              {streamingFiles.filter(f => !displayFiles[f.path]).length > 0 && (
+                <span className="flex items-center gap-0.5 text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">
+                  <Plus className="w-2.5 h-2.5" />
+                  {streamingFiles.filter(f => !displayFiles[f.path]).length} new
+                </span>
+              )}
+              {streamingFiles.filter(f => !!displayFiles[f.path]).length > 0 && (
+                <span className="flex items-center gap-0.5 text-[10px] font-medium text-sky-400 bg-sky-400/10 px-1.5 py-0.5 rounded-full">
+                  <Pencil className="w-2.5 h-2.5" />
+                  {streamingFiles.filter(f => !!displayFiles[f.path]).length} modified
+                </span>
+              )}
+              <span className="text-[11px] text-muted-foreground ml-auto">
+                {((genProgress?.charsReceived ?? 0) / 1000).toFixed(1)}k chars
+              </span>
+            </div>
+          )}
+
+          {/* First generation → full StreamingFileView */}
+          {isFirstGenStreaming && genProgress?.streamingCode ? (
             <StreamingFileView
               streamingCode={genProgress.streamingCode}
               filesDetected={genProgress.filesDetected}
               charsReceived={genProgress.charsReceived}
+              existingFiles={displayFiles}
             />
           ) : (
-            <>
-              {/* File tree sidebar – dark IDE style */}
-              {isMultiFile && (
+            <div className="flex flex-1 min-h-0 overflow-hidden">
+              {/* File tree sidebar – always visible, enhanced with streaming indicators */}
+              {(isMultiFile || isIterationStreaming) && (
                 <div className="hidden md:block w-48 shrink-0 border-r border-white/10 bg-[#181825] overflow-auto">
                   <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-gray-500 font-semibold">
                     Explorer
                   </div>
-                  <FileTreeView files={displayFiles} selectedFile={selectedFile} onSelectFile={setSelectedFile} />
+                  <FileTreeView
+                    files={isIterationStreaming ? mergedTreeFiles : displayFiles}
+                    selectedFile={selectedFile}
+                    onSelectFile={(path) => {
+                      if (isIterationStreaming) userPickedFileRef.current = true;
+                      setSelectedFile(path);
+                    }}
+                    streamingMap={isIterationStreaming ? streamingMap : undefined}
+                    activeStreamingPath={isIterationStreaming ? activeStreamingPath : undefined}
+                    originalFiles={isIterationStreaming ? displayFiles : undefined}
+                  />
                 </div>
               )}
               <div className="flex-1 flex flex-col overflow-hidden bg-[#1e1e2e]">
                 {/* File tab bar */}
                 <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/10 bg-[#252536] shrink-0">
-                  <FileCode2 className={`w-3.5 h-3.5 shrink-0 ${
-                    selectedFile.endsWith(".tsx") || selectedFile.endsWith(".jsx") ? "text-blue-400" :
-                    selectedFile.endsWith(".ts") || selectedFile.endsWith(".js") ? "text-yellow-400" :
-                    selectedFile.endsWith(".css") ? "text-pink-400" :
-                    selectedFile.endsWith(".json") ? "text-green-400" : "text-gray-400"
-                  }`} />
+                  {isIterationStreaming && activeStreamingPath === selectedFile ? (
+                    <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-amber-400" />
+                  ) : (
+                    <FileCode2 className={`w-3.5 h-3.5 shrink-0 ${
+                      selectedFile.endsWith(".tsx") || selectedFile.endsWith(".jsx") ? "text-blue-400" :
+                      selectedFile.endsWith(".ts") || selectedFile.endsWith(".js") ? "text-yellow-400" :
+                      selectedFile.endsWith(".css") ? "text-pink-400" :
+                      selectedFile.endsWith(".json") ? "text-green-400" : "text-gray-400"
+                    }`} />
+                  )}
                   <span className="text-xs font-mono text-gray-300 truncate">
                     {selectedFile.startsWith("/") ? selectedFile.slice(1) : selectedFile}
                   </span>
+                  {isIterationStreaming && streamingMap.has(selectedFile) && (
+                    displayFiles[selectedFile] ? (
+                      <span className="text-[9px] font-medium text-sky-400 bg-sky-400/10 px-1.5 py-0.5 rounded-full">
+                        Modified
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-medium text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">
+                        New file
+                      </span>
+                    )
+                  )}
+                  {isIterationStreaming && activeStreamingPath === selectedFile && (
+                    <span className="flex items-center gap-1 ml-auto text-[10px] text-amber-400 shrink-0">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      writing...
+                    </span>
+                  )}
+                  {isIterationStreaming && streamingMap.get(selectedFile)?.isComplete && (
+                    <span className="flex items-center gap-1 ml-auto text-[10px] text-emerald-400 shrink-0">
+                      <Check className="w-3 h-3" />
+                      done
+                    </span>
+                  )}
                 </div>
-                {/* Code content with line numbers */}
+                {/* Code content — streaming diff or static */}
                 <div className="flex-1 overflow-auto">
-                  <pre className="p-4 text-[13px] font-mono leading-relaxed whitespace-pre-wrap">
-                    {(displayFiles[selectedFile] || "// Select a file").split("\n").map((line, i) => (
-                      <div key={i} className="flex">
-                        <span className="inline-block w-8 shrink-0 text-right pr-4 text-gray-600 select-none text-[11px] leading-relaxed">
-                          {i + 1}
-                        </span>
-                        <span className="text-gray-200 flex-1">{line}</span>
-                      </div>
-                    ))}
-                  </pre>
+                  {isIterationStreaming && streamingMap.has(selectedFile) ? (
+                    <IterationDiffView
+                      content={streamingMap.get(selectedFile)!.content}
+                      oldContent={displayFiles[selectedFile]}
+                      isStreaming={activeStreamingPath === selectedFile}
+                      codeEndRef={streamingCodeEndRef}
+                    />
+                  ) : (
+                    <pre className="p-4 text-[13px] font-mono leading-relaxed whitespace-pre-wrap">
+                      {(displayFiles[selectedFile] || "// Select a file").split("\n").map((line, i) => (
+                        <div key={i} className="flex">
+                          <span className="inline-block w-8 shrink-0 text-right pr-4 text-gray-600 select-none text-[11px] leading-relaxed">
+                            {i + 1}
+                          </span>
+                          <span className="text-gray-200 flex-1">{line}</span>
+                        </div>
+                      ))}
+                    </pre>
+                  )}
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
 

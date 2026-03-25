@@ -7,7 +7,10 @@ import {
   Loader2,
   Check,
   ChevronDown,
+  Plus,
+  Pencil,
 } from "lucide-react";
+import type { FileMap } from "@/lib/parser";
 
 interface StreamingFile {
   path: string;
@@ -19,6 +22,22 @@ interface StreamingFileViewProps {
   streamingCode: string;
   filesDetected: number;
   charsReceived: number;
+  existingFiles?: FileMap;
+}
+
+type LineStatus = "unchanged" | "added" | "modified";
+
+function computeLineDiff(newContent: string, oldContent: string | undefined): LineStatus[] {
+  if (!oldContent) {
+    return newContent.split("\n").map(() => "added");
+  }
+  const newLines = newContent.split("\n");
+  const oldLines = oldContent.split("\n");
+  return newLines.map((line, i) => {
+    if (i >= oldLines.length) return "added";
+    if (line !== oldLines[i]) return "modified";
+    return "unchanged";
+  });
 }
 
 function parseStreamingFiles(code: string): StreamingFile[] {
@@ -78,11 +97,79 @@ function FileName({ path }: { path: string }) {
   return <span className={`font-mono ${getFileExtColor(path)}`}>{name}</span>;
 }
 
+interface DiffCodeViewProps {
+  content: string;
+  oldContent: string | undefined;
+  isStreaming: boolean;
+  codeEndRef: React.RefObject<HTMLDivElement | null>;
+}
+
+function DiffCodeView({ content, oldContent, isStreaming, codeEndRef }: DiffCodeViewProps) {
+  const lines = content.split("\n");
+  const lineStatuses = useMemo(
+    () => computeLineDiff(content, oldContent),
+    [content, oldContent]
+  );
+
+  const hasOld = oldContent !== undefined;
+
+  return (
+    <pre className="p-4 text-[13px] font-mono leading-relaxed whitespace-pre-wrap">
+      {lines.map((line, i) => {
+        const status = lineStatuses[i] ?? "unchanged";
+        const isChanged = hasOld && status !== "unchanged";
+
+        let bgClass = "";
+        let gutterClass = "";
+        let gutterChar = " ";
+
+        if (isChanged) {
+          if (status === "added") {
+            bgClass = "bg-emerald-500/8";
+            gutterClass = "text-emerald-500";
+            gutterChar = "+";
+          } else if (status === "modified") {
+            bgClass = "bg-sky-500/8";
+            gutterClass = "text-sky-500";
+            gutterChar = "~";
+          }
+        }
+
+        return (
+          <div key={i} className={`flex ${bgClass}`}>
+            {hasOld && (
+              <span className={`inline-block w-4 shrink-0 text-center text-[11px] leading-relaxed select-none ${gutterClass}`}>
+                {gutterChar}
+              </span>
+            )}
+            <span className="inline-block w-8 shrink-0 text-right pr-4 text-gray-600 select-none text-[11px] leading-relaxed">
+              {i + 1}
+            </span>
+            <span className={`flex-1 ${isChanged ? (status === "added" ? "text-emerald-300" : "text-sky-200") : "text-gray-200"}`}>
+              {line}
+            </span>
+          </div>
+        );
+      })}
+      {isStreaming && (
+        <div className="flex">
+          {hasOld && <span className="inline-block w-4 shrink-0" />}
+          <span className="inline-block w-8 shrink-0" />
+          <span className="inline-block w-[2px] h-[1.2em] bg-amber-400 animate-pulse" />
+        </div>
+      )}
+      <div ref={codeEndRef} />
+    </pre>
+  );
+}
+
 export function StreamingFileView({
   streamingCode,
   filesDetected,
   charsReceived,
+  existingFiles,
 }: StreamingFileViewProps) {
+  const hasExisting = existingFiles && Object.keys(existingFiles).length > 0;
   const files = useMemo(() => parseStreamingFiles(streamingCode), [streamingCode]);
   const folderTree = useMemo(() => buildFolderTree(files), [files]);
   const [selectedIdx, setSelectedIdx] = useState<number>(-1);
@@ -134,8 +221,25 @@ export function StreamingFileView({
       <div className="flex items-center gap-2 px-3 py-1.5 border-b bg-muted/50 shrink-0">
         <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
         <span className="text-xs font-medium text-amber-500">
-          Generating{filesDetected > 0 ? ` · ${filesDetected} file${filesDetected !== 1 ? "s" : ""}` : ""}...
+          {hasExisting ? "Updating" : "Generating"}
+          {filesDetected > 0 ? ` · ${filesDetected} file${filesDetected !== 1 ? "s" : ""}` : ""}...
         </span>
+        {hasExisting && files.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            {files.filter(f => !existingFiles![f.path]).length > 0 && (
+              <span className="flex items-center gap-0.5 text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">
+                <Plus className="w-2.5 h-2.5" />
+                {files.filter(f => !existingFiles![f.path]).length} new
+              </span>
+            )}
+            {files.filter(f => !!existingFiles![f.path]).length > 0 && (
+              <span className="flex items-center gap-0.5 text-[10px] font-medium text-sky-400 bg-sky-400/10 px-1.5 py-0.5 rounded-full">
+                <Pencil className="w-2.5 h-2.5" />
+                {files.filter(f => !!existingFiles![f.path]).length} modified
+              </span>
+            )}
+          </div>
+        )}
         <span className="text-[11px] text-muted-foreground ml-auto">
           {(charsReceived / 1000).toFixed(1)}k chars
         </span>
@@ -163,6 +267,9 @@ export function StreamingFileView({
                     const isActive = globalIdx === viewIdx;
                     const isWriting = globalIdx === activeFileIdx && !file.isComplete;
 
+                    const isNewFile = hasExisting && !existingFiles![file.path];
+                    const isModifiedFile = hasExisting && !!existingFiles![file.path];
+
                     return (
                       <button
                         key={file.path}
@@ -181,6 +288,19 @@ export function StreamingFileView({
                           <FileCode2 className={`w-3 h-3 shrink-0 ${getFileExtColor(file.path)}`} />
                         )}
                         <FileName path={file.path} />
+                        {hasExisting && !isWriting && (
+                          isNewFile ? (
+                            <span className="ml-auto flex items-center gap-0.5 text-[9px] font-semibold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full shrink-0">
+                              <Plus className="w-2.5 h-2.5" />
+                              New
+                            </span>
+                          ) : isModifiedFile ? (
+                            <span className="ml-auto flex items-center gap-0.5 text-[9px] font-semibold text-sky-400 bg-sky-400/10 px-1.5 py-0.5 rounded-full shrink-0">
+                              <Pencil className="w-2.5 h-2.5" />
+                              Mod
+                            </span>
+                          ) : null
+                        )}
                         {isWriting && (
                           <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
                         )}
@@ -203,6 +323,16 @@ export function StreamingFileView({
               <span className="text-xs font-mono text-gray-300 truncate">
                 {viewFile.path.startsWith("/") ? viewFile.path.slice(1) : viewFile.path}
               </span>
+              {hasExisting && existingFiles![viewFile.path] && (
+                <span className="text-[9px] font-medium text-sky-400 bg-sky-400/10 px-1.5 py-0.5 rounded-full">
+                  Modified
+                </span>
+              )}
+              {hasExisting && !existingFiles![viewFile.path] && (
+                <span className="text-[9px] font-medium text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">
+                  New file
+                </span>
+              )}
               {viewIdx === activeFileIdx && !viewFile.isComplete && (
                 <span className="flex items-center gap-1 ml-auto text-[10px] text-amber-400 shrink-0">
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -221,26 +351,12 @@ export function StreamingFileView({
           {/* Code content */}
           <div className="flex-1 overflow-auto">
             {viewFile ? (
-              <div className="relative">
-                {/* Line numbers + code */}
-                <pre className="p-4 text-[13px] font-mono leading-relaxed whitespace-pre-wrap">
-                  {viewFile.content.split("\n").map((line, i) => (
-                    <div key={i} className="flex">
-                      <span className="inline-block w-8 shrink-0 text-right pr-4 text-gray-600 select-none text-[11px] leading-relaxed">
-                        {i + 1}
-                      </span>
-                      <span className="text-gray-200 flex-1">{line}</span>
-                    </div>
-                  ))}
-                  {viewIdx === activeFileIdx && !viewFile?.isComplete && (
-                    <div className="flex">
-                      <span className="inline-block w-8 shrink-0" />
-                      <span className="inline-block w-[2px] h-[1.2em] bg-amber-400 animate-pulse" />
-                    </div>
-                  )}
-                  <div ref={codeEndRef} />
-                </pre>
-              </div>
+              <DiffCodeView
+                content={viewFile.content}
+                oldContent={existingFiles?.[viewFile.path]}
+                isStreaming={viewIdx === activeFileIdx && !viewFile.isComplete}
+                codeEndRef={codeEndRef}
+              />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500 text-sm">
                 Select a file to view
