@@ -141,7 +141,7 @@ Usuario escribe prompt
 
 ---
 
-### Fase 2 — Projects + Generation Proxy + Billing + Rate Limiting 🔄
+### Fase 2 — Projects + Generation Proxy + Billing + Rate Limiting ✅
 
 **Objetivo:** Implementar las 3 apps backend restantes que convierten Dokiflux en un producto funcional con persistencia, billing y control de uso.
 
@@ -395,9 +395,34 @@ Dokiflux/
 │   │   │   └── services/
 │   │   │       ├── email.py          # Brevo email service
 │   │   │       └── tokens.py         # Token generation helpers
-│   │   ├── projects/                  # 🔄 Fase 2
-│   │   ├── billing/                   # 🔄 Fase 2
-│   │   └── generation/                # 🔄 Fase 2
+│   │   ├── projects/                  # ✅ CRUD + ChatMessage
+│   │   │   ├── models.py             # Project, ChatMessage
+│   │   │   ├── serializers.py        # List/Detail/Create serializers
+│   │   │   ├── views.py              # CRUD + messages list
+│   │   │   ├── permissions.py        # IsProjectOwner
+│   │   │   ├── urls.py               # /api/projects/...
+│   │   │   └── admin.py
+│   │   ├── billing/                   # ✅ Créditos + planes
+│   │   │   ├── models.py             # UserPlan, CreditGrant, CreditTransaction
+│   │   │   ├── services.py           # get_balance, consume_credits, grant_monthly
+│   │   │   ├── signals.py            # Auto-create plan + grant on register
+│   │   │   ├── plans.py              # PLAN_DEFINITIONS (free/premium)
+│   │   │   ├── throttles.py          # PlanBasedDailyThrottle
+│   │   │   ├── serializers.py
+│   │   │   ├── views.py              # balance, transactions, plans
+│   │   │   ├── urls.py               # /api/billing/...
+│   │   │   └── admin.py
+│   │   └── generation/                # ✅ Proxy OpenAI + audit
+│   │       ├── models.py             # Generation (audit log)
+│   │       ├── providers/
+│   │       │   ├── base.py           # BaseProvider (abstracto)
+│   │       │   └── openai.py         # OpenAIProvider (httpx async streaming)
+│   │       ├── services.py           # stream_generation orchestrator
+│   │       ├── middleware.py         # AsyncJWTAuthMiddleware
+│   │       ├── serializers.py
+│   │       ├── views.py              # generate (SSE async), estimate
+│   │       ├── urls.py               # /api/generate/, /api/estimate/
+│   │       └── admin.py
 │   ├── manage.py
 │   ├── requirements.txt
 │   └── Dockerfile
@@ -459,7 +484,7 @@ Dokiflux/
 | GET | `/check-username/{username}/` | No | Verificar disponibilidad |
 | POST | `/google/` | No | Login/registro Google OAuth |
 
-### Projects (`/api/projects/`) — 🔄 Fase 2
+### Projects (`/api/projects/`) — ✅ Implementado
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
@@ -470,7 +495,7 @@ Dokiflux/
 | DELETE | `/{id}/` | Sí | Eliminar proyecto |
 | GET | `/{id}/messages/` | Sí | Historial de chat |
 
-### Billing (`/api/billing/`) — 🔄 Fase 2
+### Billing (`/api/billing/`) — ✅ Implementado
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
@@ -478,7 +503,7 @@ Dokiflux/
 | GET | `/transactions/` | Sí | Historial de movimientos |
 | GET | `/plans/` | No | Planes disponibles |
 
-### Generation (`/api/`) — 🔄 Fase 2
+### Generation (`/api/`) — ✅ Implementado
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|

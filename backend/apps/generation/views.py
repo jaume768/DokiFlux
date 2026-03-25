@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from asgiref.sync import sync_to_async
 from django.http import StreamingHttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
 
 from apps.billing.plans import PLAN_DEFINITIONS
@@ -18,6 +19,7 @@ from .providers.openai import calculate_cost, PRICING
 logger = logging.getLogger(__name__)
 
 
+@csrf_exempt
 async def generate_view(request):
     """
     POST /api/generate/
@@ -125,6 +127,7 @@ async def generate_view(request):
     return response
 
 
+@csrf_exempt
 async def estimate_view(request):
     """
     POST /api/estimate/

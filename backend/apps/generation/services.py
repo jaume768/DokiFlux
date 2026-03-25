@@ -3,6 +3,7 @@ import logging
 from decimal import Decimal
 from typing import AsyncGenerator, Any
 
+from asgiref.sync import sync_to_async
 from django.utils.timezone import now
 
 from apps.billing.services import consume_credits, get_balance
@@ -62,13 +63,13 @@ async def stream_generation(
     5. Yield SSE chunks throughout
     """
     # 1. Pre-check credits
-    balance = get_balance(user)
+    balance = await sync_to_async(get_balance)(user)
     if balance < MIN_COST_ESTIMATE:
         yield {"type": "error", "error": "Insufficient credits. Please upgrade your plan or purchase more credits."}
         return
 
     # 2. Serialize current project state
-    file_map = project.file_map or {}
+    file_map = await sync_to_async(lambda: project.file_map or {})()
     current_project = None
     if file_map:
         current_project = "\n\n".join(
@@ -133,7 +134,7 @@ async def stream_generation(
         # Deduct actual cost
         actual_cost = generation.cost
         if actual_cost > 0:
-            success = consume_credits(
+            success = await sync_to_async(consume_credits)(
                 user,
                 actual_cost,
                 description=f"Generation #{generation.id}: {prompt[:100]}",
@@ -171,7 +172,7 @@ async def stream_generation(
         # Chat-only: still costs tokens, deduct
         actual_cost = generation.cost
         if actual_cost > 0:
-            consume_credits(
+            await sync_to_async(consume_credits)(
                 user,
                 actual_cost,
                 description=f"Chat #{generation.id}: {prompt[:100]}",

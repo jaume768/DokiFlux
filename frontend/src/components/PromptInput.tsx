@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { SendHorizonal, Loader2, Square, Coins } from "lucide-react";
 import { CostEstimate } from "@/types";
 import { formatCost } from "@/lib/pricing";
+import { getStoredTokens } from "@/lib/api";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
@@ -12,9 +15,10 @@ interface PromptInputProps {
   isLoading: boolean;
   currentProject?: string;
   chatHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  projectId?: number;
 }
 
-export function PromptInput({ onSubmit, onCancel, isLoading, currentProject, chatHistory }: PromptInputProps) {
+export function PromptInput({ onSubmit, onCancel, isLoading, currentProject, chatHistory, projectId }: PromptInputProps) {
   const [value, setValue] = useState("");
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
@@ -45,16 +49,24 @@ export function PromptInput({ onSubmit, onCancel, isLoading, currentProject, cha
       setEstimateLoading(true);
 
       try {
-        const res = await fetch("/api/estimate", {
+        const tokens = getStoredTokens();
+        const res = await fetch(`${API_BASE}/estimate/`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: trimmed, currentProject, chatHistory }),
+          headers: {
+            "Content-Type": "application/json",
+            ...(tokens?.access ? { Authorization: `Bearer ${tokens.access}` } : {}),
+          },
+          body: JSON.stringify({
+            prompt: trimmed,
+            ...(projectId ? { project_id: projectId } : {}),
+            chat_history: chatHistory,
+          }),
           signal: controller.signal,
         });
 
         if (res.ok) {
           const data = await res.json();
-          setEstimate(data.estimate);
+          setEstimate(data);
         }
       } catch {
         // Abort or network error — ignore

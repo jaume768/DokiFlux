@@ -146,6 +146,12 @@ CORS_ALLOWED_ORIGINS = config(
 )
 CORS_ALLOW_CREDENTIALS = True
 
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="http://localhost:3000",
+    cast=Csv(),
+)
+
 # --- Spectacular (API docs) ---
 
 SPECTACULAR_SETTINGS = {
