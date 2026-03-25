@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { apiGet, apiPatch, getStoredTokens } from "@/lib/api";
 import type { ProjectDetail, ChatMessageResponse, PaginatedResponse } from "@/types/auth";
@@ -12,7 +12,7 @@ import { SessionStatsBar } from "@/components/TokenUsage";
 import { Message, SessionStats, StreamChunk, GenerationProgress } from "@/types";
 import { parseMultiFileOutput, mergeFiles, serializeFileMap, type FileMap, getFileCount } from "@/lib/parser";
 import { MAX_CHAT_HISTORY } from "@/lib/prompts";
-import { Sparkles, MessageSquare, Monitor, ArrowLeft, Coins, Loader2 } from "lucide-react";
+import { Sparkles, MessageSquare, Monitor, ArrowLeft, Coins, Loader2, Pencil, Check, X } from "lucide-react";
 import { useIsMobile, useIsIOS } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/button";
 
@@ -24,9 +24,12 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const projectId = parseInt(id, 10);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { balance, refreshBalance, planType } = useAuth();
 
   const [projectName, setProjectName] = useState("");
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentFiles, setCurrentFiles] = useState<FileMap>({});
   const [generationKey, setGenerationKey] = useState(0);
@@ -39,6 +42,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const autoFixCountRef = useRef(0);
   const MAX_AUTO_FIX_RETRIES = 3;
   const isLoadingRef = useRef(false);
+  const initialPromptSentRef = useRef(false);
   const [sessionStats, setSessionStats] = useState<SessionStats>({
     totalInputTokens: 0,
     totalOutputTokens: 0,
@@ -98,6 +102,22 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
 
     loadProject();
   }, [projectId, router]);
+
+  // Auto-submit initial prompt from query params
+  useEffect(() => {
+    const initialPrompt = searchParams?.get("prompt");
+    if (
+      initialPrompt &&
+      !isLoading &&
+      !isLoadingProject &&
+      messages.length === 0 &&
+      !initialPromptSentRef.current
+    ) {
+      initialPromptSentRef.current = true;
+      handleSubmit(initialPrompt);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, isLoading, isLoadingProject, messages.length]);
 
   const buildCompressedPayload = useCallback(() => {
     const allMsgs = messagesRef.current.filter(
@@ -366,6 +386,21 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     [projectId, buildCompressedPayload, refreshBalance]
   );
 
+  async function handleTitleSave() {
+    if (!editedTitle.trim()) {
+      setIsEditingTitle(false);
+      return;
+    }
+
+    try {
+      await apiPatch(`/projects/${projectId}/`, { name: editedTitle.trim() });
+      setProjectName(editedTitle.trim());
+      setIsEditingTitle(false);
+    } catch {
+      setIsEditingTitle(false);
+    }
+  }
+
   const handleBuildError = useCallback(
     (errorText: string) => {
       if (isLoadingRef.current) return;
@@ -422,18 +457,57 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     <div className="h-[100dvh] flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-4 md:px-6 py-2 md:py-3 border-b bg-background shrink-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/")}
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <Sparkles className="w-5 h-5 text-primary" />
-          <h1 className="text-base md:text-lg font-bold truncate max-w-[200px]">
-            {projectName}
-          </h1>
+          <Sparkles className="w-5 h-5 text-primary shrink-0" />
+          {isEditingTitle ? (
+            <div className="flex items-center gap-1 flex-1 min-w-0">
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleTitleSave();
+                  if (e.key === "Escape") setIsEditingTitle(false);
+                }}
+                className="flex-1 min-w-0 text-base md:text-lg font-bold bg-transparent border-b border-primary outline-none px-1"
+                autoFocus
+              />
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={handleTitleSave}
+              >
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => setIsEditingTitle(false)}
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setEditedTitle(projectName);
+                setIsEditingTitle(true);
+              }}
+              className="flex items-center gap-1.5 group flex-1 min-w-0"
+            >
+              <h1 className="text-base md:text-lg font-bold truncate">
+                {projectName}
+              </h1>
+              <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            </button>
+          )}
         </div>
 
         {isMobile && (
