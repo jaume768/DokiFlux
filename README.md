@@ -42,16 +42,16 @@ El objetivo es convertirlo en un SaaS con autenticación, persistencia de proyec
 ┌──────────────────────────────────────────────────────────────┐
 │                        Monorepo                              │
 │                                                              │
-│  ┌──────────────┐    ┌──────────────┐    ┌───────────────┐  │
-│  │   frontend/   │    │   backend/   │    │  Docker        │  │
-│  │   Next.js 16  │◄──►│  Django 5.1  │    │  Compose       │  │
-│  │   React 19    │    │  DRF + JWT   │    │               │  │
-│  │   Tailwind v4 │    │  PostgreSQL  │    │  4 servicios: │  │
-│  │   shadcn/ui   │    │  Redis       │    │  frontend     │  │
-│  │   WebContainers│   │              │    │  backend      │  │
-│  └──────────────┘    └──────────────┘    │  db (Postgres) │  │
-│                                          │  redis         │  │
-│                                          └───────────────┘  │
+│  ┌──────────────┐    ┌──────────────┐    ┌───────────────┐   │
+│  │   frontend/   │    │   backend/  │    │  Docker       │   │
+│  │   Next.js 16  │◄──►│  Django 5.1 │    │  Compose      │   │
+│  │   React 19    │    │  DRF + JWT  │    │               │   │
+│  │   Tailwind v4 │    │  PostgreSQL │    │  4 servicios: │   │
+│  │   shadcn/ui   │    │  Redis      │    │  frontend     │   │
+│  │   WebContainers│   │             │    │  backend      │   │
+│  └──────────────┘    └──────────────┘    │  db (Postgres)│   │
+│                                          │  redis        │   │
+│                                          └───────────────┘   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
