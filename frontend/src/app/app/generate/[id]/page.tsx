@@ -15,6 +15,8 @@ import { MAX_CHAT_HISTORY } from "@/lib/prompts";
 import { Sparkles, MessageSquare, Monitor, ArrowLeft, Coins, Loader2, Pencil, Check, X } from "lucide-react";
 import { useIsMobile, useIsIOS } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/button";
+import { ModelSelector } from "@/components/ModelSelector";
+import { DEFAULT_MODEL, isValidModelId, type ModelId } from "@/lib/pricing";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -51,6 +53,10 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   });
   const [mobileView, setMobileView] = useState<MobileView>("chat");
   const [hasNewPreview, setHasNewPreview] = useState(false);
+  const modelParam = searchParams.get("model");
+  const [selectedModel, setSelectedModel] = useState<ModelId>(
+    modelParam && isValidModelId(modelParam) ? modelParam : DEFAULT_MODEL
+  );
   const [genProgress, setGenProgress] = useState<GenerationProgress>({
     phase: null,
     filesDetected: 0,
@@ -172,6 +178,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             project_id: projectId,
             prompt,
             chat_history: chatHistory,
+            model: selectedModel,
           }),
           signal: controller.signal,
         });
@@ -383,7 +390,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         setGenProgress({ phase: null, filesDetected: 0, charsReceived: 0, streamingCode: "" });
       }
     },
-    [projectId, buildCompressedPayload, refreshBalance]
+    [projectId, buildCompressedPayload, refreshBalance, selectedModel]
   );
 
   async function handleTitleSave() {
@@ -544,15 +551,17 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         )}
 
         <div className="flex items-center gap-2">
+          <ModelSelector
+            value={selectedModel}
+            onChange={setSelectedModel}
+            disabled={isLoading}
+          />
           {balance !== null && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
               <Coins className="w-3 h-3" />
               <span>${parseFloat(balance).toFixed(2)}</span>
             </div>
           )}
-          <div className="text-xs text-muted-foreground hidden sm:block">
-            Powered by GPT-5.4
-          </div>
         </div>
       </header>
 

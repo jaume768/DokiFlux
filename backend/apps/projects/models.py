@@ -12,6 +12,10 @@ class Project(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     file_map = models.JSONField(default=dict, blank=True)
+    file_map_url = models.URLField(
+        max_length=500, null=True, blank=True,
+        help_text="S3 URL for file_map storage (prepared, not yet active).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

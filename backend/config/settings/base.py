@@ -191,6 +191,13 @@ GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", default="")
 AUTO_VERIFY_EMAIL = config("AUTO_VERIFY_EMAIL", default=False, cast=bool)
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
 
-# --- OpenAI ---
-
+# --- AI Provider API Keys ---
+# Single key (backward compat)
 OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
+ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
+GEMINI_API_KEY = config("GEMINI_API_KEY", default="")
+
+# Multi-key rotation (comma-separated, takes precedence over single key)
+OPENAI_API_KEYS = [k.strip() for k in config("OPENAI_API_KEYS", default="").split(",") if k.strip()]
+ANTHROPIC_API_KEYS = [k.strip() for k in config("ANTHROPIC_API_KEYS", default="").split(",") if k.strip()]
+GEMINI_API_KEYS = [k.strip() for k in config("GEMINI_API_KEYS", default="").split(",") if k.strip()]

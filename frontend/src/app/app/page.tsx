@@ -7,12 +7,15 @@ import { generateProjectTitle } from "@/lib/projectUtils";
 import type { ProjectListItem } from "@/types/auth";
 import { Sparkles, SendHorizonal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ModelSelector } from "@/components/ModelSelector";
+import { DEFAULT_MODEL, type ModelId } from "@/lib/pricing";
 
 export default function HomePage() {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
+  const [selectedModel, setSelectedModel] = useState<ModelId>(DEFAULT_MODEL);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,7 +30,7 @@ export default function HomePage() {
         name: title,
         description: "",
       });
-      router.push(`/app/generate/${project.id}?prompt=${encodeURIComponent(prompt)}`);
+      router.push(`/app/generate/${project.id}?prompt=${encodeURIComponent(prompt)}&model=${selectedModel}`);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -74,12 +77,11 @@ export default function HomePage() {
               className="w-full resize-none bg-transparent px-6 py-4 text-base outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
             />
             <div className="flex items-center justify-between px-4 pb-4">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                  GPT-5.4
-                </div>
-              </div>
+              <ModelSelector
+                value={selectedModel}
+                onChange={setSelectedModel}
+                disabled={isCreating}
+              />
               <Button
                 type="submit"
                 disabled={!prompt.trim() || isCreating}

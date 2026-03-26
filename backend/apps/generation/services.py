@@ -10,7 +10,7 @@ from apps.billing.services import consume_credits, get_balance
 from apps.projects.models import ChatMessage, Project
 
 from .models import Generation
-from .providers.openai import OpenAIProvider, calculate_cost, MAX_OUTPUT_TOKENS
+from .providers.registry import get_model_config, calculate_cost
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +20,20 @@ MIN_COST_ESTIMATE = Decimal("0.005")
 
 def get_provider(model: str = "gpt-5.4"):
     """Factory: return the appropriate provider for the model."""
-    # Future: route to AnthropicProvider, GoogleProvider, etc.
-    return OpenAIProvider()
+    config = get_model_config(model)
+    provider_name = config["provider"]
+
+    if provider_name == "openai":
+        from .providers.openai import OpenAIProvider
+        return OpenAIProvider()
+    elif provider_name == "anthropic":
+        from .providers.anthropic import AnthropicProvider
+        return AnthropicProvider()
+    elif provider_name == "gemini":
+        from .providers.gemini import GeminiProvider
+        return GeminiProvider()
+    else:
+        raise ValueError(f"Unknown provider: {provider_name}")
 
 
 def build_messages(prompt: str, current_project: str | None, chat_history: list[dict]) -> list[dict]:
@@ -96,7 +108,10 @@ async def stream_generation(
     chat_text = ""
     error_occurred = False
 
-    async for chunk in provider.stream_generate(messages, model=model, max_tokens=MAX_OUTPUT_TOKENS):
+    model_config = get_model_config(model)
+    max_tokens = model_config["max_output_tokens"]
+
+    async for chunk in provider.stream_generate(messages, model=model, max_tokens=max_tokens):
         chunk_type = chunk.get("type")
 
         if chunk_type == "text":

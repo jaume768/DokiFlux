@@ -88,7 +88,7 @@ El objetivo es convertirlo en un SaaS con autenticación, persistencia de proyec
 | **Base de datos** | PostgreSQL 16 |
 | **Cache / Rate Limiting** | Redis 7 |
 | **Email transaccional** | Brevo (Sendinblue) |
-| **IA** | OpenAI GPT-5.4 (Responses API, streaming + function calling) |
+| **IA** | Multi-proveedor: OpenAI GPT-5.4, Claude (Sonnet/Opus 4.6, Haiku 4.5), Gemini (3.1 Pro, 3 Flash, 3.1 Flash-Lite) |
 | **Auth** | JWT (access 30min / refresh 7d), Google OAuth (`google-auth`) |
 | **Infraestructura** | Docker Compose (dev), Dockerfiles multietapa |
 
@@ -98,10 +98,11 @@ El objetivo es convertirlo en un SaaS con autenticación, persistencia de proyec
 Usuario escribe prompt
        │
        ▼
-┌─────────────────────┐
-│  GPT-5.4 Responses  │
-│  API (streaming)    │
-└─────────┬───────────┘
+┌──────────────────────────┐
+│  Multi-Provider Router   │
+│  OpenAI / Claude / Gemini│
+│  (streaming SSE)         │
+└─────────┬────────────────┘
           │
     ┌─────┴─────┐
     │           │
@@ -269,19 +270,34 @@ Se aplica solo al endpoint `/api/generate/`.
 
 ---
 
-### Fase 4 — Multi-proveedor, Storage, Pagos, Workers 📋
+### Fase 4 — Multi-proveedor IA + API Key Rotation ✅
 
-**Objetivo:** Escalar la plataforma con soporte multi-modelo, almacenamiento externo, pagos reales y tareas asíncronas.
+**Objetivo:** Soporte multi-modelo con 3 proveedores (OpenAI, Anthropic, Google) y rotación de API keys.
 
-**Por qué:** Para ser competitivo hay que ofrecer múltiples modelos (cada uno tiene sus fortalezas), y para escalar el billing necesita pagos reales con Stripe.
+**Por qué:** Para ser competitivo hay que ofrecer múltiples modelos (cada uno tiene sus fortalezas en coste, velocidad e inteligencia).
 
-**Qué se hará:**
-- **Multi-proveedor IA** — Implementar `AnthropicProvider`, `GoogleProvider` sobre la abstracción `BaseProvider`. Ofrecer diferentes modelos con costes distintos.
-- **Multi API key rotation** — Pool de API keys con round-robin para multiplicar rate limits de los proveedores.
-- **S3 / Object Storage** — Migrar file_map de JSONField a S3 para proyectos grandes. Añadir campo `file_map_url` al modelo `Project`.
+**Qué se hizo:**
+- **11 modelos de IA** — GPT-5.4 (5 niveles de reasoning: none/low/medium/high/xhigh), Claude Sonnet 4.6, Claude Opus 4.6, Claude Haiku 4.5, Gemini 3.1 Pro, Gemini 3 Flash, Gemini 3.1 Flash-Lite
+- **3 providers** — `OpenAIProvider` (refactorizado), `AnthropicProvider` (nuevo), `GeminiProvider` (nuevo), todos sobre `BaseProvider`
+- **MODEL_REGISTRY centralizado** — Config, pricing y límites de cada modelo en `providers/registry.py`. Único punto de verdad.
+- **Multi API Key rotation** — `KeyPool` thread-safe con round-robin en `providers/key_pool.py`. Soporta múltiples keys por proveedor (comma-separated en `.env`).
+- **Factory multi-provider** — `get_provider(model_id)` en `services.py` instancia el provider correcto según el registry.
+- **Endpoint `/api/models/`** — Lista modelos disponibles con pricing (para el frontend).
+- **Frontend ModelSelector** — Dropdown en el header de generación para elegir modelo. Agrupado por proveedor con pricing inline.
+- **Validación de modelo** — Serializer valida que el modelo esté en el registry. Estimate view usa pricing del modelo seleccionado.
+- **S3 preparado** — Campo `file_map_url` añadido al modelo `Project` (migración aplicada, sin lógica activa).
+
+**Decisiones técnicas:**
+- **Prompts compartidos** — `SYSTEM_PROMPT` y `CODEGEN_RULES` en `providers/prompts.py`, con tool definitions en formato específico de cada proveedor (OpenAI function, Anthropic input_schema, Gemini function_declarations).
+- **Reasoning effort en GPT-5.4** — Parámetro `reasoning.effort` controla "thinking tokens". Se facturan como output tokens, así que xhigh es significativamente más caro.
+- **Backward compatible** — Si solo `OPENAI_API_KEY` está definida (sin `OPENAI_API_KEYS`), se usa como fallback. Ídem para Anthropic y Gemini.
+- **Message format conversion** — Cada provider convierte mensajes internos a su formato nativo (OpenAI: `developer`/`user`/`assistant`, Anthropic: `system` param + `user`/`assistant`, Gemini: `system_instruction` + `user`/`model`).
+
+**Pendiente (Fase 4b — 📋):**
 - **Stripe** — Suscripciones (free → premium), compra de créditos adicionales, webhooks para renovación automática.
 - **Celery + Redis** — Tareas async: expiración de grants, envío de emails masivos, analytics, limpieza de proyectos huérfanos.
 - **Project snapshots** — Versionado de proyectos vinculado a cada generación. "Undo" para volver al estado anterior.
+- **S3 activo** — Lógica de upload/download de file_map a S3 (campo ya preparado).
 
 ---
 
@@ -352,8 +368,14 @@ npm run dev
 ## Variables de entorno
 
 ```bash
-# === OpenAI ===
-OPENAI_API_KEY=sk-...                    # API key de OpenAI (requerida)
+# === AI Providers ===
+OPENAI_API_KEY=sk-...                    # API key de OpenAI
+ANTHROPIC_API_KEY=sk-ant-...             # API key de Anthropic (Claude)
+GEMINI_API_KEY=AIza...                   # API key de Google Gemini
+# Multi-key rotation (comma-separated, optional):
+# OPENAI_API_KEYS=sk-key1,sk-key2
+# ANTHROPIC_API_KEYS=sk-ant-key1,sk-ant-key2
+# GEMINI_API_KEYS=AIza-key1,AIza-key2
 
 # === Backend Django ===
 DJANGO_SECRET_KEY=change-me              # Secret key de Django
@@ -421,6 +443,7 @@ Dokiflux/
 │   │   │   ├── TokenUsage.tsx         # Tokens/coste por generación + stats
 │   │   │   ├── Sidebar.tsx            # Navegación + proyectos recientes + balance
 │   │   │   ├── ThemeProvider.tsx       # next-themes wrapper
+│   │   │   ├── ModelSelector.tsx       # Dropdown multi-modelo (OpenAI/Claude/Gemini)
 │   │   │   ├── ThemeToggle.tsx         # Botón dark/light mode
 │   │   │   ├── landing/               # Componentes de landing/pricing
 │   │   │   │   ├── LandingNavbar.tsx  # Navbar responsive (logo, links, CTAs, mobile)
@@ -442,7 +465,7 @@ Dokiflux/
 │   │   │   ├── openai.ts             # Cliente OpenAI singleton (legacy)
 │   │   │   ├── prompts.ts            # System prompt + codegen rules
 │   │   │   ├── parser.ts             # Parser multiarchivo + merge
-│   │   │   ├── pricing.ts            # Costes por tokens + estimación
+│   │   │   ├── pricing.ts            # Multi-model registry + costes + estimación
 │   │   │   ├── projectUtils.ts       # Utilidades de proyecto (generar título)
 │   │   │   └── utils.ts              # Utilidades shadcn
 │   │   └── types/
@@ -488,16 +511,21 @@ Dokiflux/
 │   │   │   ├── views.py              # balance, transactions, plans
 │   │   │   ├── urls.py               # /api/billing/...
 │   │   │   └── admin.py
-│   │   └── generation/                # ✅ Proxy OpenAI + audit
+│   │   └── generation/                # ✅ Multi-provider AI + audit
 │   │       ├── models.py             # Generation (audit log)
 │   │       ├── providers/
 │   │       │   ├── base.py           # BaseProvider (abstracto)
-│   │       │   └── openai.py         # OpenAIProvider (httpx async streaming)
-│   │       ├── services.py           # stream_generation orchestrator
+│   │       │   ├── registry.py       # MODEL_REGISTRY + calculate_cost
+│   │       │   ├── key_pool.py       # KeyPool round-robin multi-key
+│   │       │   ├── prompts.py        # Shared prompts + tool defs
+│   │       │   ├── openai.py         # OpenAIProvider (reasoning effort)
+│   │       │   ├── anthropic.py      # AnthropicProvider (Messages API)
+│   │       │   └── gemini.py         # GeminiProvider (REST streaming)
+│   │       ├── services.py           # stream_generation + multi-provider factory
 │   │       ├── middleware.py         # AsyncJWTAuthMiddleware
 │   │       ├── serializers.py
-│   │       ├── views.py              # generate (SSE async), estimate
-│   │       ├── urls.py               # /api/generate/, /api/estimate/
+│   │       ├── views.py              # generate (SSE async), estimate, models
+│   │       ├── urls.py               # /api/generate/, /api/estimate/, /api/models/
 │   │       └── admin.py
 │   ├── manage.py
 │   ├── requirements.txt
@@ -529,16 +557,19 @@ Dokiflux/
 - Los créditos comprados expiran tras **1 año**
 - Si la generación no produce cambios o falla, **no se cobra**
 
-### Coste por generación (GPT-5.4)
+### Coste por generación (por modelo)
 
-| | Precio por 1M tokens |
-|--|--|
-| Input | $2.50 |
-| Output | $15.00 |
+| Modelo | Input / 1M tokens | Output / 1M tokens | Max output |
+|--------|-------------------|--------------------|-----------|
+| GPT-5.4 (all reasoning levels) | $2.50 | $15.00 | 31,000 |
+| Claude Sonnet 4.6 | $3.00 | $15.00 | 16,384 |
+| Claude Opus 4.6 | $5.00 | $25.00 | 16,384 |
+| Claude Haiku 4.5 | $1.00 | $5.00 | 8,192 |
+| Gemini 3.1 Pro | $2.00 | $12.00 | 65,536 |
+| Gemini 3 Flash | $0.50 | $3.00 | 65,536 |
+| Gemini 3.1 Flash-Lite | $0.25 | $1.50 | 65,536 |
 
-- **Primera generación típica** (~500 input + ~2,000 output): **~$0.031**
-- **Iteración típica** (~5,000 input + ~1,000 output): **~$0.028**
-- **Máximo output por generación:** 31,000 tokens
+> **Nota:** En GPT-5.4 con reasoning effort (low/medium/high/xhigh), los "thinking tokens" se facturan como output. A mayor effort, más tokens de salida consumidos.
 
 ---
 
@@ -584,8 +615,9 @@ Dokiflux/
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
-| POST | `/generate/` | Sí | Proxy streaming SSE a OpenAI |
-| POST | `/estimate/` | Sí | Estimación de coste |
+| POST | `/generate/` | Sí | Proxy streaming SSE multi-proveedor (model param) |
+| POST | `/estimate/` | Sí | Estimación de coste (soporta model param) |
+| GET | `/models/` | No | Lista modelos disponibles con pricing |
 
 ---
 

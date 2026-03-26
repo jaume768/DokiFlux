@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from .providers.registry import VALID_MODEL_IDS, DEFAULT_MODEL
+
 
 class GenerateRequestSerializer(serializers.Serializer):
     project_id = serializers.IntegerField()
@@ -9,7 +11,15 @@ class GenerateRequestSerializer(serializers.Serializer):
         required=False,
         default=list,
     )
-    model = serializers.CharField(max_length=50, default="gpt-5.4", required=False)
+    model = serializers.CharField(max_length=50, default=DEFAULT_MODEL, required=False)
+
+    def validate_model(self, value):
+        """Ensure model is in the registry."""
+        if value not in VALID_MODEL_IDS:
+            raise serializers.ValidationError(
+                f"Unknown model '{value}'. Valid models: {', '.join(sorted(VALID_MODEL_IDS))}"
+            )
+        return value
 
     def validate_chat_history(self, value):
         """Ensure chat_history entries have valid role and content."""

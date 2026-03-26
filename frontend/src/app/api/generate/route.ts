@@ -1,6 +1,6 @@
 import { getOpenAIClient } from "@/lib/openai";
 import { SYSTEM_PROMPT, CODEGEN_RULES } from "@/lib/prompts";
-import { calculateCost, MAX_OUTPUT_TOKENS } from "@/lib/pricing";
+import { calculateCost, getModelConfig, DEFAULT_MODEL } from "@/lib/pricing";
 import { GenerateRequest } from "@/types";
 
 export const maxDuration = 120;
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
       instructions: SYSTEM_PROMPT,
       input: inputMessages,
       tools: [GENERATE_UI_TOOL],
-      max_output_tokens: MAX_OUTPUT_TOKENS,
+      max_output_tokens: getModelConfig(DEFAULT_MODEL).maxOutputTokens,
       stream: true,
     });
 

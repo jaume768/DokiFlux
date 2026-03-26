@@ -1,15 +1,126 @@
-const PRICING = {
+export interface ModelConfig {
+  provider: "openai" | "anthropic" | "gemini";
+  category: "openai" | "anthropic" | "gemini";
+  displayName: string;
+  inputPerMillion: number;
+  outputPerMillion: number;
+  maxOutputTokens: number;
+}
+
+const MODEL_REGISTRY: Record<string, ModelConfig> = {
+  // ── OpenAI ──
   "gpt-5.4": {
+    provider: "openai",
+    category: "openai",
+    displayName: "GPT-5.4",
     inputPerMillion: 2.5,
     outputPerMillion: 15.0,
+    maxOutputTokens: 31000,
   },
-} as const;
+  "gpt-5.4-low": {
+    provider: "openai",
+    category: "openai",
+    displayName: "GPT-5.4 (Low)",
+    inputPerMillion: 2.5,
+    outputPerMillion: 15.0,
+    maxOutputTokens: 31000,
+  },
+  "gpt-5.4-medium": {
+    provider: "openai",
+    category: "openai",
+    displayName: "GPT-5.4 (Medium)",
+    inputPerMillion: 2.5,
+    outputPerMillion: 15.0,
+    maxOutputTokens: 31000,
+  },
+  "gpt-5.4-high": {
+    provider: "openai",
+    category: "openai",
+    displayName: "GPT-5.4 (High)",
+    inputPerMillion: 2.5,
+    outputPerMillion: 15.0,
+    maxOutputTokens: 31000,
+  },
+  "gpt-5.4-xhigh": {
+    provider: "openai",
+    category: "openai",
+    displayName: "GPT-5.4 (xHigh)",
+    inputPerMillion: 2.5,
+    outputPerMillion: 15.0,
+    maxOutputTokens: 31000,
+  },
 
-export type ModelId = keyof typeof PRICING;
+  // ── Anthropic ──
+  "claude-sonnet-4.6": {
+    provider: "anthropic",
+    category: "anthropic",
+    displayName: "Claude Sonnet 4.6",
+    inputPerMillion: 3.0,
+    outputPerMillion: 15.0,
+    maxOutputTokens: 16384,
+  },
+  "claude-opus-4.6": {
+    provider: "anthropic",
+    category: "anthropic",
+    displayName: "Claude Opus 4.6",
+    inputPerMillion: 5.0,
+    outputPerMillion: 25.0,
+    maxOutputTokens: 16384,
+  },
+  "claude-haiku-4.5": {
+    provider: "anthropic",
+    category: "anthropic",
+    displayName: "Claude Haiku 4.5",
+    inputPerMillion: 1.0,
+    outputPerMillion: 5.0,
+    maxOutputTokens: 8192,
+  },
+
+  // ── Google Gemini ──
+  "gemini-3.1-pro": {
+    provider: "gemini",
+    category: "gemini",
+    displayName: "Gemini 3.1 Pro",
+    inputPerMillion: 2.0,
+    outputPerMillion: 12.0,
+    maxOutputTokens: 65536,
+  },
+  "gemini-3-flash": {
+    provider: "gemini",
+    category: "gemini",
+    displayName: "Gemini 3 Flash",
+    inputPerMillion: 0.5,
+    outputPerMillion: 3.0,
+    maxOutputTokens: 65536,
+  },
+  "gemini-3.1-flash-lite": {
+    provider: "gemini",
+    category: "gemini",
+    displayName: "Gemini 3.1 Flash-Lite",
+    inputPerMillion: 0.25,
+    outputPerMillion: 1.5,
+    maxOutputTokens: 65536,
+  },
+};
+
+export { MODEL_REGISTRY };
+
+export type ModelId = keyof typeof MODEL_REGISTRY;
 
 export const DEFAULT_MODEL: ModelId = "gpt-5.4";
 
-export const MAX_OUTPUT_TOKENS = 31000;
+export function isValidModelId(id: string): id is ModelId {
+  return id in MODEL_REGISTRY;
+}
+
+export const MODEL_LIST = Object.entries(MODEL_REGISTRY).map(([id, config]) => ({
+  id: id as ModelId,
+  ...config,
+}));
+
+export function getModelConfig(modelId: ModelId): ModelConfig {
+  return MODEL_REGISTRY[modelId] ?? MODEL_REGISTRY[DEFAULT_MODEL];
+}
 
 export interface CostEstimate {
   inputTokens: number;
@@ -25,15 +136,15 @@ export function estimateCost(
   hasHistory: boolean,
   model: ModelId = DEFAULT_MODEL
 ): CostEstimate {
-  const pricing = PRICING[model];
-  const inputCost = (inputTokens / 1_000_000) * pricing.inputPerMillion;
+  const config = getModelConfig(model);
+  const inputCost = (inputTokens / 1_000_000) * config.inputPerMillion;
 
   // Heuristic: first generation produces more output than iterations
   const estimatedOutputMin = hasHistory ? 300 : 800;
-  const estimatedOutputMax = MAX_OUTPUT_TOKENS;
+  const estimatedOutputMax = config.maxOutputTokens;
 
-  const minOutputCost = (estimatedOutputMin / 1_000_000) * pricing.outputPerMillion;
-  const maxOutputCost = (estimatedOutputMax / 1_000_000) * pricing.outputPerMillion;
+  const minOutputCost = (estimatedOutputMin / 1_000_000) * config.outputPerMillion;
+  const maxOutputCost = (estimatedOutputMax / 1_000_000) * config.outputPerMillion;
 
   return {
     inputTokens,
@@ -50,9 +161,9 @@ export function calculateCost(
   outputTokens: number,
   model: ModelId = DEFAULT_MODEL
 ): number {
-  const pricing = PRICING[model];
-  const inputCost = (inputTokens / 1_000_000) * pricing.inputPerMillion;
-  const outputCost = (outputTokens / 1_000_000) * pricing.outputPerMillion;
+  const config = getModelConfig(model);
+  const inputCost = (inputTokens / 1_000_000) * config.inputPerMillion;
+  const outputCost = (outputTokens / 1_000_000) * config.outputPerMillion;
   return inputCost + outputCost;
 }
 

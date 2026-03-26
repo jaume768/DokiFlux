@@ -14,7 +14,7 @@ from apps.projects.models import Project
 
 from .serializers import EstimateRequestSerializer, GenerateRequestSerializer
 from .services import stream_generation
-from .providers.openai import calculate_cost, PRICING
+from .providers.registry import calculate_cost, get_model_config, list_models, MODEL_REGISTRY, DEFAULT_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -193,11 +193,14 @@ async def estimate_view(request):
     estimated_output_min = 300 if has_history else 800
     estimated_output_max = 31000
 
-    model = "gpt-5.4"
-    pricing = PRICING.get(model, PRICING["gpt-5.4"])
-    input_cost = (Decimal(estimated_input_tokens) / Decimal("1000000")) * pricing["input_per_million"]
-    min_output_cost = (Decimal(estimated_output_min) / Decimal("1000000")) * pricing["output_per_million"]
-    max_output_cost = (Decimal(estimated_output_max) / Decimal("1000000")) * pricing["output_per_million"]
+    model = body.get("model", DEFAULT_MODEL)
+    if model not in MODEL_REGISTRY:
+        model = DEFAULT_MODEL
+    config = get_model_config(model)
+    estimated_output_max = config["max_output_tokens"]
+    input_cost = (Decimal(estimated_input_tokens) / Decimal("1000000")) * config["input_per_million"]
+    min_output_cost = (Decimal(estimated_output_min) / Decimal("1000000")) * config["output_per_million"]
+    max_output_cost = (Decimal(estimated_output_max) / Decimal("1000000")) * config["output_per_million"]
 
     balance = await sync_to_async(get_balance)(user)
 
@@ -211,6 +214,20 @@ async def estimate_view(request):
         "estimatedCostMax": float(input_cost + max_output_cost),
         "currentBalance": float(balance),
     })
+
+
+@csrf_exempt
+async def models_view(request):
+    """
+    GET /api/models/
+    Returns list of available AI models with pricing info.
+    """
+    if request.method != "GET":
+        from django.http import JsonResponse
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    from django.http import JsonResponse
+    return JsonResponse({"models": list_models(), "default": DEFAULT_MODEL})
 
 
 def _sse_error(message: str):
