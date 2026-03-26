@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { Moon, Sun, Monitor } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function ThemeToggle() {
@@ -27,29 +27,15 @@ export function ThemeToggle() {
   }
 
   const cycleTheme = () => {
-    if (theme === "light") {
-      setTheme("dark");
-    } else if (theme === "dark") {
-      setTheme("system");
-    } else {
-      setTheme("light");
-    }
+    setTheme(theme === "light" ? "dark" : "light");
   };
 
   const getIcon = () => {
-    if (theme === "light") {
-      return <Sun className="w-4 h-4" />;
-    } else if (theme === "dark") {
-      return <Moon className="w-4 h-4" />;
-    } else {
-      return <Monitor className="w-4 h-4" />;
-    }
+    return theme === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />;
   };
 
   const getLabel = () => {
-    if (theme === "light") return "Light";
-    if (theme === "dark") return "Dark";
-    return "System";
+    return theme === "light" ? "Light" : "Dark";
   };
 
   return (

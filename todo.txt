@@ -23,9 +23,12 @@
     - Auth + pagos (por ejemplo Stripe), DB provider popular (por ejemplo Supabase) y logging/errores (por ejemplo Sentry), 
     pero con setup explícito y guardrails. (El objetivo no es “100 integraciones”, es “3 que eviten re‑prompts”).    
 19- Incluir selector de modelos de ia gratis?
-20- Quitar preferencias del usuario a color de fondo
 21- Mejorar rendimiento general y experiencia de usuario
 22- Ajustar precios (para que sea rentable) y cambiar un poco la estetica para no parecer tanto a v0
 23- Añadir templates y poder hacer proyectos "Del staff" como templates con los prompts
 24- Enseñar anuncios si se genera con ia gratis?
 25- Oauth con google y github y envio de mail con Brevo
+
+
+Ofrecer a los usuarios diferentes servicios después de generar los proyectos, hosting, dominio, base de datos, etc.
+- Multi framework (Next.js, React (opcion gratis), Vue, Angular, Svelte, etc.) en premium.
