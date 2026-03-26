@@ -330,6 +330,54 @@ Se aplica solo al endpoint `/api/generate/`.
 
 ---
 
+### Fase 6 — Servicios Post-Generación, Chat Libre y Multi-Framework 📋
+
+**Objetivo:** Ampliar el producto más allá de la generación de proyectos React, ofreciendo servicios de productización, un chat libre sin generación de código, y soporte multi-framework.
+
+#### 6.1 — Servicios Post-Generación (Contacto DokiFlux)
+
+**Qué:** Ofrecer a los usuarios un camino para llevar sus proyectos generados a producción con ayuda profesional.
+
+- **CTA post-generación** — Botón/banner en la UI tras generar: "¿Quieres llevar tu proyecto a producción?"
+- **Servicios ofrecidos** — Hosting, dominio personalizado, base de datos, mejoras avanzadas, integraciones.
+- **Formulario de contacto** — Enlace a email comercial o formulario integrado.
+- **Posible integración** — Calendly para agendar llamadas, Typeform para presupuestos.
+
+#### 6.2 — Chat Libre (sin generación de proyecto)
+
+**Qué:** La sección "Chats" del sidebar pasa de ser un placeholder a un chat funcional tipo ChatGPT, sin WebContainer ni generación de código.
+
+- **Interfaz** — Conversación libre con el modelo de IA seleccionado (mismo `ModelSelector`).
+- **Sin WebContainer** — No hay preview, no hay generación de archivos. Solo chat de texto con respuestas en markdown.
+- **Endpoint** — Posibilidades: reutilizar `/api/generate/` sin `project_id` ni contexto, o crear un endpoint `/api/chat/` más ligero.
+- **Selector de modelo** — Disponible en el chat, mismos modelos que en generación.
+- **Persistencia** — Historial de chats guardado en backend (nuevo modelo `Chat` + `ChatMessage`).
+
+#### 6.3 — Multi-Framework
+
+**Qué:** Permitir al usuario elegir el framework del proyecto en la primera generación (React, Vue, Angular, Next.js).
+
+**Estrategia de implementación:**
+
+| Orden | Framework | Stack | Notas |
+|-------|-----------|-------|-------|
+| 1 | React + Vite | ✅ Ya funcional | Base actual |
+| 2 | Vue 3 + Vite | Composition API + Tailwind | Más similar a React, menor esfuerzo |
+| 3 | Next.js | App Router + Tailwind | Requiere SSR awareness en prompts |
+| 4 | Angular | Angular CLI + Tailwind | Más diferente, último |
+
+**Cada framework requiere:**
+- **Scaffolding WebContainer** — `package.json`, configs, entry point, estructura de directorios diferente.
+- **Prompts del sistema** — `CODEGEN_RULES` adaptados: imports, routing, sintaxis de componentes, convenciones.
+- **Parser de archivos** — Ajustar si cambia la estructura de directorios o extensiones.
+
+**Reglas:**
+- El framework se elige en la primera generación (`/app` page) y se guarda por proyecto.
+- Una vez generado, el framework **no se puede cambiar** (no hay selector en `/app/generate/[id]`).
+- El selector UI ya está implementado con todos los frameworks bloqueados excepto React.
+
+---
+
 ## Quick Start
 
 ### 1. Clonar y configurar

@@ -9,6 +9,8 @@ import { Sparkles, SendHorizonal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModelSelector } from "@/components/ModelSelector";
 import { DEFAULT_MODEL, type ModelId } from "@/lib/pricing";
+import { FrameworkSelector } from "@/components/FrameworkSelector";
+import { DEFAULT_FRAMEWORK, type FrameworkId } from "@/lib/frameworks";
 
 export default function HomePage() {
   const router = useRouter();
@@ -16,6 +18,7 @@ export default function HomePage() {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [selectedModel, setSelectedModel] = useState<ModelId>(DEFAULT_MODEL);
+  const [selectedFramework, setSelectedFramework] = useState<FrameworkId>(DEFAULT_FRAMEWORK);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,7 +33,7 @@ export default function HomePage() {
         name: title,
         description: "",
       });
-      router.push(`/app/generate/${project.id}?prompt=${encodeURIComponent(prompt)}&model=${selectedModel}`);
+      router.push(`/app/generate/${project.id}?prompt=${encodeURIComponent(prompt)}&model=${selectedModel}&framework=${selectedFramework}`);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -77,11 +80,18 @@ export default function HomePage() {
               className="w-full resize-none bg-transparent px-6 py-4 text-base outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
             />
             <div className="flex items-center justify-between px-4 pb-4">
-              <ModelSelector
-                value={selectedModel}
-                onChange={setSelectedModel}
-                disabled={isCreating}
-              />
+              <div className="flex items-center gap-2">
+                <ModelSelector
+                  value={selectedModel}
+                  onChange={setSelectedModel}
+                  disabled={isCreating}
+                />
+                <FrameworkSelector
+                  value={selectedFramework}
+                  onChange={setSelectedFramework}
+                  disabled={isCreating}
+                />
+              </div>
               <Button
                 type="submit"
                 disabled={!prompt.trim() || isCreating}

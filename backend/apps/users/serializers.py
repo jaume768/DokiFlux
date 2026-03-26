@@ -41,7 +41,7 @@ class RegisterSerializer(serializers.Serializer):
 class LoginSerializer(serializers.Serializer):
     """Serializer for POST /api/auth/login/."""
 
-    email = serializers.EmailField()
+    identifier = serializers.CharField(help_text="Email or username")
     password = serializers.CharField(write_only=True)
 
 

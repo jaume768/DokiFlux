@@ -79,21 +79,6 @@ interface CodePreviewProps {
   genProgress?: GenerationProgress;
 }
 
-const DEFAULT_FILES: FileMap = {
-  "/App.tsx": `export default function Welcome() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-12 text-center text-white max-w-md">
-        <h1 className="text-4xl font-bold mb-4">Dokiflux</h1>
-        <p className="text-lg opacity-90">
-          Describe a UI component in the chat and watch it come to life.
-        </p>
-      </div>
-    </div>
-  );
-}`,
-};
-
 const STATUS_CONFIG: Record<ContainerStatus, { label: string; icon: React.ReactNode; color: string }> = {
   idle: { label: "Waiting", icon: <Play className="w-3.5 h-3.5" />, color: "text-muted-foreground" },
   booting: { label: "Starting environment...", icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />, color: "text-blue-500" },
@@ -307,9 +292,7 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
   const streamingCodeEndRef = useRef<HTMLDivElement>(null);
   const iframeLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const displayFiles = useMemo(() => {
-    return Object.keys(files).length > 0 ? files : DEFAULT_FILES;
-  }, [files]);
+  const displayFiles = files;
 
   // ── Inline iteration streaming state ──
   const isWritingCode = !!(genProgress?.phase && (genProgress.phase === "writing" || genProgress.phase === "writing-files") && genProgress.streamingCode);
@@ -432,11 +415,11 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
 
   // Mount files when generationKey changes
   useEffect(() => {
-    if (generationKey !== prevGenKeyRef.current && Object.keys(displayFiles).length > 0) {
+    if (generationKey !== prevGenKeyRef.current && Object.keys(files).length > 0) {
       prevGenKeyRef.current = generationKey;
-      mountFiles(displayFiles);
+      mountFiles(files);
     }
-  }, [generationKey, displayFiles, mountFiles]);
+  }, [generationKey, files, mountFiles]);
 
   // Auto-scroll logs
   useEffect(() => {
@@ -553,9 +536,9 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
     URL.revokeObjectURL(url);
   }
 
-  const fileList = Object.keys(displayFiles);
-  if (!fileList.includes(selectedFile) && fileList.length > 0) {
-    setSelectedFile(fileList.find((f) => f.includes("App")) || fileList[0]);
+  const effectiveFileList = Object.keys(isIterationStreaming ? mergedTreeFiles : displayFiles);
+  if (!effectiveFileList.includes(selectedFile) && effectiveFileList.length > 0) {
+    setSelectedFile(effectiveFileList.find((f) => f.includes("App")) || effectiveFileList[0]);
   }
 
   return (
@@ -741,13 +724,18 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
             </div>
           )}
 
-          {/* First generation → full StreamingFileView */}
-          {isFirstGenStreaming && genProgress?.streamingCode ? (
+          {/* Empty state — no files yet and not streaming */}
+          {!isFirstGenStreaming && !isIterationStreaming && Object.keys(displayFiles).length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
+              <Code2 className="w-10 h-10 opacity-30" />
+              <p className="text-sm text-center px-4">Genera un componente para ver el código aquí</p>
+            </div>
+          ) : isFirstGenStreaming && genProgress?.streamingCode ? (
             <StreamingFileView
               streamingCode={genProgress.streamingCode}
               filesDetected={genProgress.filesDetected}
               charsReceived={genProgress.charsReceived}
-              existingFiles={displayFiles}
+              existingFiles={{}}
             />
           ) : (
             <div className="flex flex-1 min-h-0 overflow-hidden">

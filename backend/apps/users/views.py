@@ -96,7 +96,7 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
-    """POST /api/auth/login/ — Login with email + password, returns JWT."""
+    """POST /api/auth/login/ — Login with email or username + password, returns JWT."""
 
     permission_classes = [AllowAny]
 
@@ -104,11 +104,17 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        email = serializer.validated_data["email"].lower().strip()
+        identifier = serializer.validated_data["identifier"].strip()
         password = serializer.validated_data["password"]
 
+        # Detect whether identifier is an email or username
+        if "@" in identifier:
+            lookup = {"email": identifier.lower()}
+        else:
+            lookup = {"username__iexact": identifier}
+
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(**lookup)
         except User.DoesNotExist:
             return Response(
                 {"error": "Credenciales inválidas."},

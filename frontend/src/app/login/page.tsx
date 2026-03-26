@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -22,7 +22,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login({ email, password });
+      await login({ identifier, password });
     } catch (err) {
       if (err instanceof ApiError) {
         const data = err.data as Record<string, unknown>;
@@ -63,15 +63,15 @@ export default function LoginPage() {
               )}
 
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">
-                  Email
+                <label htmlFor="identifier" className="text-sm font-medium">
+                  Email o nombre de usuario
                 </label>
                 <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu@email.com"
+                  id="identifier"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="tu@email.com o username"
                   required
                   autoFocus
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
@@ -113,7 +113,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                disabled={isLoading || !email || !password}
+                disabled={isLoading || !identifier || !password}
                 className="w-full"
                 size="lg"
               >
