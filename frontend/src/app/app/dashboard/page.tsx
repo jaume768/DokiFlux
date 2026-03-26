@@ -78,7 +78,7 @@ export default function DashboardPage() {
         name: newName.trim(),
         description: newDesc.trim(),
       });
-      router.push(`/generate/${project.id}`);
+      router.push(`/app/generate/${project.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -239,7 +239,7 @@ export default function DashboardPage() {
               <Card
                 key={project.id}
                 className="group cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all"
-                onClick={() => router.push(`/generate/${project.id}`)}
+                onClick={() => router.push(`/app/generate/${project.id}`)}
               >
                 <CardHeader>
                   <CardTitle className="truncate">{project.name}</CardTitle>

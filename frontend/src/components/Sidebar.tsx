@@ -49,9 +49,9 @@ export function Sidebar() {
   }, [pathname, loadProjects]);
 
   const navItems = [
-    { icon: Home, label: "Home", path: "/" },
-    { icon: FolderOpen, label: "Proyectos", path: "/dashboard" },
-    { icon: MessageSquare, label: "Chats", path: "/chats" },
+    { icon: Home, label: "Home", path: "/app" },
+    { icon: FolderOpen, label: "Proyectos", path: "/app/dashboard" },
+    { icon: MessageSquare, label: "Chats", path: "/app/chats" },
   ];
 
   return (
@@ -63,7 +63,7 @@ export function Sidebar() {
           <h1 className="text-lg font-bold">DokiFlux</h1>
         </div>
         <Button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/app")}
           className="w-full justify-start gap-2"
           size="sm"
         >
@@ -121,11 +121,11 @@ export function Sidebar() {
                 </div>
               ) : (
                 projects.map((project) => {
-                  const isActive = pathname === `/generate/${project.id}`;
+                  const isActive = pathname === `/app/generate/${project.id}`;
                   return (
                     <button
                       key={project.id}
-                      onClick={() => router.push(`/generate/${project.id}`)}
+                      onClick={() => router.push(`/app/generate/${project.id}`)}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                         isActive
                           ? "bg-muted text-foreground"

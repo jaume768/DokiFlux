@@ -46,7 +46,13 @@ const PUBLIC_PATHS = [
   "/verify-email",
   "/password-reset",
   "/password-reset-confirm",
+  "/pricing",
 ];
+
+function isPublicPath(pathname: string): boolean {
+  if (pathname === "/") return true;
+  return PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -106,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+    const isPublic = isPublicPath(pathname);
 
     if (!isAuthenticated && !isPublic) {
       router.replace("/login");
@@ -122,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (isAuthenticated && isPublic) {
       if (user?.has_completed_onboarding) {
-        router.replace("/dashboard");
+        router.replace("/app");
       } else {
         router.replace("/onboarding");
       }
@@ -141,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.user.has_completed_onboarding) {
         router.push("/onboarding");
       } else {
-        router.push("/dashboard");
+        router.push("/app");
       }
     },
     [router, refreshBalance]

@@ -94,7 +94,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           messagesRef.current = loadedMessages;
         }
       } catch {
-        router.replace("/dashboard");
+        router.replace("/app/dashboard");
       } finally {
         setIsLoadingProject(false);
       }
@@ -461,7 +461,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/app")}
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>

@@ -26,13 +26,37 @@ El objetivo es convertirlo en un SaaS con autenticación, persistencia de proyec
 - **Responsive** — Chat/Preview conmutable en móvil, detección iOS Safari
 - **Navegación por URL** — Barra de URL con atrás/adelante/recargar para apps multipágina
 
-### Backend (Fase 1 completada)
+### Backend (Fases 1 + 2 completadas)
 - **Auth completa** — Registro con email + password, login con JWT (access + refresh)
 - **Google OAuth** — Login con Google Identity Services, verificación de `id_token` en backend
 - **Verificación de email** — Emails transaccionales vía Brevo (auto-verify en desarrollo)
 - **Username y onboarding** — Username único obligatorio post-registro, pantalla de onboarding
 - **Password reset** — Flujo completo con token por email
+- **Proyectos** — CRUD completo con file_map (JSONField) y ChatMessage, serializers separados list/detail
+- **Billing** — Sistema de créditos FIFO, planes (free/premium), transacciones atómicas, auto-create on register
+- **Generation proxy** — Proxy streaming SSE a OpenAI con validación de créditos, audit log, provider abstraction
+- **Rate limiting** — Throttle por plan con Redis backend (free: 7/día, premium: 100/día)
 - **API docs** — Swagger/OpenAPI con drf-spectacular
+
+### Frontend (Fase 3 completada — Integración completa)
+- **Auth flow pages** — Login, registro, onboarding (elegir username), password reset
+- **AuthContext** — JWT con auto-refresh en 401, route protection, balance/plan tracking
+- **API client** — `api.ts` con token management, wrappers tipados (apiGet, apiPost, apiPatch, apiDelete)
+- **Dashboard** — Lista de proyectos del usuario, crear/eliminar, badge de plan, saldo
+- **Sidebar** — Navegación (Home, Proyectos, Chats), proyectos recientes, balance, theme toggle, user info
+- **Generación vía proxy** — `/app/generate/[id]` conectado al backend (no OpenAI directo), header JWT
+- **Persistencia** — file_map guardado en backend tras cada generación, chat history cargado desde backend
+- **Display de créditos** — Saldo actual en sidebar, header de generación y dashboard
+- **Protected routes** — Middleware que redirige a /login si no hay token, a /onboarding si no hay username
+- **Dark/Light mode** — ThemeProvider + ThemeToggle integrados
+
+### Páginas públicas y onboarding (Fase 5 parcial — completada)
+- **Landing page (`/`)** — Hero con CTA, "cómo funciona" (3 pasos), grid de features, showcase de templates, preview de pricing, CTA final. Animaciones con framer-motion.
+- **Pricing page (`/pricing`)** — 3 planes (Free/Premium/Business), tabla de costes por generación, FAQ con acordeón
+- **Onboarding mejorado** — Flujo de 2 pasos: elegir username → elegir template o empezar en blanco
+- **6 templates predefinidos** — Dashboard Analytics, Landing SaaS, E-commerce, Portfolio, Chat App, Admin Panel. Cada uno con prompt predefinido que se auto-genera.
+- **Componentes landing** — LandingNavbar (responsive + mobile menu), Footer, PlanCard, TemplateCard, FeatureCard, FAQItem
+- **Reestructuración de rutas** — Rutas autenticadas bajo `/app/` (con Sidebar), rutas públicas en raíz
 
 ---
 
@@ -218,19 +242,30 @@ Se aplica solo al endpoint `/api/generate/`.
 
 ---
 
-### Fase 3 — Integración Frontend ↔ Backend 📋
+### Fase 3 — Integración Frontend ↔ Backend ✅
 
 **Objetivo:** Conectar el frontend existente al backend, reemplazando las llamadas directas a OpenAI por llamadas autenticadas al proxy.
 
-**Por qué:** Hasta ahora el frontend llama a su propio `/api/generate` (Next.js route). Para que funcione como SaaS, todas las llamadas deben pasar por el backend Django (auth, billing, rate limiting).
+**Por qué:** Hasta ahora el frontend llamaba a su propio `/api/generate` (Next.js route). Para que funcione como SaaS, todas las llamadas deben pasar por el backend Django (auth, billing, rate limiting).
 
-**Qué se hará:**
-- **Auth flow pages** — Login, registro, verificación email, onboarding (elegir username)
-- **Adaptar `/generate`** — Cambiar fetch de `/api/generate` → `NEXT_PUBLIC_API_URL/generate/` con header `Authorization: Bearer {token}`
-- **Dashboard** — Lista de proyectos del usuario, crear/abrir/eliminar proyectos
-- **Persistencia** — Guardar/cargar file_map y chat history desde el backend
-- **Display de créditos** — Saldo actual, historial de uso, badge de plan
-- **Protected routes** — Middleware que redirige a login si no hay token válido
+**Qué se hizo:**
+- **Auth flow pages** — Login (`/login`), registro (`/register`), onboarding con username (`/onboarding`), password reset (`/password-reset`)
+- **AuthContext** — Contexto React con JWT tokens (localStorage), auto-refresh en 401, carga de perfil y balance al montar, route protection integrada
+- **API client (`lib/api.ts`)** — Cliente HTTP con auto-inject de Bearer token, refresh automático, `ApiError` tipado, wrappers (apiGet/apiPost/apiPatch/apiDelete)
+- **Adaptar `/generate`** — Fetch cambiado de `/api/generate` → `NEXT_PUBLIC_API_URL/generate/` con header `Authorization: Bearer {token}`. El parsing SSE no cambió.
+- **Dashboard (`/app/dashboard`)** — Lista de proyectos con grid, crear proyecto, eliminar con confirmación, badge de plan + saldo
+- **Sidebar** — Navegación (Home, Proyectos, Chats), últimos 10 proyectos recientes, saldo + plan, avatar con inicial, theme toggle, logout
+- **Home (`/app`)** — Prompt input tipo v0.dev que crea proyecto vía API y redirige a `/app/generate/{id}?prompt=...`
+- **Persistencia** — file_map guardado con `apiPatch` al backend tras cada generación. Chat history cargado al abrir proyecto. Título editable inline.
+- **Display de créditos** — Saldo en sidebar footer, header de generación, y dashboard header. Badge con tipo de plan (free/premium). Balance se refresca tras cada generación.
+- **Protected routes** — AuthProvider redirige a `/login` si no hay token, a `/onboarding` si `has_completed_onboarding=false`. Rutas públicas definidas en whitelist.
+- **Dark/Light mode** — ThemeProvider + ThemeToggle en sidebar footer
+
+**Decisiones técnicas:**
+- **Ruta `app/`** — Layout con Sidebar solo para rutas autenticadas (`/app/*`). Auth pages y páginas públicas sin sidebar.
+- **Rutas dinámicas `/app/generate/[id]`** — Cada proyecto tiene su propia URL. Prompt inicial vía query param.
+- **Tokens en localStorage** — Simple para MVP. Migrable a httpOnly cookies cuando se necesite más seguridad.
+- **Auto-submit initial prompt** — Si la URL tiene `?prompt=`, se envía automáticamente al cargar (para flujo Home → Generate).
 
 ---
 
@@ -250,16 +285,27 @@ Se aplica solo al endpoint `/api/generate/`.
 
 ---
 
-### Fase 5 — Landing, Onboarding UX, Deploy Producción 📋
+### Fase 5 — Landing, Onboarding UX, Deploy Producción ⏳
 
 **Objetivo:** Preparar el producto para usuarios reales con landing page, onboarding pulido y despliegue en producción.
 
 **Por qué:** Tener el producto técnicamente funcional no es suficiente — necesita una buena primera impresión, pricing claro y una experiencia fluida.
 
-**Qué se hará:**
-- **Landing page** — Presentación del producto, demos interactivas, pricing, testimonios
-- **Pricing page** — Comparativa de planes con CTA claro
-- **Onboarding mejorado** — Tour guiado, primer proyecto asistido, templates de ejemplo
+**Qué se hizo (✅):**
+- **Landing page (`/`)** — Hero animado (framer-motion), sección "Cómo funciona" (3 pasos), grid de 8 features, showcase de 6 templates, preview de pricing (2 planes), CTA final. Navbar responsive con detección de login. Footer con links.
+- **Pricing page (`/pricing`)** — 3 planes (Free $0, Premium $20, Business custom), tabla de costes por tipo de generación, FAQ con 6 preguntas en acordeón colapsable.
+- **Onboarding mejorado** — Flujo de 2 pasos con indicador visual: (1) Elegir username con check en tiempo real, (2) Elegir template predefinido o empezar desde cero.
+- **6 templates predefinidos (`lib/templates.ts`)** — Dashboard Analytics, Landing SaaS, E-commerce Product, Portfolio Personal, Chat App UI, Admin Panel. Cada template es un prompt que se auto-envía al generar.
+- **Componentes landing reutilizables** — `LandingNavbar`, `Footer`, `PlanCard`, `TemplateCard`, `FeatureCard`, `FAQItem` en `components/landing/`.
+- **Reestructuración de rutas** — Rutas autenticadas bajo `/app/*` (con Sidebar layout). Raíz `/` libre para landing pública. `PUBLIC_PATHS` actualizado con `/`, `/pricing`.
+
+**Decisiones técnicas:**
+- **`/app/` como ruta real** — Antes era route group `(main)/`. Ahora `/app/*` es una ruta real con su propio layout + Sidebar. Las páginas públicas (`/`, `/pricing`) no tienen sidebar.
+- **Templates como prompts** — Los templates no son código hardcodeado sino prompts predefinidos en `lib/templates.ts`. Al seleccionar uno se crea proyecto vía API y se redirige a `/app/generate/[id]?prompt=...` que auto-genera.
+- **framer-motion** — Animaciones fade-in, stagger y scroll-triggered en la landing. Lightweight, solo se carga en páginas públicas.
+- **buttonVariants + Link** — El Button de base-ui no soporta `asChild`, así que se usa `buttonVariants()` con `<Link>` de Next.js para CTAs con routing.
+
+**Pendiente (📋):**
 - **Deploy** — Backend en VPS/Cloud (Gunicorn + Nginx), frontend en Vercel/Netlify, PostgreSQL gestionado, Redis gestionado
 - **CI/CD** — GitHub Actions para tests, lint, build y deploy automático
 - **Monitoring** — Sentry para errores, logging estructurado, métricas de uso
@@ -348,30 +394,60 @@ Dokiflux/
 ├── frontend/                          # Next.js 16 (React 19)
 │   ├── src/
 │   │   ├── app/
+│   │   │   ├── page.tsx              # Landing page pública (hero, features, templates, pricing)
+│   │   │   ├── pricing/page.tsx      # Pricing page (3 planes, FAQ, tabla costes)
 │   │   │   ├── api/
-│   │   │   │   ├── generate/route.ts  # Streaming SSE → GPT-5.4
-│   │   │   │   └── estimate/route.ts  # Estimación de coste pre-generación
-│   │   │   ├── generate/page.tsx      # UI principal (chat + preview)
-│   │   │   ├── layout.tsx
-│   │   │   └── page.tsx               # Redirect → /generate
+│   │   │   │   ├── generate/route.ts  # Streaming SSE → GPT-5.4 (legacy, sin usar)
+│   │   │   │   └── estimate/route.ts  # Estimación de coste (legacy, sin usar)
+│   │   │   ├── app/                   # Rutas autenticadas (con Sidebar)
+│   │   │   │   ├── layout.tsx        # Layout con Sidebar
+│   │   │   │   ├── page.tsx          # Home — prompt input → crear proyecto
+│   │   │   │   ├── dashboard/page.tsx # Dashboard — CRUD proyectos
+│   │   │   │   ├── chats/page.tsx     # Vista de chats (placeholder)
+│   │   │   │   └── generate/
+│   │   │   │       ├── page.tsx       # Redirect → /app/dashboard
+│   │   │   │       └── [id]/page.tsx  # UI principal (chat + preview)
+│   │   │   ├── login/page.tsx         # Login con email + password
+│   │   │   ├── register/page.tsx      # Registro con nombre + email + password
+│   │   │   ├── onboarding/page.tsx    # Onboarding 2 pasos: username + template
+│   │   │   ├── password-reset/page.tsx # Solicitar reset de contraseña
+│   │   │   ├── layout.tsx             # Root layout (AuthProvider + ThemeProvider)
+│   │   │   └── globals.css
 │   │   ├── components/
 │   │   │   ├── ChatPanel.tsx          # Lista de mensajes (markdown)
 │   │   │   ├── PromptInput.tsx        # Input con badge de coste
 │   │   │   ├── CodePreview.tsx        # WebContainer + code viewer + logs
 │   │   │   ├── StreamingFileView.tsx  # Streaming code viewer real-time
 │   │   │   ├── TokenUsage.tsx         # Tokens/coste por generación + stats
-│   │   │   └── ui/                    # Primitivas shadcn/ui
+│   │   │   ├── Sidebar.tsx            # Navegación + proyectos recientes + balance
+│   │   │   ├── ThemeProvider.tsx       # next-themes wrapper
+│   │   │   ├── ThemeToggle.tsx         # Botón dark/light mode
+│   │   │   ├── landing/               # Componentes de landing/pricing
+│   │   │   │   ├── LandingNavbar.tsx  # Navbar responsive (logo, links, CTAs, mobile)
+│   │   │   │   ├── Footer.tsx         # Footer con 4 columnas
+│   │   │   │   ├── PlanCard.tsx       # Card de plan (pricing)
+│   │   │   │   ├── TemplateCard.tsx   # Card de template (landing + onboarding)
+│   │   │   │   ├── FeatureCard.tsx    # Card de feature (landing)
+│   │   │   │   ├── FAQItem.tsx        # Acordeón FAQ (pricing)
+│   │   │   │   └── index.ts          # Barrel exports
+│   │   │   └── ui/                    # Primitivas shadcn/ui (button, card, badge...)
+│   │   ├── context/
+│   │   │   └── AuthContext.tsx         # JWT auth, route protection, balance
 │   │   ├── hooks/
 │   │   │   ├── useWebContainer.ts     # Lifecycle WebContainer
 │   │   │   └── useIsMobile.ts         # Detección móvil + iOS
 │   │   ├── lib/
-│   │   │   ├── openai.ts             # Cliente OpenAI singleton
+│   │   │   ├── api.ts                # API client (JWT, auto-refresh, wrappers)
+│   │   │   ├── templates.ts          # 6 templates predefinidos con prompts
+│   │   │   ├── openai.ts             # Cliente OpenAI singleton (legacy)
 │   │   │   ├── prompts.ts            # System prompt + codegen rules
 │   │   │   ├── parser.ts             # Parser multiarchivo + merge
 │   │   │   ├── pricing.ts            # Costes por tokens + estimación
+│   │   │   ├── projectUtils.ts       # Utilidades de proyecto (generar título)
 │   │   │   └── utils.ts              # Utilidades shadcn
 │   │   └── types/
-│   │       └── index.ts              # Message, StreamChunk, SessionStats...
+│   │       ├── index.ts              # Message, StreamChunk, SessionStats...
+│   │       └── auth.ts               # User, AuthTokens, Project, Billing types
 │   ├── Dockerfile
 │   └── package.json
 │
@@ -437,16 +513,17 @@ Dokiflux/
 
 ---
 
-## Pricing (planificado)
+## Pricing
 
-| | Free | Premium |
-|--|------|---------|
-| **Precio** | $0/mes | $20/mes |
-| **Créditos incluidos** | $5/mes | $20/mes |
-| **Mensajes/día** | 7 | 100 |
-| **Tamaño máx. proyecto** | 200 KB | 500 KB |
-| **Badge "Built with Dokiflux"** | Sí | No |
-| **Créditos adicionales** | Compra disponible | Compra disponible |
+| | Free | Premium | Business |
+|--|------|---------|----------|
+| **Precio** | $0/mes | $20/mes | Custom |
+| **Créditos incluidos** | $5/mes | $20/mes | Personalizados |
+| **Mensajes/día** | 7 | 100 | Ilimitados |
+| **Tamaño máx. proyecto** | 200 KB | 500 KB | Sin límite |
+| **Badge "Built with Dokiflux"** | Sí | No | No |
+| **Créditos adicionales** | Compra disponible | Compra disponible | Incluidos |
+| **Soporte** | Comunidad | Email | Prioritario |
 
 - Los créditos mensuales no usados **roll over** y expiran tras **65 días**
 - Los créditos comprados expiran tras **1 año**

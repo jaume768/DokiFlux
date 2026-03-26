@@ -17,7 +17,7 @@ export default function ChatsPage() {
         <p className="text-muted-foreground">
           Tus proyectos y conversaciones aparecen en el sidebar. Selecciona uno para continuar o crea uno nuevo.
         </p>
-        <Button onClick={() => router.push("/")} size="lg">
+        <Button onClick={() => router.push("/app")} size="lg">
           Crear nuevo chat
         </Button>
       </div>

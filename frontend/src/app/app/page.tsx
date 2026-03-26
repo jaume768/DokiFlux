@@ -27,7 +27,7 @@ export default function HomePage() {
         name: title,
         description: "",
       });
-      router.push(`/generate/${project.id}?prompt=${encodeURIComponent(prompt)}`);
+      router.push(`/app/generate/${project.id}?prompt=${encodeURIComponent(prompt)}`);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
