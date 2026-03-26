@@ -127,13 +127,43 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+const root = ReactDOM.createRoot(document.getElementById("root")!);
+root.render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
     </BrowserRouter>
   </React.StrictMode>
 );
+
+// Notify parent frame ONLY after React has actually painted visible content.
+// MutationObserver detects when React inserts children into #root,
+// then we wait for stylesheets + paint to settle before signalling ready.
+(function waitForContent() {
+  var rootEl = document.getElementById("root");
+  if (!rootEl) return;
+
+  function signalReady() {
+    requestAnimationFrame(function() {
+      setTimeout(function() {
+        window.parent.postMessage({ type: "dokiflux-content-ready" }, "*");
+      }, 150);
+    });
+  }
+
+  if (rootEl.children.length > 0) {
+    signalReady();
+    return;
+  }
+
+  var observer = new MutationObserver(function() {
+    if (rootEl.children.length > 0) {
+      observer.disconnect();
+      signalReady();
+    }
+  });
+  observer.observe(rootEl, { childList: true });
+})();
 `;
 
 const TSCONFIG = {

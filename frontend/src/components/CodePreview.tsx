@@ -305,6 +305,7 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
   const prevPhaseRef = useRef<string | null>(null);
   const userPickedFileRef = useRef(false);
   const streamingCodeEndRef = useRef<HTMLDivElement>(null);
+  const iframeLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const displayFiles = useMemo(() => {
     return Object.keys(files).length > 0 ? files : DEFAULT_FILES;
@@ -413,10 +414,13 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
     setUrlInput("/");
   }, [previewUrl]);
 
-  // Listen for navigation messages from the iframe (postMessage bridge)
+  // Listen for messages from the iframe (navigation tracking)
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
-      if (e.data && e.data.type === "dokiflux-navigation" && typeof e.data.path === "string") {
+      if (!e.data) return;
+
+      // Navigation tracking
+      if (e.data.type === "dokiflux-navigation" && typeof e.data.path === "string") {
         const path = e.data.path;
         setIframePath(path);
         setUrlInput(path);
@@ -487,7 +491,15 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
   }
 
   const handleIframeLoad = useCallback(() => {
-    setIframeLoaded(true);
+    // Wait a fixed 30s after iframe onLoad for React + Tailwind to finish
+    // rendering inside the WebContainer before revealing the preview.
+    if (iframeLoadTimeoutRef.current) {
+      clearTimeout(iframeLoadTimeoutRef.current);
+    }
+    iframeLoadTimeoutRef.current = setTimeout(() => {
+      setIframeLoaded(true);
+      iframeLoadTimeoutRef.current = null;
+    }, 30000);
   }, []);
 
   async function handleDownloadProject() {
