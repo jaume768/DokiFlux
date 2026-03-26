@@ -91,6 +91,7 @@ class OpenAIProvider(BaseProvider):
                         return
 
                     buffer = ""
+                    first_text_output_index = None
                     async for chunk in response.aiter_text():
                         buffer += chunk
                         while "\n" in buffer:
@@ -116,10 +117,14 @@ class OpenAIProvider(BaseProvider):
                                 event_type == "response.output_text.delta"
                                 and "delta" in event
                             ):
-                                yield {
-                                    "type": "chat",
-                                    "content": event["delta"],
-                                }
+                                oi = event.get("output_index", 0)
+                                if first_text_output_index is None:
+                                    first_text_output_index = oi
+                                if oi == first_text_output_index:
+                                    yield {
+                                        "type": "chat",
+                                        "content": event["delta"],
+                                    }
 
                             # Function call arguments (code generation)
                             if (
