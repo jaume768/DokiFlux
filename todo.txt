@@ -4,19 +4,14 @@
 8- Persistencia de proyectos (Al tener el backend con django):
     - Arquitectura típica:
        Usuario → Frontend → API Backend → Base de datos
-                              → Object Storage (S3)
+                              → Object Storage (S3, falta almacenar los proyectos de los usuarios en el s3, ahora es en el backend)
                               → LLM (OpenAI, Anthropic...)
-9- pricing:
+9- pricing (falta incluir stripe para cobrar y demas):
     - Free: $0/mes, incluye $5/mes en créditos (y límites como 7 mensajes/día según pricing page) (badge “Built with Dokiflux” por defecto en free).
     - Premium: $20/mes, con $20/mes en créditos (documentación + post oficial de pricing).
     - Business: Personalizado según la empresa.
     - Comprar Créditos: Poder comprar créditos adicionales.
     - Créditos no usados roll over y expiran tras 65 días (mensuales) y los comprados expiran a 1 año (shared pool).
-10- Ofrecer diferentes modelos y costes y mirar de incluir modelos gratis:
-    - GPT
-    - Gemiini
-    - Claude
-    - etc.
 12- “Si la generación no modifica archivos o falla sin producir avance, no se cobra (o se cobra 0)” (revisar esta estrategia)
 13- Que hacer cuando el usuario quiere iterar sobre un proyecto grande? Limite de los modelos en el output/input? (multi api keys y ir cambiando de uno a otro según el rate limit)
 15- Capacidad de volver al estado anterior (con backend)
@@ -27,3 +22,5 @@
 
     - Auth + pagos (por ejemplo Stripe), DB provider popular (por ejemplo Supabase) y logging/errores (por ejemplo Sentry), 
     pero con setup explícito y guardrails. (El objetivo no es “100 integraciones”, es “3 que eviten re‑prompts”).    
+19- Incluir selector de modelos de ia gratis?
+20- Quitar preferencias del usuario a color de fondo
