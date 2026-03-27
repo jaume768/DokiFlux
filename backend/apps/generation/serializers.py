@@ -23,6 +23,7 @@ class GenerateRequestSerializer(serializers.Serializer):
 
     def validate_chat_history(self, value):
         """Ensure chat_history entries have valid role and content."""
+        MAX_CONTENT_LENGTH = 50_000
         for entry in value:
             if "role" not in entry or "content" not in entry:
                 raise serializers.ValidationError(
@@ -31,6 +32,10 @@ class GenerateRequestSerializer(serializers.Serializer):
             if entry["role"] not in ("user", "assistant"):
                 raise serializers.ValidationError(
                     "chat_history role must be 'user' or 'assistant'."
+                )
+            if len(entry.get("content", "")) > MAX_CONTENT_LENGTH:
+                raise serializers.ValidationError(
+                    f"Each chat_history entry content must not exceed {MAX_CONTENT_LENGTH} characters."
                 )
         return value
 

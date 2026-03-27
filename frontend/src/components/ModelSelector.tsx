@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Cpu, Brain, Sparkles, Zap } from "lucide-react";
-import { MODEL_LIST, DEFAULT_MODEL, type ModelId, type ModelConfig } from "@/lib/pricing";
+import { ChevronDown, Cpu, Brain, Sparkles } from "lucide-react";
+import { type ModelId, type ModelConfig } from "@/lib/pricing";
+import { useModels } from "@/context/ModelsContext";
 
 interface ModelSelectorProps {
   value: ModelId;
@@ -28,27 +29,28 @@ const PROVIDER_LABELS: Record<string, string> = {
   gemini: "Google",
 };
 
-type GroupedModels = { provider: string; label: string; models: (ModelConfig & { id: ModelId })[] }[];
+type GroupedModels = { provider: string; label: string; models: ModelConfig[] }[];
 
-function groupModels(): GroupedModels {
-  const groups: Record<string, (ModelConfig & { id: ModelId })[]> = {};
-  for (const m of MODEL_LIST) {
+function groupModels(models: ModelConfig[]): GroupedModels {
+  const groups: Record<string, ModelConfig[]> = {};
+  for (const m of models) {
     if (!groups[m.provider]) groups[m.provider] = [];
     groups[m.provider].push(m);
   }
-  return Object.entries(groups).map(([provider, models]) => ({
+  return Object.entries(groups).map(([provider, items]) => ({
     provider,
     label: PROVIDER_LABELS[provider] ?? provider,
-    models,
+    models: items,
   }));
 }
 
 export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { models, isLoaded } = useModels();
 
-  const selected = MODEL_LIST.find((m) => m.id === value) ?? MODEL_LIST[0];
-  const grouped = groupModels();
+  const selected = models.find((m) => m.id === value) ?? models[0];
+  const grouped = groupModels(models);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -59,6 +61,15 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  if (!isLoaded || !selected) {
+    return (
+      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
+                      bg-zinc-800 border border-zinc-700 text-zinc-500 animate-pulse">
+        Loading models…
+      </div>
+    );
+  }
 
   return (
     <div ref={ref} className="relative">

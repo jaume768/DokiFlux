@@ -11,19 +11,12 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import type {
   User,
-  AuthTokens,
   LoginRequest,
   RegisterRequest,
   AuthResponse,
   BalanceResponse,
 } from "@/types/auth";
-import {
-  apiPost,
-  apiGet,
-  getStoredTokens,
-  setStoredTokens,
-  clearStoredTokens,
-} from "@/lib/api";
+import { apiPost, apiGet } from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -33,7 +26,7 @@ interface AuthContextType {
   planType: "free" | "premium";
   login: (data: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<AuthResponse>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   refreshBalance: () => Promise<void>;
 }
@@ -70,7 +63,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
     } catch {
       setUser(null);
-      clearStoredTokens();
     }
   }, []);
 
@@ -84,22 +76,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // On mount: check stored tokens and load user
+  // On mount: check if a valid session cookie exists by calling /auth/me/
   useEffect(() => {
     async function init() {
-      const tokens = getStoredTokens();
-      if (!tokens?.access) {
-        setIsLoading(false);
-        return;
-      }
-
       try {
         const userData = await apiGet<User>("/auth/me/");
         setUser(userData);
-        // Load balance in parallel
         refreshBalance();
       } catch {
-        clearStoredTokens();
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -140,7 +125,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await apiPost<AuthResponse>("/auth/login/", data, {
         auth: false,
       });
-      setStoredTokens(res.tokens);
       setUser(res.user);
       refreshBalance();
 
@@ -159,8 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         auth: false,
       });
 
-      if (res.tokens) {
-        setStoredTokens(res.tokens);
+      if (res.user) {
         setUser(res.user);
         refreshBalance();
         router.push("/onboarding");
@@ -171,8 +154,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [router, refreshBalance]
   );
 
-  const logout = useCallback(() => {
-    clearStoredTokens();
+  const logout = useCallback(async () => {
+    try {
+      await apiPost("/auth/logout/");
+    } catch {
+      // Silently fail — cookies will expire naturally
+    }
     setUser(null);
     setBalance(null);
     router.push("/login");

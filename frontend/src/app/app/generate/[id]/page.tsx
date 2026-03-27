@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { apiGet, apiPatch, getStoredTokens } from "@/lib/api";
+import { apiGet, apiPatch, API_BASE } from "@/lib/api";
 import type { ProjectDetail, ChatMessageResponse, PaginatedResponse } from "@/types/auth";
 import { ChatPanel } from "@/components/ChatPanel";
 import { PromptInput } from "@/components/PromptInput";
@@ -16,9 +16,8 @@ import { Sparkles, MessageSquare, Monitor, ArrowLeft, Coins, Loader2, Pencil, Ch
 import { useIsMobile, useIsIOS } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/button";
 import { ModelSelector } from "@/components/ModelSelector";
-import { DEFAULT_MODEL, isValidModelId, type ModelId } from "@/lib/pricing";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+import { DEFAULT_MODEL, type ModelId } from "@/lib/pricing";
+import { useModels } from "@/context/ModelsContext";
 
 type MobileView = "chat" | "preview";
 
@@ -28,6 +27,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const router = useRouter();
   const searchParams = useSearchParams();
   const { balance, refreshBalance, planType } = useAuth();
+  const { isValidModelId, defaultModel } = useModels();
 
   const [projectName, setProjectName] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -56,7 +56,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const [hasNewPreview, setHasNewPreview] = useState(false);
   const modelParam = searchParams.get("model");
   const [selectedModel, setSelectedModel] = useState<ModelId>(
-    modelParam && isValidModelId(modelParam) ? modelParam : DEFAULT_MODEL
+    modelParam && isValidModelId(modelParam) ? modelParam : (defaultModel || DEFAULT_MODEL)
   );
   const [genProgress, setGenProgress] = useState<GenerationProgress>({
     phase: null,
@@ -168,13 +168,12 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
       const streamingMsgId = crypto.randomUUID();
 
       try {
-        const tokens = getStoredTokens();
         const res = await fetch(`${API_BASE}/generate/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(tokens?.access ? { Authorization: `Bearer ${tokens.access}` } : {}),
           },
+          credentials: "include",
           body: JSON.stringify({
             project_id: projectId,
             prompt,

@@ -1,71 +1,20 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
-const TOKEN_KEY = "dokiflux_tokens";
-
-export interface StoredTokens {
-  access: string;
-  refresh: string;
-}
-
-// --- Token storage ---
-
-export function getStoredTokens(): StoredTokens | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(TOKEN_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-export function setStoredTokens(tokens: StoredTokens): void {
-  localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
-}
-
-export function clearStoredTokens(): void {
-  localStorage.removeItem(TOKEN_KEY);
-}
-
-// --- API client ---
+// --- API client (cookie-based auth — no localStorage) ---
 
 let isRefreshing = false;
-let refreshPromise: Promise<StoredTokens | null> | null = null;
+let refreshPromise: Promise<boolean> | null = null;
 
-async function refreshAccessToken(): Promise<StoredTokens | null> {
-  const tokens = getStoredTokens();
-  if (!tokens?.refresh) return null;
-
+async function refreshAccessToken(): Promise<boolean> {
   try {
     const res = await fetch(`${API_BASE}/auth/token/refresh/`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh: tokens.refresh }),
+      credentials: "include",
     });
-
-    if (!res.ok) {
-      clearStoredTokens();
-      return null;
-    }
-
-    const data = await res.json();
-    const newTokens: StoredTokens = {
-      access: data.access,
-      refresh: tokens.refresh,
-    };
-    setStoredTokens(newTokens);
-    return newTokens;
+    return res.ok;
   } catch {
-    clearStoredTokens();
-    return null;
+    return false;
   }
-}
-
-async function getValidAccessToken(): Promise<string | null> {
-  const tokens = getStoredTokens();
-  if (!tokens?.access) return null;
-  return tokens.access;
 }
 
 export interface ApiOptions extends Omit<RequestInit, "body"> {
@@ -105,43 +54,35 @@ export async function api<T = unknown>(
     headers["Content-Type"] = "application/json";
   }
 
-  if (auth) {
-    const token = await getValidAccessToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-  }
-
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
 
   let res = await fetch(url, {
     ...fetchOptions,
     headers,
+    credentials: "include",
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  // Auto-refresh on 401
+  // Auto-refresh on 401 using the httpOnly refresh_token cookie
   if (res.status === 401 && auth) {
     if (!isRefreshing) {
       isRefreshing = true;
       refreshPromise = refreshAccessToken();
     }
 
-    const newTokens = await refreshPromise;
+    const refreshed = await refreshPromise;
     isRefreshing = false;
     refreshPromise = null;
 
-    if (newTokens) {
-      headers["Authorization"] = `Bearer ${newTokens.access}`;
+    if (refreshed) {
       res = await fetch(url, {
         ...fetchOptions,
         headers,
+        credentials: "include",
         body: body ? JSON.stringify(body) : undefined,
       });
     } else {
-      // Refresh failed — redirect to login
       if (typeof window !== "undefined") {
-        clearStoredTokens();
         window.location.href = "/login";
       }
       throw new ApiError(401, { detail: "Session expired" });

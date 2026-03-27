@@ -218,8 +218,6 @@ async def stream_generation(
 
 # --- Async DB helpers (sync_to_async wrappers) ---
 
-from asgiref.sync import sync_to_async
-
 
 @sync_to_async
 def _create_generation(user, project, prompt, model):

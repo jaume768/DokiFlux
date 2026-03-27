@@ -1,5 +1,4 @@
 import json
-import sys
 
 from rest_framework import serializers
 
@@ -53,7 +52,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     def validate_file_map(self, value):
         """Validate file_map size against the user's plan limit."""
         serialized = json.dumps(value)
-        size_kb = sys.getsizeof(serialized) / 1024
+        size_kb = len(serialized.encode("utf-8")) / 1024
 
         # Import here to avoid circular imports at module level
         from apps.billing.plans import PLAN_DEFINITIONS

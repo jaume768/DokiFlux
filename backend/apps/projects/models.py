@@ -1,4 +1,3 @@
-import sys
 from django.conf import settings
 from django.db import models
 
@@ -28,10 +27,10 @@ class Project(models.Model):
 
     @property
     def file_map_size_kb(self):
-        """Approximate size of the serialized file_map in KB."""
+        """Accurate size of the serialized file_map in KB (UTF-8 bytes)."""
         import json
 
-        return sys.getsizeof(json.dumps(self.file_map)) / 1024
+        return len(json.dumps(self.file_map).encode("utf-8")) / 1024
 
 
 class ChatMessage(models.Model):

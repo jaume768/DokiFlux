@@ -9,7 +9,15 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+
+try:
+    from google.oauth2 import id_token as google_id_token
+    from google.auth.transport import requests as google_requests
+except ImportError:
+    google_id_token = None
+    google_requests = None
 
 from .serializers import (
     RegisterSerializer,
@@ -26,6 +34,7 @@ from .serializers import (
 from .models import EmailVerificationToken, PasswordResetToken
 from .services.email import email_service
 from .services.tokens import create_email_verification_token, create_password_reset_token
+from .throttles import AnonAuthThrottle, ResendEmailThrottle
 from .validators import validate_username, RESERVED_USERNAMES
 
 logger = logging.getLogger(__name__)
@@ -41,10 +50,92 @@ def _get_tokens_for_user(user):
     }
 
 
+def _set_auth_cookies(response, tokens: dict) -> None:
+    """Set JWT tokens as httpOnly Secure SameSite=Lax cookies."""
+    secure = not settings.DEBUG
+    response.set_cookie(
+        "access_token",
+        tokens["access"],
+        httponly=True,
+        samesite="Lax",
+        secure=secure,
+        max_age=1800,  # 30 minutes — matches ACCESS_TOKEN_LIFETIME
+        path="/",
+    )
+    response.set_cookie(
+        "refresh_token",
+        tokens["refresh"],
+        httponly=True,
+        samesite="Lax",
+        secure=secure,
+        max_age=604800,  # 7 days — matches REFRESH_TOKEN_LIFETIME
+        path="/",
+    )
+
+
+def _clear_auth_cookies(response) -> None:
+    """Clear both auth cookies."""
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/")
+
+
+class LogoutView(APIView):
+    """POST /api/auth/logout/ — Blacklist the refresh token and clear auth cookies."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = (
+            request.data.get("refresh")
+            or request.COOKIES.get("refresh_token")
+        )
+        if refresh_token:
+            try:
+                RefreshToken(refresh_token).blacklist()
+            except TokenError:
+                pass
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        _clear_auth_cookies(response)
+        return response
+
+
+class CookieTokenRefreshView(APIView):
+    """POST /api/auth/token/refresh/ — Rotate refresh token from httpOnly cookie."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token_str = request.COOKIES.get("refresh_token")
+        if not refresh_token_str:
+            return Response(
+                {"error": "Refresh token cookie not found."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        try:
+            old_token = RefreshToken(refresh_token_str)
+            access = str(old_token.access_token)
+            old_token.blacklist()
+            new_refresh = RefreshToken.for_user(
+                User.objects.get(id=old_token["user_id"])
+            )
+            tokens = {"access": access, "refresh": str(new_refresh)}
+        except (TokenError, User.DoesNotExist):
+            response = Response(
+                {"error": "Invalid or expired refresh token."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+            _clear_auth_cookies(response)
+            return response
+        response = Response({"detail": "Token refreshed."})
+        _set_auth_cookies(response, tokens)
+        return response
+
+
 class RegisterView(APIView):
     """POST /api/auth/register/ — Register with email + password."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [AnonAuthThrottle]
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -73,15 +164,14 @@ class RegisterView(APIView):
         )
 
         if auto_verify:
-            # DEV: auto-verified, return JWT immediately
+            # DEV: auto-verified, set cookies and return user
             tokens = _get_tokens_for_user(user)
-            return Response(
-                {
-                    "tokens": tokens,
-                    "user": UserSerializer(user).data,
-                },
+            response = Response(
+                {"user": UserSerializer(user).data},
                 status=status.HTTP_201_CREATED,
             )
+            _set_auth_cookies(response, tokens)
+            return response
         else:
             # PROD: send verification email
             token_obj = create_email_verification_token(user)
@@ -99,6 +189,7 @@ class LoginView(APIView):
     """POST /api/auth/login/ — Login with email or username + password, returns JWT."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [AnonAuthThrottle]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -134,10 +225,9 @@ class LoginView(APIView):
             )
 
         tokens = _get_tokens_for_user(user)
-        return Response({
-            "tokens": tokens,
-            "user": UserSerializer(user).data,
-        })
+        response = Response({"user": UserSerializer(user).data})
+        _set_auth_cookies(response, tokens)
+        return response
 
 
 class VerifyEmailView(APIView):
@@ -176,16 +266,16 @@ class VerifyEmailView(APIView):
         user.save(update_fields=["is_email_verified"])
 
         tokens = _get_tokens_for_user(user)
-        return Response({
-            "tokens": tokens,
-            "user": UserSerializer(user).data,
-        })
+        response = Response({"user": UserSerializer(user).data})
+        _set_auth_cookies(response, tokens)
+        return response
 
 
 class ResendVerificationView(APIView):
     """POST /api/auth/resend-verification/ — Resend verification email."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [ResendEmailThrottle]
 
     def post(self, request):
         serializer = ResendVerificationSerializer(data=request.data)
@@ -208,6 +298,7 @@ class PasswordResetRequestView(APIView):
     """POST /api/auth/password-reset/ — Request password reset email."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [AnonAuthThrottle]
 
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -319,6 +410,7 @@ class CheckUsernameView(APIView):
     """GET /api/auth/check-username/{username}/ — Check username availability."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [AnonAuthThrottle]
 
     def get(self, request, username):
         username = username.lower().strip()
@@ -336,10 +428,16 @@ class CheckUsernameView(APIView):
         is_taken = User.objects.filter(username=username).exists()
 
         if is_taken:
-            # Generate suggestion
+            # Generate suggestion (max 20 attempts to avoid infinite loop)
             suggestion = f"{username}{random.randint(10, 999)}"
-            while User.objects.filter(username=suggestion).exists() or suggestion in RESERVED_USERNAMES:
+            max_attempts = 20
+            attempt = 0
+            while (
+                attempt < max_attempts
+                and (User.objects.filter(username=suggestion).exists() or suggestion in RESERVED_USERNAMES)
+            ):
                 suggestion = f"{username}{random.randint(10, 9999)}"
+                attempt += 1
             return Response({"available": False, "suggestion": suggestion})
 
         return Response({"available": True})
@@ -349,6 +447,7 @@ class GoogleAuthView(APIView):
     """POST /api/auth/google/ — Authenticate with Google id_token."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [AnonAuthThrottle]
 
     def post(self, request):
         serializer = GoogleAuthSerializer(data=request.data)
@@ -358,15 +457,12 @@ class GoogleAuthView(APIView):
 
         # Verify the Google id_token
         try:
-            from google.oauth2 import id_token
-            from google.auth.transport import requests as google_requests
-
-            idinfo = id_token.verify_oauth2_token(
+            idinfo = google_id_token.verify_oauth2_token(
                 id_token_str,
                 google_requests.Request(),
                 settings.GOOGLE_CLIENT_ID,
             )
-        except ValueError:
+        except (ValueError, AttributeError):
             return Response(
                 {"error": "Token de Google inválido."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -398,8 +494,6 @@ class GoogleAuthView(APIView):
                 user.save(update_fields=["is_email_verified"])
 
         tokens = _get_tokens_for_user(user)
-        return Response({
-            "tokens": tokens,
-            "user": UserSerializer(user).data,
-            "created": created,
-        })
+        response = Response({"user": UserSerializer(user).data, "created": created})
+        _set_auth_cookies(response, tokens)
+        return response

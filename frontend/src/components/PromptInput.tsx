@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button";
 import { SendHorizonal, Loader2, Square, Coins } from "lucide-react";
 import { CostEstimate } from "@/types";
 import { formatCost } from "@/lib/pricing";
-import { getStoredTokens } from "@/lib/api";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+import { API_BASE } from "@/lib/api";
 
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
@@ -49,13 +47,10 @@ export function PromptInput({ onSubmit, onCancel, isLoading, currentProject, cha
       setEstimateLoading(true);
 
       try {
-        const tokens = getStoredTokens();
         const res = await fetch(`${API_BASE}/estimate/`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(tokens?.access ? { Authorization: `Bearer ${tokens.access}` } : {}),
-          },
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             prompt: trimmed,
             ...(projectId ? { project_id: projectId } : {}),

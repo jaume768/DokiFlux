@@ -7,13 +7,13 @@ import { Sparkles, Menu, X } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { getStoredTokens } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 export function LandingNavbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isLoggedIn =
-    typeof window !== "undefined" && !!getStoredTokens()?.access;
+  const { isAuthenticated } = useAuth();
+  const isLoggedIn = isAuthenticated;
 
   const navLinks = [
     { label: "Características", href: "/#features" },

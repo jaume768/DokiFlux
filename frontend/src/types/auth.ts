@@ -41,8 +41,8 @@ export interface PasswordResetConfirmRequest {
 }
 
 export interface AuthResponse {
-  tokens: AuthTokens;
   user: User;
+  created?: boolean;
 }
 
 export interface BalanceResponse {
