@@ -25,6 +25,7 @@ import {
   Pencil,
   Monitor,
   Smartphone,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -285,7 +286,13 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
   const [iframePath, setIframePath] = useState("/");
   const [urlInput, setUrlInput] = useState("/");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
-  const { status, previewUrl, error, logs, lastBuildError, clearBuildError, mountFiles } = useWebContainer();
+  const { status, previewUrl, error, logs, lastBuildError, clearBuildError, mountFiles, restartContainer } = useWebContainer();
+  const [mobileWidth, setMobileWidth] = useState(375);
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartWidthRef = useRef(375);
+  const MOBILE_MIN_WIDTH = 280;
+  const MOBILE_MAX_WIDTH = 768;
   const prevGenKeyRef = useRef<number>(-1);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -294,6 +301,30 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
   const userPickedFileRef = useRef(false);
   const streamingCodeEndRef = useRef<HTMLDivElement>(null);
   const iframeLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleRestartContainer() {
+    restartContainer(files);
+  }
+
+  function handleMobileDragStart(e: React.PointerEvent) {
+    isDraggingRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragStartWidthRef.current = mobileWidth;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function handleMobileDragMove(e: React.PointerEvent) {
+    if (!isDraggingRef.current) return;
+    const delta = e.clientX - dragStartXRef.current;
+    const newWidth = Math.round(
+      Math.max(MOBILE_MIN_WIDTH, Math.min(MOBILE_MAX_WIDTH, dragStartWidthRef.current + delta * 2))
+    );
+    setMobileWidth(newWidth);
+  }
+
+  function handleMobileDragEnd() {
+    isDraggingRef.current = false;
+  }
 
   const displayFiles = files;
 
@@ -604,6 +635,18 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Download</span>
           </Button>
+          {status !== "idle" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRestartContainer}
+              title="Restart WebContainer"
+              className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Restart</span>
+            </Button>
+          )}
           {activeTab === "preview" && (
             <div className="flex items-center bg-muted rounded-md p-0.5 ml-1">
               <button
@@ -672,7 +715,7 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
               </div>
               {/* Iframe */}
               <div className={`relative flex-1 min-h-0 ${
-                previewMode === "mobile" ? "flex items-start justify-center bg-zinc-950/80 p-4 overflow-auto" : ""
+                previewMode === "mobile" ? "flex flex-col items-center bg-zinc-950/80 overflow-auto" : ""
               }`}>
                 {!iframeLoaded && (
                   <div className={`flex flex-col items-center justify-center bg-background z-10 gap-3 ${
@@ -685,17 +728,54 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
                   </div>
                 )}
                 {previewMode === "mobile" ? (
-                  <div className="relative w-[375px] h-[680px] shrink-0 rounded-[2.5rem] border-[6px] border-zinc-700 bg-black shadow-2xl shadow-black/50 overflow-hidden">
-                    {/* Notch */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[28px] bg-black rounded-b-2xl z-20" />
-                    <iframe
-                      ref={iframeRef}
-                      src={previewUrl}
-                      className="w-full h-full border-0"
-                      title="Preview"
-                      allow="cross-origin-isolated"
-                      onLoad={handleIframeLoad}
-                    />
+                  <div className="flex flex-col items-center py-4 min-h-full w-full">
+                    {/* Size controls */}
+                    <div className="flex items-center gap-2 mb-3 shrink-0">
+                      {[280, 375, 414, 768].map((w) => (
+                        <button
+                          key={w}
+                          onClick={() => setMobileWidth(w)}
+                          className={`px-2 py-0.5 rounded text-[11px] font-mono transition-colors ${
+                            mobileWidth === w
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                          }`}
+                        >
+                          {w}
+                        </button>
+                      ))}
+                      <span className="text-[11px] font-mono text-zinc-500">
+                        {mobileWidth} × {Math.round(mobileWidth * (16 / 9))}
+                      </span>
+                    </div>
+                    {/* Phone frame + drag handle */}
+                    <div className="flex items-stretch shrink-0">
+                      <div
+                        className="relative shrink-0 rounded-[2.5rem] border-[6px] border-zinc-700 bg-black shadow-2xl shadow-black/50 overflow-hidden"
+                        style={{ width: mobileWidth, height: Math.round(mobileWidth * (16 / 9)) }}
+                      >
+                        {/* Notch */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[28px] bg-black rounded-b-2xl z-20" />
+                        <iframe
+                          ref={iframeRef}
+                          src={previewUrl}
+                          className="w-full h-full border-0"
+                          title="Preview"
+                          allow="cross-origin-isolated"
+                          onLoad={handleIframeLoad}
+                        />
+                      </div>
+                      {/* Drag handle */}
+                      <div
+                        className="w-4 flex items-center justify-center cursor-ew-resize select-none group ml-1"
+                        onPointerDown={handleMobileDragStart}
+                        onPointerMove={handleMobileDragMove}
+                        onPointerUp={handleMobileDragEnd}
+                        onPointerCancel={handleMobileDragEnd}
+                      >
+                        <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-zinc-400 transition-colors" />
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <iframe

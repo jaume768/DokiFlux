@@ -28,6 +28,7 @@
 23- Añadir templates y poder hacer proyectos "Del staff" como templates con los prompts
 24- Enseñar anuncios si se genera con ia gratis?
 25- Oauth con google y github y envio de mail con Brevo
+26- Hacer auditoria de seguridad y posibles refactorizaciones
 
 
 Ofrecer a los usuarios diferentes servicios después de generar los proyectos, hosting, dominio, base de datos, etc.

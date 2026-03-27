@@ -20,6 +20,7 @@ interface UseWebContainerReturn {
   lastBuildError: string | null;
   clearBuildError: () => void;
   mountFiles: (files: FileMap) => Promise<void>;
+  restartContainer: (files: FileMap) => Promise<void>;
 }
 
 const VITE_PACKAGE_JSON = {
@@ -501,5 +502,42 @@ export function useWebContainer(): UseWebContainerReturn {
     [addLog]
   );
 
-  return { status, previewUrl, error, logs, lastBuildError, clearBuildError, mountFiles };
+  const restartContainer = useCallback(
+    async (files: FileMap) => {
+      // Kill running server
+      if (serverProcessRef.current) {
+        try {
+          serverProcessRef.current.kill();
+        } catch {
+          // ignore
+        }
+        serverProcessRef.current = null;
+      }
+      // Teardown container instance so it gets re-booted
+      if (containerRef.current) {
+        try {
+          containerRef.current.teardown();
+        } catch {
+          // ignore
+        }
+        containerRef.current = null;
+        wcInstance = null;
+        wcBootPromise = null;
+      }
+      isInstalledRef.current = false;
+      isDevServerRef.current = false;
+      setPreviewUrl(null);
+      setError(null);
+      setLogs([]);
+      setStatus("idle");
+      // Small delay to let the teardown settle
+      await new Promise((r) => setTimeout(r, 400));
+      if (isMountedRef.current) {
+        await mountFiles(files);
+      }
+    },
+    [mountFiles]
+  );
+
+  return { status, previewUrl, error, logs, lastBuildError, clearBuildError, mountFiles, restartContainer };
 }

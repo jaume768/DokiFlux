@@ -12,7 +12,7 @@ import { SessionStatsBar } from "@/components/TokenUsage";
 import { Message, SessionStats, StreamChunk, GenerationProgress } from "@/types";
 import { parseMultiFileOutput, mergeFiles, serializeFileMap, type FileMap, getFileCount } from "@/lib/parser";
 import { MAX_CHAT_HISTORY } from "@/lib/prompts";
-import { Sparkles, MessageSquare, Monitor, ArrowLeft, Coins, Loader2, Pencil, Check, X } from "lucide-react";
+import { Sparkles, MessageSquare, Monitor, ArrowLeft, Coins, Loader2, Pencil, Check, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useIsMobile, useIsIOS } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/button";
 import { ModelSelector } from "@/components/ModelSelector";
@@ -52,6 +52,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     generationCount: 0,
   });
   const [mobileView, setMobileView] = useState<MobileView>("chat");
+  const [chatCollapsed, setChatCollapsed] = useState(false);
   const [hasNewPreview, setHasNewPreview] = useState(false);
   const modelParam = searchParams.get("model");
   const [selectedModel, setSelectedModel] = useState<ModelId>(
@@ -551,6 +552,20 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         )}
 
         <div className="flex items-center gap-2">
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setChatCollapsed((v) => !v)}
+              title={chatCollapsed ? "Show chat" : "Hide chat"}
+            >
+              {chatCollapsed ? (
+                <PanelLeftOpen className="w-4 h-4" />
+              ) : (
+                <PanelLeftClose className="w-4 h-4" />
+              )}
+            </Button>
+          )}
           <ModelSelector
             value={selectedModel}
             onChange={setSelectedModel}
@@ -569,11 +584,13 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
 
       <div className="flex-1 flex overflow-hidden relative">
         <div
-          className={`flex flex-col border-r bg-background ${
+          className={`flex flex-col border-r bg-background transition-all duration-300 ${
             isMobile
               ? mobileView === "chat"
                 ? "w-full"
                 : "hidden"
+              : chatCollapsed
+              ? "w-0 min-w-0 overflow-hidden border-r-0"
               : "w-[440px] min-w-[360px]"
           }`}
         >
