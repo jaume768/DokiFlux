@@ -23,6 +23,8 @@ import {
   ArrowRight,
   Plus,
   Pencil,
+  Monitor,
+  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -282,6 +284,7 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframePath, setIframePath] = useState("/");
   const [urlInput, setUrlInput] = useState("/");
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const { status, previewUrl, error, logs, lastBuildError, clearBuildError, mountFiles } = useWebContainer();
   const prevGenKeyRef = useRef<number>(-1);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -601,6 +604,32 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Download</span>
           </Button>
+          {activeTab === "preview" && (
+            <div className="flex items-center bg-muted rounded-md p-0.5 ml-1">
+              <button
+                onClick={() => setPreviewMode("desktop")}
+                className={`p-1.5 rounded transition-colors ${
+                  previewMode === "desktop"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Desktop view"
+              >
+                <Monitor className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setPreviewMode("mobile")}
+                className={`p-1.5 rounded transition-colors ${
+                  previewMode === "mobile"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Mobile view"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -642,21 +671,42 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
                 </div>
               </div>
               {/* Iframe */}
-              <div className="relative flex-1 min-h-0">
+              <div className={`relative flex-1 min-h-0 ${
+                previewMode === "mobile" ? "flex items-start justify-center bg-zinc-950/80 p-4 overflow-auto" : ""
+              }`}>
                 {!iframeLoaded && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background z-10 gap-3">
+                  <div className={`flex flex-col items-center justify-center bg-background z-10 gap-3 ${
+                    previewMode === "mobile"
+                      ? "absolute inset-0 rounded-[2rem]"
+                      : "absolute inset-0"
+                  }`}>
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                     <p className="text-sm text-muted-foreground">Loading preview...</p>
                   </div>
                 )}
-                <iframe
-                  ref={iframeRef}
-                  src={previewUrl}
-                  className="absolute inset-0 w-full h-full border-0"
-                  title="Preview"
-                  allow="cross-origin-isolated"
-                  onLoad={handleIframeLoad}
-                />
+                {previewMode === "mobile" ? (
+                  <div className="relative w-[375px] h-[680px] shrink-0 rounded-[2.5rem] border-[6px] border-zinc-700 bg-black shadow-2xl shadow-black/50 overflow-hidden">
+                    {/* Notch */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[28px] bg-black rounded-b-2xl z-20" />
+                    <iframe
+                      ref={iframeRef}
+                      src={previewUrl}
+                      className="w-full h-full border-0"
+                      title="Preview"
+                      allow="cross-origin-isolated"
+                      onLoad={handleIframeLoad}
+                    />
+                  </div>
+                ) : (
+                  <iframe
+                    ref={iframeRef}
+                    src={previewUrl}
+                    className="absolute inset-0 w-full h-full border-0"
+                    title="Preview"
+                    allow="cross-origin-isolated"
+                    onLoad={handleIframeLoad}
+                  />
+                )}
               </div>
             </div>
           ) : (
