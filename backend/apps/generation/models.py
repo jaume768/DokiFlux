@@ -37,6 +37,10 @@ class Generation(models.Model):
         null=True, blank=True,
         help_text="Snapshot of project file_map BEFORE this generation (for restore).",
     )
+    result_file_map = models.JSONField(
+        null=True, blank=True,
+        help_text="Merged file_map AFTER this generation completed (for restore).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 

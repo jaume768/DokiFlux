@@ -64,6 +64,23 @@ class ProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
             .annotate(message_count=Count("messages"))
         )
 
+    def partial_update(self, request, *args, **kwargs):
+        generation_id = request.data.get("generation_id")
+        file_map = request.data.get("file_map")
+        response = super().partial_update(request, *args, **kwargs)
+        if generation_id and file_map:
+            try:
+                gen = Generation.objects.get(
+                    id=generation_id,
+                    project_id=kwargs["pk"],
+                    project__user=request.user,
+                )
+                gen.result_file_map = file_map
+                gen.save(update_fields=["result_file_map"])
+            except Generation.DoesNotExist:
+                pass
+        return response
+
 
 class ChatMessageListView(generics.ListAPIView):
     """
@@ -100,23 +117,24 @@ class ProjectRestoreView(APIView):
         except Generation.DoesNotExist:
             return Response({"error": "Generation not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Return the state AFTER this generation ran, not before.
-        # The snapshot of the NEXT generation = state after gen N.
-        # If gen N is the latest, the current project.file_map IS the result of gen N.
-        next_gen = (
-            Generation.objects.filter(
-                project=project,
-                created_at__gt=generation.created_at,
-                file_map_snapshot__isnull=False,
-            )
-            .order_by("created_at")
-            .first()
-        )
-
-        if next_gen:
-            result_file_map = next_gen.file_map_snapshot
+        # Prefer the stored result_file_map (state AFTER this generation).
+        # Fallback for older generations without result_file_map: use next gen's snapshot.
+        if generation.result_file_map:
+            result_file_map = generation.result_file_map
         else:
-            result_file_map = project.file_map or {}
+            next_gen = (
+                Generation.objects.filter(
+                    project=project,
+                    created_at__gt=generation.created_at,
+                    file_map_snapshot__isnull=False,
+                )
+                .order_by("created_at")
+                .first()
+            )
+            if next_gen:
+                result_file_map = next_gen.file_map_snapshot
+            else:
+                result_file_map = project.file_map or {}
 
         if not result_file_map:
             return Response(

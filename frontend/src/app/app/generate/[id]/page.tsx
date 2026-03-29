@@ -314,9 +314,12 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             setHasNewPreview(true);
           }
 
-          // Save file_map to backend
+          // Save file_map to backend (also links result to generation for restore)
           try {
-            await apiPatch(`/projects/${projectId}/`, { file_map: finalFiles });
+            await apiPatch(`/projects/${projectId}/`, {
+              file_map: finalFiles,
+              ...(streamingGenerationId ? { generation_id: streamingGenerationId } : {}),
+            });
           } catch {
             console.error("Failed to save file_map");
           }
