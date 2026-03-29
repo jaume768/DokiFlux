@@ -46,9 +46,7 @@ export function FrameworkSelector({ value, onChange, disabled }: FrameworkSelect
         type="button"
         disabled={disabled}
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
-                   bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200
-                   transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span className={FRAMEWORK_COLORS[selected.id] ?? "text-zinc-300"}>
           {FRAMEWORK_ICONS[selected.id]}
@@ -58,8 +56,7 @@ export function FrameworkSelector({ value, onChange, disabled }: FrameworkSelect
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[200px] max-h-[300px] overflow-y-auto
-                        rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl">
+        <div className="absolute top-full left-0 mt-1 z-50 min-w-[200px] max-h-[300px] overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl">
           <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 bg-zinc-900/80 sticky top-0">
             Framework
           </div>
@@ -74,11 +71,7 @@ export function FrameworkSelector({ value, onChange, disabled }: FrameworkSelect
                   setOpen(false);
                 }
               }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors
-                ${fw.available
-                  ? `hover:bg-zinc-800 ${fw.id === value ? "bg-zinc-800 text-white" : "text-zinc-300"}`
-                  : "text-zinc-600 cursor-not-allowed"
-                }`}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors ${fw.available ? `hover:bg-zinc-800 ${fw.id === value ? "bg-zinc-800 text-white" : "text-zinc-300"}` : "text-zinc-600 cursor-not-allowed"}`}
             >
               <span className={fw.available ? (FRAMEWORK_COLORS[fw.id] ?? "text-zinc-300") : "opacity-50"}>
                 {FRAMEWORK_ICONS[fw.id]}

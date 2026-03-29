@@ -64,8 +64,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
 
   if (!isLoaded || !selected) {
     return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
-                      bg-zinc-800 border border-zinc-700 text-zinc-500 animate-pulse">
+      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-500 animate-pulse">
         Loading models…
       </div>
     );
@@ -77,9 +76,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
         type="button"
         disabled={disabled}
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
-                   bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200
-                   transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span className={PROVIDER_COLORS[selected.provider]}>
           {PROVIDER_ICONS[selected.provider]}
@@ -89,8 +86,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[240px] max-h-[360px] overflow-y-auto
-                        rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl">
+        <div className="absolute top-full left-0 mt-1 z-50 min-w-[240px] max-h-[360px] overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl">
           {grouped.map((group) => (
             <div key={group.provider}>
               <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 bg-zinc-900/80 sticky top-0">
@@ -104,8 +100,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
                     onChange(m.id);
                     setOpen(false);
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors
-                    hover:bg-zinc-800 ${m.id === value ? "bg-zinc-800 text-white" : "text-zinc-300"}`}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-800 ${m.id === value ? "bg-zinc-800 text-white" : "text-zinc-300"}`}
                 >
                   <span className={PROVIDER_COLORS[m.provider]}>
                     {PROVIDER_ICONS[m.provider]}
