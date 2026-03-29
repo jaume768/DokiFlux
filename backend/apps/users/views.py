@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Count, Sum, F
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -497,3 +498,77 @@ class GoogleAuthView(APIView):
         response = Response({"user": UserSerializer(user).data, "created": created})
         _set_auth_cookies(response, tokens)
         return response
+
+
+class ProfileStatsView(APIView):
+    """GET /api/auth/profile-stats/ — Aggregated usage statistics for the current user."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from apps.projects.models import Project
+        from apps.generation.models import Generation
+        from apps.billing.models import CreditGrant
+        from apps.billing.services import set_subscription_cancellation, downgrade_to_free
+        from django.conf import settings as django_settings
+        from django.utils.timezone import datetime as tz_datetime, timezone as tz
+
+        user = request.user
+
+        total_projects = Project.objects.filter(user=user).count()
+
+        gen_qs = Generation.objects.filter(user=user, status="completed")
+        gen_agg = gen_qs.aggregate(
+            total_generations=Count("id"),
+            total_cost=Sum("cost"),
+            total_input_tokens=Sum("input_tokens"),
+            total_output_tokens=Sum("output_tokens"),
+        )
+
+        favorite_model = (
+            gen_qs.values("model")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+            .values_list("model", flat=True)
+            .first()
+        )
+
+        credits_granted = CreditGrant.objects.filter(user=user).aggregate(
+            total=Sum("original_amount")
+        )["total"] or 0
+
+        total_tokens = (gen_agg["total_input_tokens"] or 0) + (gen_agg["total_output_tokens"] or 0)
+
+        # Live-sync Stripe subscription cancellation status (fallback when webhook not received)
+        plan = getattr(user, "plan", None)
+        if plan and plan.stripe_subscription_id and django_settings.STRIPE_SECRET_KEY:
+            try:
+                import stripe as stripe_lib
+                stripe_lib.api_key = django_settings.STRIPE_SECRET_KEY
+                sub = stripe_lib.Subscription.retrieve(plan.stripe_subscription_id)
+                sub_status = sub.get("status", "")
+                cape = sub.get("cancel_at_period_end", False)
+                cancel_at_ts = sub.get("cancel_at")
+                if sub_status in ("canceled", "unpaid", "past_due"):
+                    downgrade_to_free(user)
+                    plan.refresh_from_db()
+                elif sub_status == "active":
+                    cancel_at_dt = tz_datetime.fromtimestamp(cancel_at_ts, tz=tz.utc) if cancel_at_ts else None
+                    set_subscription_cancellation(user, cancel_at_period_end=cape, cancel_at=cancel_at_dt)
+                    plan.refresh_from_db()
+            except Exception:
+                pass  # Stripe unavailable — use cached DB values
+
+        return Response({
+            "date_joined": user.date_joined.isoformat(),
+            "full_name": user.full_name,
+            "auth_provider": user.auth_provider,
+            "total_projects": total_projects,
+            "total_generations": gen_agg["total_generations"] or 0,
+            "total_cost_spent": str(gen_agg["total_cost"] or 0),
+            "total_tokens_used": total_tokens,
+            "favorite_model": favorite_model or "",
+            "credits_granted": str(credits_granted),
+            "cancel_at_period_end": plan.cancel_at_period_end if plan else False,
+            "cancel_at": plan.cancel_at.isoformat() if (plan and plan.cancel_at) else None,
+        })

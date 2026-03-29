@@ -1,3 +1,5 @@
+import logging
+
 import stripe
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -6,13 +8,15 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+logger = logging.getLogger(__name__)
+
 from .models import CreditTransaction, UserPlan
 from .plans import PLAN_DEFINITIONS
 from .serializers import (
     CreditTransactionSerializer,
     PlanDefinitionSerializer,
 )
-from .services import downgrade_to_free, get_balance, renew_monthly_credits, upgrade_to_premium
+from .services import downgrade_to_free, get_balance, renew_monthly_credits, set_subscription_cancellation, upgrade_to_premium
 
 User = get_user_model()
 
@@ -30,12 +34,10 @@ class BalanceView(APIView):
                 "balance": str(balance),
                 "plan": {
                     "plan_type": plan.plan_type if plan else "free",
-                    "started_at": (
-                        plan.started_at.isoformat() if plan else None
-                    ),
-                    "stripe_subscription_id": (
-                        plan.stripe_subscription_id if plan else ""
-                    ),
+                    "started_at": plan.started_at.isoformat() if plan else None,
+                    "stripe_subscription_id": plan.stripe_subscription_id if plan else "",
+                    "cancel_at_period_end": plan.cancel_at_period_end if plan else False,
+                    "cancel_at": plan.cancel_at.isoformat() if (plan and plan.cancel_at) else None,
                 },
             }
         )
@@ -192,23 +194,32 @@ class VerifyCheckoutSessionView(APIView):
         if not session_id:
             return Response({"error": "session_id required."}, status=status.HTTP_400_BAD_REQUEST)
 
+        logger.info("[verify-session] user=%s session_id=%s", request.user.email, session_id)
         stripe.api_key = settings.STRIPE_SECRET_KEY
 
         try:
             session = stripe.checkout.Session.retrieve(session_id)
         except stripe.StripeError as e:
+            logger.error("[verify-session] Stripe error retrieving session: %s", e)
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        if session.get("status") != "complete" or session.get("payment_status") != "paid":
+        session_status = session.status
+        payment_status = session.payment_status
+        logger.info("[verify-session] session status=%s payment_status=%s", session_status, payment_status)
+
+        if session_status != "complete" or payment_status != "paid":
+            logger.warning("[verify-session] Payment not completed — status=%s payment_status=%s", session_status, payment_status)
             return Response({"upgraded": False, "reason": "payment not completed"})
 
-        customer_id = session.get("customer", "")
-        subscription_id = session.get("subscription", "")
+        customer_id = session.customer or ""
+        subscription_id = session.subscription or ""
 
         plan = getattr(request.user, "plan", None)
         if plan and plan.plan_type == "premium":
+            logger.info("[verify-session] User %s already premium, skipping", request.user.email)
             return Response({"upgraded": False, "reason": "already premium", "plan_type": "premium"})
 
+        logger.info("[verify-session] Upgrading user %s to premium (customer=%s, sub=%s)", request.user.email, customer_id, subscription_id)
         upgrade_to_premium(request.user, customer_id, subscription_id)
         return Response({"upgraded": True, "plan_type": "premium"})
 
@@ -225,6 +236,7 @@ class StripeWebhookView(APIView):
 
     def post(self, request):
         if not settings.STRIPE_WEBHOOK_SECRET:
+            logger.warning("[webhook] STRIPE_WEBHOOK_SECRET not configured — rejecting request")
             return Response(
                 {"error": "Webhook secret not configured."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -239,12 +251,15 @@ class StripeWebhookView(APIView):
                 payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
             )
         except ValueError:
+            logger.error("[webhook] Invalid payload")
             return Response({"error": "Invalid payload"}, status=status.HTTP_400_BAD_REQUEST)
-        except stripe.error.SignatureVerificationError:
+        except stripe.SignatureVerificationError:
+            logger.error("[webhook] Invalid signature — check STRIPE_WEBHOOK_SECRET matches 'stripe listen' output")
             return Response({"error": "Invalid signature"}, status=status.HTTP_400_BAD_REQUEST)
 
         event_type = event["type"]
         data = event["data"]["object"]
+        logger.info("[webhook] Received event type=%s id=%s", event_type, event.id)
 
         if event_type == "checkout.session.completed":
             self._handle_checkout_completed(data)
@@ -274,31 +289,42 @@ class StripeWebhookView(APIView):
             return None
 
     def _handle_checkout_completed(self, session):
-        user = self._get_user_from_metadata(session.get("metadata", {}))
+        metadata = session.metadata or {}
+        user = self._get_user_from_metadata(metadata)
         if not user:
-            customer_id = session.get("customer", "")
+            customer_id = session.customer or ""
             user = self._get_user_from_customer(customer_id)
         if not user:
+            logger.error("[webhook] checkout.session.completed — could not find user. metadata=%s customer=%s", metadata, session.customer)
             return
 
-        customer_id = session.get("customer", "")
-        subscription_id = session.get("subscription", "")
+        customer_id = session.customer or ""
+        subscription_id = session.subscription or ""
+        logger.info("[webhook] checkout.session.completed — upgrading user=%s customer=%s sub=%s", user.email, customer_id, subscription_id)
         upgrade_to_premium(user, customer_id, subscription_id)
 
     def _handle_invoice_paid(self, invoice):
-        billing_reason = invoice.get("billing_reason", "")
+        billing_reason = invoice.billing_reason or ""
         if billing_reason == "subscription_cycle":
-            customer_id = invoice.get("customer", "")
+            customer_id = invoice.customer or ""
             user = self._get_user_from_customer(customer_id)
             if user:
                 renew_monthly_credits(user)
 
     def _handle_subscription_change(self, subscription):
-        sub_status = subscription.get("status", "")
-        customer_id = subscription.get("customer", "")
+        sub_status = subscription.status or ""
+        customer_id = subscription.customer or ""
+        cancel_at_period_end = subscription.cancel_at_period_end or False
+        cancel_at_ts = subscription.cancel_at  # Unix timestamp or None
         user = self._get_user_from_customer(customer_id)
         if not user:
             return
 
         if sub_status in ("canceled", "unpaid", "past_due"):
             downgrade_to_free(user)
+        elif sub_status == "active" and cancel_at_period_end:
+            from django.utils.timezone import datetime, timezone as tz
+            cancel_at_dt = datetime.fromtimestamp(cancel_at_ts, tz=tz.utc) if cancel_at_ts else None
+            set_subscription_cancellation(user, cancel_at_period_end=True, cancel_at=cancel_at_dt)
+        elif sub_status == "active" and not cancel_at_period_end:
+            set_subscription_cancellation(user, cancel_at_period_end=False, cancel_at=None)

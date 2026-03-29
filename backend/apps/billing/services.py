@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal
 from datetime import timedelta
 
@@ -10,6 +11,8 @@ from .plans import (
     MONTHLY_GRANT_EXPIRY_DAYS,
     PLAN_DEFINITIONS,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def get_balance(user):
@@ -76,6 +79,7 @@ def grant_monthly_credits(user):
 
     plan_def = PLAN_DEFINITIONS.get(plan.plan_type, PLAN_DEFINITIONS["free"])
     credit_amount = plan_def["monthly_credits"]
+    logger.info("[credits] Granting %s credits to user=%s (plan=%s)", credit_amount, user.email, plan.plan_type)
 
     grant = CreditGrant.objects.create(
         user=user,
@@ -103,10 +107,14 @@ def upgrade_to_premium(user, stripe_customer_id: str, stripe_subscription_id: st
     """
     plan, _ = UserPlan.objects.get_or_create(user=user, defaults={"plan_type": "free"})
     was_free = plan.plan_type != "premium"
+    logger.info("[upgrade] user=%s was_free=%s customer=%s sub=%s", user.email, was_free, stripe_customer_id, stripe_subscription_id)
     plan.plan_type = "premium"
     plan.stripe_customer_id = stripe_customer_id
     plan.stripe_subscription_id = stripe_subscription_id
-    plan.save(update_fields=["plan_type", "stripe_customer_id", "stripe_subscription_id"])
+    plan.cancel_at_period_end = False
+    plan.cancel_at = None
+    plan.save(update_fields=["plan_type", "stripe_customer_id", "stripe_subscription_id", "cancel_at_period_end", "cancel_at"])
+    logger.info("[upgrade] UserPlan saved as premium for user=%s", user.email)
 
     if was_free:
         grant_monthly_credits(user)
@@ -122,8 +130,25 @@ def downgrade_to_free(user):
     if plan:
         plan.plan_type = "free"
         plan.stripe_subscription_id = ""
-        plan.save(update_fields=["plan_type", "stripe_subscription_id"])
+        plan.cancel_at_period_end = False
+        plan.cancel_at = None
+        plan.save(update_fields=["plan_type", "stripe_subscription_id", "cancel_at_period_end", "cancel_at"])
     return plan
+
+
+def set_subscription_cancellation(user, cancel_at_period_end: bool, cancel_at=None):
+    """
+    Mark a premium subscription as pending cancellation (cancel_at_period_end=True)
+    without immediately downgrading the plan.
+    If cancel_at_period_end is False (user reactivated), clears the cancellation flags.
+    """
+    from django.utils.timezone import datetime as tz_datetime
+    plan = getattr(user, "plan", None)
+    if not plan:
+        return
+    plan.cancel_at_period_end = cancel_at_period_end
+    plan.cancel_at = cancel_at
+    plan.save(update_fields=["cancel_at_period_end", "cancel_at"])
 
 
 def renew_monthly_credits(user):

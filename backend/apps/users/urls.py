@@ -13,6 +13,7 @@ from .views import (
     SetUsernameView,
     CheckUsernameView,
     GoogleAuthView,
+    ProfileStatsView,
 )
 
 app_name = "users"
@@ -30,4 +31,5 @@ urlpatterns = [
     path("check-username/<str:username>/", CheckUsernameView.as_view(), name="check-username"),
     path("google/", GoogleAuthView.as_view(), name="google-auth"),
     path("logout/", LogoutView.as_view(), name="logout"),
+    path("profile-stats/", ProfileStatsView.as_view(), name="profile-stats"),
 ]

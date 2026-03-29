@@ -50,6 +50,8 @@ export interface BalanceResponse {
   plan: {
     plan_type: "free" | "premium";
     started_at: string | null;
+    cancel_at_period_end?: boolean;
+    cancel_at?: string | null;
   };
 }
 

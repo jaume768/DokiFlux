@@ -293,10 +293,13 @@ Se aplica solo al endpoint `/api/generate/`.
 - **Backward compatible** — Si solo `OPENAI_API_KEY` está definida (sin `OPENAI_API_KEYS`), se usa como fallback. Ídem para Anthropic y Gemini.
 - **Message format conversion** — Cada provider convierte mensajes internos a su formato nativo (OpenAI: `developer`/`user`/`assistant`, Anthropic: `system` param + `user`/`assistant`, Gemini: `system_instruction` + `user`/`model`).
 
-**Pendiente (Fase 4b — 📋):**
-- **Stripe** — Suscripciones (free → premium), compra de créditos adicionales, webhooks para renovación automática.
+**Fase 4b — Billing + Snapshots ✅:**
+- **Stripe** — Suscripciones free → premium con Stripe Checkout. `UserPlan` con `stripe_customer_id` + `stripe_subscription_id`. Webhook handler + endpoint `verify-session` como fallback fiable sin depender del webhook en desarrollo. Créditos Premium ($20) concedidos automáticamente al upgrade. (4242 4242 4242 4242, 12/26, 123)
+- **Project snapshots** — Campos `file_map_snapshot` (estado antes) y `result_file_map` (estado después) en modelo `Generation`. Permite restaurar cualquier versión anterior de un proyecto.
+- **Página de perfil** — `/app/profile` con estadísticas de uso (proyectos, generaciones, coste, modelo favorito, tokens), gestión de suscripción inline y enlace al portal de Stripe.
+
+**Pendiente (Fase 4c — 📋):**
 - **Celery + Redis** — Tareas async: expiración de grants, envío de emails masivos, analytics, limpieza de proyectos huérfanos.
-- **Project snapshots** — Versionado de proyectos vinculado a cada generación. "Undo" para volver al estado anterior.
 - **S3 activo** — Lógica de upload/download de file_map a S3 (campo ya preparado).
 
 ---

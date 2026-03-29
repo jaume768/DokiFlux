@@ -159,21 +159,26 @@ export function Sidebar() {
             </div>
           </div>
         )}
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
-          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-            {user?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-xs font-medium truncate">
-              {user?.username || user?.email}
+        <div className="flex items-center gap-1 rounded-lg hover:bg-muted transition-colors">
+          <button
+            onClick={() => router.push("/app/profile")}
+            className="flex items-center gap-2 px-3 py-2 flex-1 min-w-0 text-left"
+          >
+            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+              {user?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
             </div>
-          </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-medium truncate">
+                {user?.username || user?.email}
+              </div>
+            </div>
+          </button>
           <ThemeToggle />
           <Button
             variant="ghost"
             size="icon-xs"
             onClick={logout}
-            className="shrink-0"
+            className="shrink-0 mr-1"
           >
             <LogOut className="w-3.5 h-3.5" />
           </Button>

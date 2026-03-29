@@ -1,7 +1,7 @@
 "use client";
 
 import { XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function BillingCancelPage() {
@@ -20,12 +20,12 @@ export default function BillingCancelPage() {
           No se ha realizado ningún cargo. Puedes actualizar a Premium cuando quieras.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button asChild>
-            <Link href="/app/billing">Ver planes</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/app">Ir al dashboard</Link>
-          </Button>
+          <Link href="/app/billing" className={buttonVariants()}>
+            Ver planes
+          </Link>
+          <Link href="/app" className={buttonVariants({ variant: "outline" })}>
+            Ir al dashboard
+          </Link>
         </div>
       </div>
     </div>
