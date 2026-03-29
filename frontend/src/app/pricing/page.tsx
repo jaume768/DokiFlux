@@ -82,11 +82,10 @@ export default function PricingPage() {
               "Sin badge de marca",
               "Créditos adicionales comprables",
             ]}
-            cta="Próximamente"
-            ctaHref="#"
+            cta="Actualizar a Premium"
+            ctaHref="/app/billing"
             highlighted
             badge="Popular"
-            disabled
           />
           <PlanCard
             name="Business"

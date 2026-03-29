@@ -19,6 +19,8 @@ class UserPlan(models.Model):
         max_length=20, choices=PLAN_CHOICES, default="free"
     )
     started_at = models.DateTimeField(auto_now_add=True)
+    stripe_customer_id = models.CharField(max_length=100, blank=True, default="")
+    stripe_subscription_id = models.CharField(max_length=100, blank=True, default="")
 
     class Meta:
         db_table = "user_plans"

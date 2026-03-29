@@ -196,6 +196,12 @@ GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", default="")
 AUTO_VERIFY_EMAIL = config("AUTO_VERIFY_EMAIL", default=False, cast=bool)
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
 
+# --- Stripe ---
+
+STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
+STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="")
+STRIPE_PREMIUM_PRICE_ID = config("STRIPE_PREMIUM_PRICE_ID", default="")
+
 # --- AI Provider API Keys ---
 # Single key (backward compat)
 OPENAI_API_KEY = config("OPENAI_API_KEY", default="")

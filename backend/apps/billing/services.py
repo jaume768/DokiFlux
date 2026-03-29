@@ -69,8 +69,9 @@ def grant_monthly_credits(user):
     Grant monthly credits based on the user's plan.
     Creates a CreditGrant and logs a CreditTransaction.
     """
-    plan = getattr(user, "plan", None)
-    if not plan:
+    try:
+        plan = UserPlan.objects.get(user=user)
+    except UserPlan.DoesNotExist:
         plan = UserPlan.objects.create(user=user, plan_type="free")
 
     plan_def = PLAN_DEFINITIONS.get(plan.plan_type, PLAN_DEFINITIONS["free"])
@@ -93,3 +94,40 @@ def grant_monthly_credits(user):
     )
 
     return grant
+
+
+def upgrade_to_premium(user, stripe_customer_id: str, stripe_subscription_id: str):
+    """
+    Upgrade a user to the premium plan.
+    Updates UserPlan, saves Stripe IDs, and grants premium monthly credits.
+    """
+    plan, _ = UserPlan.objects.get_or_create(user=user, defaults={"plan_type": "free"})
+    was_free = plan.plan_type != "premium"
+    plan.plan_type = "premium"
+    plan.stripe_customer_id = stripe_customer_id
+    plan.stripe_subscription_id = stripe_subscription_id
+    plan.save(update_fields=["plan_type", "stripe_customer_id", "stripe_subscription_id"])
+
+    if was_free:
+        grant_monthly_credits(user)
+
+    return plan
+
+
+def downgrade_to_free(user):
+    """
+    Downgrade a user to the free plan (subscription cancelled/expired).
+    """
+    plan = getattr(user, "plan", None)
+    if plan:
+        plan.plan_type = "free"
+        plan.stripe_subscription_id = ""
+        plan.save(update_fields=["plan_type", "stripe_subscription_id"])
+    return plan
+
+
+def renew_monthly_credits(user):
+    """
+    Called on each successful Stripe invoice payment to grant monthly credits.
+    """
+    return grant_monthly_credits(user)
