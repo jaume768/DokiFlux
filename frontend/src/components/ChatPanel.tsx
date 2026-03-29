@@ -5,15 +5,18 @@ import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TokenUsageBadge } from "@/components/TokenUsage";
 import { Message, GenerationProgress } from "@/types";
-import { User, Bot, AlertCircle, Loader2, Code2, Brain, FileCode2, Package } from "lucide-react";
+import { User, Bot, AlertCircle, Loader2, Code2, Brain, FileCode2, Package, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ChatPanelProps {
   messages: Message[];
   isLoading: boolean;
   genProgress?: GenerationProgress;
+  onRestore?: (generationId: number) => void;
+  isRestoring?: boolean;
 }
 
-function AssistantMessage({ msg }: { msg: Message }) {
+function AssistantMessage({ msg, onRestore, isRestoring }: { msg: Message; onRestore?: (generationId: number) => void; isRestoring?: boolean }) {
   const msgType = msg.type || (msg.rawCode ? "code" : msg.content.startsWith("Error:") || msg.content === "Generation cancelled." ? "error" : "chat");
 
   if (msgType === "chat") {
@@ -72,7 +75,21 @@ function AssistantMessage({ msg }: { msg: Message }) {
             {msg.content}
           </span>
         </div>
-        {msg.usage && <TokenUsageBadge usage={msg.usage} />}
+        <div className="flex items-center gap-2">
+          {msg.usage && <TokenUsageBadge usage={msg.usage} />}
+          {msg.generationId && onRestore && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground gap-1"
+              onClick={() => onRestore(msg.generationId!)}
+              disabled={isRestoring}
+            >
+              <RotateCcw className="w-3 h-3" />
+              Restore
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -170,7 +187,7 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
   );
 }
 
-export function ChatPanel({ messages, isLoading, genProgress }: ChatPanelProps) {
+export function ChatPanel({ messages, isLoading, genProgress, onRestore, isRestoring }: ChatPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -218,7 +235,7 @@ export function ChatPanel({ messages, isLoading, genProgress }: ChatPanelProps) 
                   {msg.content}
                 </p>
               ) : (
-                <AssistantMessage msg={msg} />
+                <AssistantMessage msg={msg} onRestore={onRestore} isRestoring={isRestoring} />
               )}
             </div>
           </div>

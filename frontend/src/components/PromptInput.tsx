@@ -2,10 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { SendHorizonal, Loader2, Square, Coins } from "lucide-react";
-import { CostEstimate } from "@/types";
-import { formatCost } from "@/lib/pricing";
-import { API_BASE } from "@/lib/api";
+import { SendHorizonal, Square } from "lucide-react";
 
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
@@ -16,13 +13,9 @@ interface PromptInputProps {
   projectId?: number;
 }
 
-export function PromptInput({ onSubmit, onCancel, isLoading, currentProject, chatHistory, projectId }: PromptInputProps) {
+export function PromptInput({ onSubmit, onCancel, isLoading }: PromptInputProps) {
   const [value, setValue] = useState("");
-  const [estimate, setEstimate] = useState<CostEstimate | null>(null);
-  const [estimateLoading, setEstimateLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const abortEstimateRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!isLoading && textareaRef.current) {
@@ -30,73 +23,15 @@ export function PromptInput({ onSubmit, onCancel, isLoading, currentProject, cha
     }
   }, [isLoading]);
 
-  const fetchEstimate = useCallback(
-    async (prompt: string) => {
-      if (abortEstimateRef.current) {
-        abortEstimateRef.current.abort();
-      }
-
-      const trimmed = prompt.trim();
-      if (!trimmed) {
-        setEstimate(null);
-        return;
-      }
-
-      const controller = new AbortController();
-      abortEstimateRef.current = controller;
-      setEstimateLoading(true);
-
-      try {
-        const res = await fetch(`${API_BASE}/estimate/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            prompt: trimmed,
-            ...(projectId ? { project_id: projectId } : {}),
-            chat_history: chatHistory,
-          }),
-          signal: controller.signal,
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setEstimate(data);
-        }
-      } catch {
-        // Abort or network error — ignore
-      } finally {
-        setEstimateLoading(false);
-      }
-    },
-    [currentProject, chatHistory]
-  );
-
   function handleChange(newValue: string) {
     setValue(newValue);
-
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-
-    debounceRef.current = setTimeout(() => {
-      fetchEstimate(newValue);
-    }, 600);
   }
-
-  // Clear estimate when generation starts or finishes
-  useEffect(() => {
-    if (isLoading) {
-      setEstimate(null);
-    }
-  }, [isLoading]);
 
   function handleSubmit() {
     const trimmed = value.trim();
     if (!trimmed || isLoading) return;
     onSubmit(trimmed);
     setValue("");
-    setEstimate(null);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -133,19 +68,6 @@ export function PromptInput({ onSubmit, onCancel, isLoading, currentProject, cha
           style={{ minHeight: "44px", maxHeight: "300px" }}
         />
         <div className="absolute bottom-2 right-2 flex items-center gap-2">
-          {!isLoading && estimate && (
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full border">
-              <Coins className="w-3 h-3" />
-              <span>
-                Est. {formatCost(estimate.estimatedCostMin)} – {formatCost(estimate.estimatedCostMax)}
-              </span>
-            </div>
-          )}
-          {!isLoading && estimateLoading && (
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Loader2 className="w-3 h-3 animate-spin" />
-            </div>
-          )}
           {isLoading ? (
             <Button
               onClick={onCancel}

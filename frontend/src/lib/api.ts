@@ -82,9 +82,6 @@ export async function api<T = unknown>(
         body: body ? JSON.stringify(body) : undefined,
       });
     } else {
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
       throw new ApiError(401, { detail: "Session expired" });
     }
   }

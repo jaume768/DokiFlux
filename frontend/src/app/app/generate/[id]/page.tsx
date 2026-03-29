@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { apiGet, apiPatch, API_BASE } from "@/lib/api";
+import { apiGet, apiPatch, apiPost, API_BASE } from "@/lib/api";
 import type { ProjectDetail, ChatMessageResponse, PaginatedResponse } from "@/types/auth";
 import { ChatPanel } from "@/components/ChatPanel";
 import { PromptInput } from "@/components/PromptInput";
@@ -37,6 +37,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const [generationKey, setGenerationKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
+  const [isRestoring, setIsRestoring] = useState(false);
   const codeRef = useRef("");
   const abortRef = useRef<AbortController | null>(null);
   const currentFilesRef = useRef<FileMap>({});
@@ -96,6 +97,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             type: m.message_type as "chat" | "code" | "error",
             usage: m.usage || undefined,
             rawCode: m.raw_code || undefined,
+            generationId: m.generation_id ?? undefined,
           }));
           setMessages(loadedMessages);
           messagesRef.current = loadedMessages;
@@ -196,6 +198,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         let chatText = "";
         let buffer = "";
         let receivedUsage: { inputTokens: number; outputTokens: number; cost: number } | null = null;
+        let streamingGenerationId: number | null = null;
         let hasCode = false;
         let hasChat = false;
 
@@ -254,6 +257,10 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
 
           if (chunk.type === "usage" && chunk.usage) {
             receivedUsage = chunk.usage;
+          }
+
+          if (chunk.type === "generation_id" && chunk.id) {
+            streamingGenerationId = chunk.id;
           }
 
           if (chunk.type === "error") {
@@ -334,6 +341,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             usage: receivedUsage ?? undefined,
             rawCode: serializeFileMap(finalFiles),
             type: "code",
+            generationId: streamingGenerationId ?? undefined,
           };
           setMessages((prev) => [...prev, codeMessage]);
           autoFixCountRef.current = 0;
@@ -391,6 +399,48 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
       }
     },
     [projectId, buildCompressedPayload, refreshBalance, selectedModel]
+  );
+
+  const handleRestore = useCallback(
+    async (generationId: number) => {
+      if (isRestoring || isLoading) return;
+      setIsRestoring(true);
+      try {
+        const data = await apiPost<{ file_map: Record<string, string> }>(
+          `/projects/${projectId}/restore/${generationId}/`,
+          {}
+        );
+        if (data.file_map && Object.keys(data.file_map).length > 0) {
+          setCurrentFiles(data.file_map);
+          currentFilesRef.current = data.file_map;
+          setGenerationKey((k) => k + 1);
+        }
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant" as const,
+            content: "Project restored to previous version.",
+            timestamp: Date.now(),
+            type: "chat" as const,
+          },
+        ]);
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant" as const,
+            content: "Error: Could not restore to this version.",
+            timestamp: Date.now(),
+            type: "error" as const,
+          },
+        ]);
+      } finally {
+        setIsRestoring(false);
+      }
+    },
+    [projectId, isRestoring, isLoading]
   );
 
   async function handleTitleSave() {
@@ -597,6 +647,8 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             messages={messages}
             isLoading={isLoading}
             genProgress={genProgress}
+            onRestore={handleRestore}
+            isRestoring={isRestoring}
           />
           <PromptInput
             onSubmit={handleSubmit}

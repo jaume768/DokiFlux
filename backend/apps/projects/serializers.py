@@ -90,6 +90,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             "message_type",
             "usage",
             "raw_code",
+            "generation_id",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]

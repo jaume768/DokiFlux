@@ -9,6 +9,7 @@ class Generation(models.Model):
         ("pending", "Pending"),
         ("streaming", "Streaming"),
         ("completed", "Completed"),
+        ("cancelled", "Cancelled"),
         ("failed", "Failed"),
         ("no_changes", "No Changes"),
     ]
@@ -32,6 +33,10 @@ class Generation(models.Model):
         max_length=20, choices=STATUS_CHOICES, default="pending"
     )
     files_changed = models.IntegerField(default=0)
+    file_map_snapshot = models.JSONField(
+        null=True, blank=True,
+        help_text="Snapshot of project file_map BEFORE this generation (for restore).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 

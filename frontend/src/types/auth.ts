@@ -103,6 +103,7 @@ export interface ChatMessageResponse {
   message_type: "chat" | "code" | "error";
   usage: { inputTokens: number; outputTokens: number; cost: number } | null;
   raw_code: string;
+  generation_id: number | null;
   created_at: string;
 }
 

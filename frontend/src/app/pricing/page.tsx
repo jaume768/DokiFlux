@@ -11,7 +11,7 @@ const FAQ_ITEMS = [
   {
     question: "¿Cuánto cuesta una generación?",
     answer:
-      "El coste depende de la complejidad del prompt y la longitud del código generado. Una generación simple cuesta ~$0.01-0.03, mientras que una generación compleja con muchos archivos puede costar ~$0.05-0.15. Siempre verás una estimación antes de generar.",
+      "El coste depende de la complejidad del prompt y la longitud del código generado. Cada generación consume créditos de tu saldo, y siempre verás el crédito consumido al finalizar.",
   },
   {
     question: "¿Los créditos expiran?",
@@ -105,49 +105,6 @@ export default function PricingPage() {
             ctaHref="#"
             disabled
           />
-        </div>
-      </section>
-
-      {/* Cost breakdown */}
-      <section className="border-t bg-muted/20 py-16">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <h2 className="mb-8 text-center text-2xl font-bold">
-            ¿Cuánto cuesta generar?
-          </h2>
-          <div className="overflow-hidden rounded-xl border bg-card">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-3 text-left font-medium">Tipo de generación</th>
-                  <th className="px-4 py-3 text-right font-medium">Coste aprox.</th>
-                  <th className="hidden px-4 py-3 text-right font-medium sm:table-cell">
-                    Con $5 (Free)
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { type: "Componente simple", cost: "$0.01 - 0.03", count: "~170 - 500" },
-                  { type: "Página completa", cost: "$0.03 - 0.08", count: "~60 - 170" },
-                  { type: "App multi-archivo", cost: "$0.05 - 0.15", count: "~33 - 100" },
-                  { type: "Iteración / fix", cost: "$0.01 - 0.03", count: "~170 - 500" },
-                ].map((row) => (
-                  <tr key={row.type} className="border-b last:border-b-0">
-                    <td className="px-4 py-3">{row.type}</td>
-                    <td className="px-4 py-3 text-right font-mono text-xs">
-                      {row.cost}
-                    </td>
-                    <td className="hidden px-4 py-3 text-right text-muted-foreground sm:table-cell">
-                      {row.count} gen.
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            Los costes varían según la complejidad del prompt y la longitud del código generado.
-          </p>
         </div>
       </section>
 

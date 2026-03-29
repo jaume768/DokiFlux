@@ -6,6 +6,7 @@ export interface Message {
   usage?: TokenUsage;
   rawCode?: string;
   type?: "chat" | "code" | "error";
+  generationId?: number;
 }
 
 export interface TokenUsage {
@@ -40,10 +41,11 @@ export interface CostEstimate {
 }
 
 export interface StreamChunk {
-  type: "text" | "chat" | "usage" | "error" | "done";
+  type: "text" | "chat" | "usage" | "error" | "done" | "generation_id";
   content?: string;
   usage?: TokenUsage;
   error?: string;
+  id?: number;
 }
 
 export type GenerationPhase =

@@ -56,6 +56,7 @@ class ChatMessage(models.Model):
     )
     usage = models.JSONField(null=True, blank=True)
     raw_code = models.TextField(blank=True)
+    generation_id = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

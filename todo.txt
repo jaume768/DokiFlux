@@ -29,7 +29,47 @@
 24- Enseñar anuncios si se genera con ia gratis?
 25- Oauth con google y github y envio de mail con Brevo
 26- Hacer auditoria de seguridad y posibles refactorizaciones
+27- Multi framework (Next.js, React (opcion gratis), Vue, Angular, Svelte, etc.) en premium.
+28- Añadir que la gente pueda hacer tickets
+29- Añadir django-hijacker para que los admins puedan ver como un usuario
 
+Usar DokiFlux como motor interno + demo para vender una productized service premium:
+“Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.
 
-Ofrecer a los usuarios diferentes servicios después de generar los proyectos, hosting, dominio, base de datos, etc.
-- Multi framework (Next.js, React (opcion gratis), Vue, Angular, Svelte, etc.) en premium.
+Prepara un “demo flow” impecable: plantilla/prompts → generación → preview → export → propuesta de producción.
+
+Ofrecer a los usuarios diferentes servicios después de generar los proyectos, hosting, dominio, base de datos, etc. :
+    - "De prototipo a producción" (paquete fijo)
+    - CTA contextual, no pop‑up genérico: en momentos de “handoff” (Export ZIP, Push a repo, Deploy) ofreces:
+    “¿Quieres que lo dejemos listo para producción (seguridad, deploy, dominio, analítica, RGPD) en X días? Ver pack.”
+    - Transparencia: “esto es un prototipador; para producción hay trabajo”
+    - Integraciones y automatización B2B (donde vive el ROI):
+        - CRM/ERP, pasarelas de pago, facturación, SSO, webhooks, data pipelines, etc. 
+        - Aquí el valor es “hago que tu negocio funcione”, no “te hago una web”.
+    - Product discovery y prototyping workshops (pagados)
+        - Taller de 1–2 sesiones: se crea prototipo con DokiFlux + backlog + estimación. Alta conversión a delivery.    
+    - "Convertimos prototipos generados con IA en software B2B listo para producción en 2–6 semanas (con seguridad, despliegue, RGPD y mantenimiento)."    
+
+Incluir Observabilidad: métricas de coste por usuario, latencia, tasa de fallo de generación, logs con trazabilidad.
+
+Riesgos legales a tener en cuenta:
+
+- RGPD: vas a tratar datos personales (cuentas, emails) y potencialmente datos personales dentro del código que el usuario pegue/suba. 
+        Necesitas base legal, minimización, retención, derechos, y acuerdos con encargados. 
+- Transferencias internacionales: al usar APIs de modelos (OpenAI/Anthropic/Google), debes gestionar subprocesadores, transferencias fuera del EEE, y tu arquitectura contractual. 
+- Cookies y medición: si usas analítica, debes cumplir criterios AEPD y LSSI. 
+        La AEPD ha publicado guías específicas y notas de implementación. 
+- EU AI Act: si comercializas un sistema que genera contenido/código con IA, tienes obligaciones de transparencia y gobernanza según rol (proveedor/deployer) y el tipo de uso. 
+        No es “parálisis legal”, pero sí exige disciplina mínima.
+
+Para la empresa:
+
+Productized service + retainer
+Oferta ejemplo (España/UE, rangos realistas):
+
+- Sprint “Prototipo validable” (5–10 días): 1.500€–4.000€
+Entrega: prototipo UI navegable + backlog + estimación + repo base.
+- “De prototipo a producción” (2–6 semanas): 8.000€–30.000€
+Entrega: app deployada, auth, base de datos, CI/CD, observabilidad básica, handover.
+- Mantenimiento: 500€–3.000€/mes (según SLA y volumen)
+Incluye bolsa de horas, parches, updates, pequeñas mejoras.

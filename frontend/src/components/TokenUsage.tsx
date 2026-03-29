@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { formatCost, formatTokens } from "@/lib/pricing";
+import { formatCost } from "@/lib/pricing";
 import { TokenUsage as TokenUsageType, SessionStats } from "@/types";
 import { Coins, Zap } from "lucide-react";
 
@@ -12,10 +12,6 @@ interface TokenUsageBadgeProps {
 export function TokenUsageBadge({ usage }: TokenUsageBadgeProps) {
   return (
     <div className="flex items-center gap-2 text-xs">
-      <Badge variant="secondary" className="gap-1 font-mono">
-        <Zap className="w-3 h-3" />
-        {formatTokens(usage.inputTokens)} in / {formatTokens(usage.outputTokens)} out
-      </Badge>
       <Badge variant="outline" className="gap-1 font-mono">
         <Coins className="w-3 h-3" />
         {formatCost(usage.cost)}
@@ -36,10 +32,6 @@ export function SessionStatsBar({ stats }: SessionStatsBarProps) {
       <span className="flex items-center gap-1 shrink-0">
         <Zap className="w-3 h-3" />
         <span className="font-medium">{stats.generationCount}</span> <span className="hidden sm:inline">generaciones</span><span className="sm:hidden">gen</span>
-      </span>
-      <span className="text-border shrink-0 hidden sm:inline">|</span>
-      <span className="shrink-0 hidden sm:inline">
-        {formatTokens(stats.totalInputTokens)} in / {formatTokens(stats.totalOutputTokens)} out
       </span>
       <span className="text-border shrink-0">|</span>
       <span className="flex items-center gap-1 font-medium shrink-0">

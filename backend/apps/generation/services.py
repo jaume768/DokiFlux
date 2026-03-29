@@ -92,14 +92,18 @@ async def stream_generation(
     # 3. Build messages
     messages = build_messages(prompt, current_project, chat_history)
 
-    # 4. Create Generation record
-    generation = await _create_generation(user, project, prompt, model)
+    # 4. Create Generation record (with snapshot of current state)
+    generation = await _create_generation(user, project, prompt, model, file_map or {})
 
-    # 5. Update status to streaming
+    # 5. Send generation_id to frontend immediately so Restore button can be shown
+    yield {"type": "generation_id", "id": generation.id}
+
+    # 6. Update status to streaming
     generation.status = "streaming"
     await _save_generation(generation)
 
-    # 6. Stream from provider
+    # 7. Stream from provider — wrapped in try/finally so billing always runs,
+    #    including when the client cancels mid-stream (GeneratorExit via aclose()).
     provider = get_provider(model)
     usage_data = None
     has_code = False
@@ -107,36 +111,130 @@ async def stream_generation(
     full_code = ""
     chat_text = ""
     error_occurred = False
+    completed_normally = False
 
     model_config = get_model_config(model)
     max_tokens = model_config["max_output_tokens"]
 
-    async for chunk in provider.stream_generate(messages, model=model, max_tokens=max_tokens):
-        chunk_type = chunk.get("type")
+    try:
+        async for chunk in provider.stream_generate(messages, model=model, max_tokens=max_tokens):
+            chunk_type = chunk.get("type")
 
-        if chunk_type == "text":
-            has_code = True
-            full_code += chunk.get("content", "")
+            if chunk_type == "text":
+                has_code = True
+                full_code += chunk.get("content", "")
 
-        if chunk_type == "chat":
-            has_chat = True
-            chat_text += chunk.get("content", "")
+            if chunk_type == "chat":
+                has_chat = True
+                chat_text += chunk.get("content", "")
 
-        if chunk_type == "usage":
-            usage_data = chunk.get("usage", {})
+            if chunk_type == "usage":
+                usage_data = chunk.get("usage", {})
 
-        if chunk_type == "error":
-            error_occurred = True
+            if chunk_type == "error":
+                error_occurred = True
 
-        # Forward chunk to client
-        yield chunk
+            yield chunk
 
-    # 7. Post-stream: update Generation record and handle billing
-    if error_occurred:
+        completed_normally = True
+    finally:
+        cancelled = not completed_normally and not error_occurred
+        await _finalize_generation(
+            generation=generation,
+            usage_data=usage_data,
+            has_code=has_code,
+            has_chat=has_chat,
+            full_code=full_code,
+            chat_text=chat_text,
+            error_occurred=error_occurred,
+            cancelled=cancelled,
+            user=user,
+            project=project,
+            prompt=prompt,
+            messages=messages,
+        )
+
+
+# --- Async DB helpers (sync_to_async wrappers) ---
+
+
+@sync_to_async
+def _create_generation(user, project, prompt, model, file_map_snapshot=None):
+    return Generation.objects.create(
+        user=user,
+        project=project,
+        prompt=prompt,
+        model=model,
+        file_map_snapshot=file_map_snapshot,
+    )
+
+
+@sync_to_async
+def _save_generation(generation):
+    generation.save()
+
+
+@sync_to_async
+def _create_message(project, role, content, message_type, usage=None, raw_code="", generation_id=None):
+    return ChatMessage.objects.create(
+        project=project,
+        role=role,
+        content=content,
+        message_type=message_type,
+        usage=usage,
+        raw_code=raw_code,
+        generation_id=generation_id,
+    )
+
+
+async def _finalize_generation(
+    generation, usage_data, has_code, has_chat,
+    full_code, chat_text, error_occurred, cancelled,
+    user, project, prompt, messages,
+):
+    """Handle billing and record updates after streaming ends (normally, cancelled, or error)."""
+
+    if error_occurred and not cancelled:
         generation.status = "failed"
         await _save_generation(generation)
         return
 
+    if cancelled:
+        # If usage chunk didn't arrive before cancel, estimate from received content
+        if not usage_data:
+            input_chars = sum(len(m.get("content", "")) for m in messages)
+            output_chars = len(full_code) + len(chat_text)
+            est_input = max(input_chars // 4, 0)
+            est_output = max(output_chars // 4, 0)
+            if est_input > 0 or est_output > 0:
+                est_cost = calculate_cost(est_input, est_output, generation.model)
+                usage_data = {
+                    "inputTokens": est_input,
+                    "outputTokens": est_output,
+                    "cost": float(est_cost),
+                }
+
+        if usage_data:
+            generation.input_tokens = usage_data.get("inputTokens", 0)
+            generation.output_tokens = usage_data.get("outputTokens", 0)
+            generation.cost = Decimal(str(usage_data.get("cost", 0)))
+
+        generation.status = "cancelled"
+        generation.completed_at = now()
+
+        actual_cost = generation.cost
+        if actual_cost > 0:
+            await sync_to_async(consume_credits)(
+                user,
+                actual_cost,
+                description=f"Cancelled gen #{generation.id}: {prompt[:100]}",
+                generation_id=generation.id,
+            )
+
+        await _save_generation(generation)
+        return
+
+    # --- Normal completion ---
     if usage_data:
         generation.input_tokens = usage_data.get("inputTokens", 0)
         generation.output_tokens = usage_data.get("outputTokens", 0)
@@ -146,7 +244,6 @@ async def stream_generation(
         generation.status = "completed"
         generation.completed_at = now()
 
-        # Deduct actual cost
         actual_cost = generation.cost
         if actual_cost > 0:
             success = await sync_to_async(consume_credits)(
@@ -158,20 +255,10 @@ async def stream_generation(
             if not success:
                 logger.warning(
                     "Failed to deduct credits for generation %s (user %s, cost %s)",
-                    generation.id,
-                    user.email,
-                    actual_cost,
+                    generation.id, user.email, actual_cost,
                 )
 
-        # Save user message
-        await _create_message(
-            project=project,
-            role="user",
-            content=prompt,
-            message_type="chat",
-        )
-
-        # Save assistant code message
+        await _create_message(project=project, role="user", content=prompt, message_type="chat")
         await _create_message(
             project=project,
             role="assistant",
@@ -179,12 +266,13 @@ async def stream_generation(
             message_type="code",
             usage=usage_data,
             raw_code=full_code,
+            generation_id=generation.id,
         )
+
     elif has_chat:
         generation.status = "completed"
         generation.completed_at = now()
 
-        # Chat-only: still costs tokens, deduct
         actual_cost = generation.cost
         if actual_cost > 0:
             await sync_to_async(consume_credits)(
@@ -194,15 +282,7 @@ async def stream_generation(
                 generation_id=generation.id,
             )
 
-        # Save user message
-        await _create_message(
-            project=project,
-            role="user",
-            content=prompt,
-            message_type="chat",
-        )
-
-        # Save assistant chat message
+        await _create_message(project=project, role="user", content=prompt, message_type="chat")
         await _create_message(
             project=project,
             role="assistant",
@@ -210,37 +290,8 @@ async def stream_generation(
             message_type="chat",
             usage=usage_data,
         )
+
     else:
         generation.status = "no_changes"
 
     await _save_generation(generation)
-
-
-# --- Async DB helpers (sync_to_async wrappers) ---
-
-
-@sync_to_async
-def _create_generation(user, project, prompt, model):
-    return Generation.objects.create(
-        user=user,
-        project=project,
-        prompt=prompt,
-        model=model,
-    )
-
-
-@sync_to_async
-def _save_generation(generation):
-    generation.save()
-
-
-@sync_to_async
-def _create_message(project, role, content, message_type, usage=None, raw_code=""):
-    return ChatMessage.objects.create(
-        project=project,
-        role=role,
-        content=content,
-        message_type=message_type,
-        usage=usage,
-        raw_code=raw_code,
-    )

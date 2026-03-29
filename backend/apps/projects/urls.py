@@ -20,4 +20,9 @@ urlpatterns = [
         views.ChatMessageListView.as_view(),
         name="messages",
     ),
+    path(
+        "<int:pk>/restore/<int:generation_id>/",
+        views.ProjectRestoreView.as_view(),
+        name="restore",
+    ),
 ]
