@@ -32,6 +32,11 @@
 27- Multi framework (Next.js, React (opcion gratis), Vue, Angular, Svelte, etc.) en premium.
 28- Añadir que la gente pueda hacer tickets
 29- Añadir django-hijacker para que los admins puedan ver como un usuario
+30- cambiar la landing para decir que es una pltaforma para hacer prototipos
+31- algunas veces se queda la preview en blanco porque el error solo esta en la consola y no se hace el auto arreglo
+32- Si inicio una generación y salgo del chat, que se siga generando en segundo plano y en el chat salga algo como que se esta haciendo, como en chatgpt
+33- Hacer que los modelos de Anthropic y google sean como los de OpenAI, para tener codigo preview mientras se genera
+34- Revisar si en los modelos de google/antrhopic se pasa el codigo anterior de contexto, creo que no, solo en openai
 
 Usar DokiFlux como motor interno + demo para vender una productized service premium:
 “Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.

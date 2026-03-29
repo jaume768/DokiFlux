@@ -61,7 +61,7 @@ MODEL_REGISTRY = {
     # ── Anthropic ─────────────────────────────────────────────
     "claude-sonnet-4.6": {
         "provider": "anthropic",
-        "api_model": "claude-sonnet-4-6-20260214",
+        "api_model": "claude-sonnet-4-6",
         "input_per_million": Decimal("7.50"),
         "output_per_million": Decimal("37.50"),
         "max_output_tokens": 16384,
@@ -70,7 +70,7 @@ MODEL_REGISTRY = {
     },
     "claude-opus-4.6": {
         "provider": "anthropic",
-        "api_model": "claude-opus-4-6-20260214",
+        "api_model": "claude-opus-4-6",
         "input_per_million": Decimal("12.50"),
         "output_per_million": Decimal("62.50"),
         "max_output_tokens": 16384,
@@ -79,7 +79,7 @@ MODEL_REGISTRY = {
     },
     "claude-haiku-4.5": {
         "provider": "anthropic",
-        "api_model": "claude-haiku-4-5-20251022",
+        "api_model": "claude-haiku-4-5",
         "input_per_million": Decimal("2.50"),
         "output_per_million": Decimal("12.50"),
         "max_output_tokens": 8192,
