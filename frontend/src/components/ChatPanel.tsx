@@ -5,7 +5,8 @@ import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TokenUsageBadge } from "@/components/TokenUsage";
 import { Message, GenerationProgress } from "@/types";
-import { User, Bot, AlertCircle, Loader2, Code2, Brain, FileCode2, Package, RotateCcw } from "lucide-react";
+import { User, Bot, AlertCircle, Loader2, Code2, Brain, FileCode2, Package, RotateCcw, Sparkles } from "lucide-react";
+import { TaskProgress } from "@/components/TaskProgress";
 import { Button } from "@/components/ui/button";
 
 interface ChatPanelProps {
@@ -115,6 +116,12 @@ const PHASE_CONFIG = {
     color: "text-blue-500",
     barColor: "bg-blue-500",
   },
+  planning: {
+    label: "Planning files...",
+    icon: Sparkles,
+    color: "text-violet-500",
+    barColor: "bg-violet-500",
+  },
   writing: {
     label: "Writing code...",
     icon: FileCode2,
@@ -139,13 +146,32 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
   const phase = progress.phase;
   if (!phase) return null;
 
-  const config = PHASE_CONFIG[phase];
+  const hasTasks = progress.tasks && progress.tasks.length > 0;
+
+  if (hasTasks) {
+    return (
+      <div className="flex gap-3">
+        <div className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
+          <Bot className="w-3.5 h-3.5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <TaskProgress
+            thinking={progress.thinking}
+            tasks={progress.tasks!}
+            currentTaskIndex={progress.currentTaskIndex ?? -1}
+            completedFiles={progress.completedFiles ?? []}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const config = PHASE_CONFIG[phase] ?? PHASE_CONFIG["writing"];
   const Icon = config.icon;
 
-  // Heuristic progress: code gen typically produces 5k–25k chars
   const ESTIMATED_CHARS = 15000;
   let percent = 0;
-  if (phase === "analyzing") {
+  if (phase === "analyzing" || phase === "planning") {
     percent = 5;
   } else if (phase === "writing" || phase === "writing-files") {
     percent = Math.min(90, 10 + (progress.charsReceived / ESTIMATED_CHARS) * 80);
@@ -170,7 +196,6 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
             {config.label}{filesLabel}
           </span>
         </div>
-        {/* Progress bar */}
         <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-700 ease-out ${config.barColor}`}

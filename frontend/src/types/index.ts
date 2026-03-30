@@ -41,15 +41,26 @@ export interface CostEstimate {
 }
 
 export interface StreamChunk {
-  type: "text" | "chat" | "usage" | "error" | "done" | "generation_id";
+  type: "text" | "chat" | "usage" | "error" | "done" | "generation_id"
+      | "thinking" | "plan" | "task_start" | "file_chunk" | "task_done";
   content?: string;
   usage?: TokenUsage;
   error?: string;
   id?: number;
+  tasks?: PlanTask[];
+  file_path?: string;
+  index?: number;
+  total?: number;
+}
+
+export interface PlanTask {
+  file_path: string;
+  label: string;
 }
 
 export type GenerationPhase =
   | "analyzing"
+  | "planning"
   | "writing"
   | "writing-files"
   | "mounting"
@@ -60,4 +71,9 @@ export interface GenerationProgress {
   filesDetected: number;
   charsReceived: number;
   streamingCode: string;
+  thinking?: string;
+  tasks?: PlanTask[];
+  currentTaskIndex?: number;
+  currentTaskFile?: string;
+  completedFiles?: string[];
 }

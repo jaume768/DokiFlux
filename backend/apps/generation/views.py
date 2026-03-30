@@ -11,7 +11,7 @@ from apps.billing.services import get_balance
 from apps.projects.models import Project
 
 from .serializers import EstimateRequestSerializer, GenerateRequestSerializer
-from .services import stream_generation
+from .services import stream_generation, stream_phased_generation
 from .throttles import check_daily_generate_limit
 from .providers.registry import get_model_config, list_models, MODEL_REGISTRY, DEFAULT_MODEL
 
@@ -75,6 +75,7 @@ async def generate_view(request):
     prompt = data["prompt"]
     chat_history = data.get("chat_history", [])
     model = data.get("model", DEFAULT_MODEL)
+    mode = data.get("mode", "phased")
 
     # --- Verify project ownership ---
     try:
@@ -118,8 +119,10 @@ async def generate_view(request):
         )
 
     # --- Stream response ---
+    generator_fn = stream_phased_generation if mode == "phased" else stream_generation
+
     async def event_stream():
-        async for chunk in stream_generation(
+        async for chunk in generator_fn(
             user=user,
             project=project,
             prompt=prompt,

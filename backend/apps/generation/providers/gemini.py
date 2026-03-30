@@ -6,7 +6,7 @@ import httpx
 
 from .base import BaseProvider
 from .key_pool import get_gemini_key
-from .prompts import SYSTEM_PROMPT, GEMINI_GENERATE_UI_TOOL
+from .prompts import SYSTEM_PROMPT, GEMINI_GENERATE_UI_TOOL, PLANNER_SYSTEM_PROMPT
 from .registry import calculate_cost, get_model_config
 
 logger = logging.getLogger(__name__)
@@ -180,6 +180,42 @@ class GeminiProvider(BaseProvider):
                 "type": "error",
                 "error": "Something went wrong. Please try again.",
             }
+
+    async def call_planner(self, messages: list[dict], model: str) -> dict:
+        """Non-streaming planner call via Gemini generateContent API."""
+        config = get_model_config(model)
+        api_model = config["api_model"]
+
+        contents = self._convert_messages(messages)
+
+        payload = {
+            "system_instruction": {"parts": [{"text": PLANNER_SYSTEM_PROMPT}]},
+            "contents": contents,
+            "generation_config": {"max_output_tokens": 600, "temperature": 0.1},
+        }
+
+        api_key = get_gemini_key()
+        url = f"{GEMINI_API_BASE}/{api_model}:generateContent?key={api_key}"
+
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+                resp = await client.post(url, json=payload, headers={"Content-Type": "application/json"})
+                data = resp.json()
+                text = ""
+                for candidate in data.get("candidates", []):
+                    for part in candidate.get("content", {}).get("parts", []):
+                        if "text" in part:
+                            text += part["text"]
+                meta = data.get("usageMetadata", {})
+                plan = self._parse_plan(text)
+                plan["usage"] = {
+                    "inputTokens": meta.get("promptTokenCount", 0),
+                    "outputTokens": meta.get("candidatesTokenCount", 0),
+                }
+                return plan
+        except Exception as e:
+            logger.error("Gemini planner error: %s", str(e), exc_info=True)
+            return {"thinking": "", "files": [], "usage": {"inputTokens": 0, "outputTokens": 0}}
 
     @staticmethod
     def _convert_messages(messages: list[dict]) -> list[dict]:

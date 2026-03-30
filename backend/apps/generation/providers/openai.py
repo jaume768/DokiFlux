@@ -6,7 +6,7 @@ import httpx
 
 from .base import BaseProvider
 from .key_pool import get_openai_key
-from .prompts import SYSTEM_PROMPT, OPENAI_GENERATE_UI_TOOL
+from .prompts import SYSTEM_PROMPT, OPENAI_GENERATE_UI_TOOL, PLANNER_SYSTEM_PROMPT
 from .registry import calculate_cost, get_model_config
 
 logger = logging.getLogger(__name__)
@@ -173,3 +173,46 @@ class OpenAIProvider(BaseProvider):
         except Exception as e:
             logger.error("OpenAI provider error: %s", str(e), exc_info=True)
             yield {"type": "error", "error": "Something went wrong. Please try again."}
+
+    async def call_planner(self, messages: list[dict], model: str) -> dict:
+        """Non-streaming planner call via Chat Completions API."""
+        config = get_model_config(model)
+        api_model = config["api_model"]
+
+        chat_messages = [{"role": "system", "content": PLANNER_SYSTEM_PROMPT}]
+        for msg in messages:
+            if msg.get("role") not in ("system", "developer"):
+                chat_messages.append({"role": msg["role"], "content": msg["content"]})
+
+        payload = {
+            "model": api_model,
+            "messages": chat_messages,
+            "max_tokens": 600,
+            "temperature": 0.1,
+        }
+
+        api_key = get_openai_key()
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+                resp = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    json=payload,
+                    headers=headers,
+                )
+                data = resp.json()
+                text = data["choices"][0]["message"]["content"] or ""
+                usage = data.get("usage", {})
+                plan = self._parse_plan(text)
+                plan["usage"] = {
+                    "inputTokens": usage.get("prompt_tokens", 0),
+                    "outputTokens": usage.get("completion_tokens", 0),
+                }
+                return plan
+        except Exception as e:
+            logger.error("OpenAI planner error: %s", str(e), exc_info=True)
+            return {"thinking": "", "files": [], "usage": {"inputTokens": 0, "outputTokens": 0}}

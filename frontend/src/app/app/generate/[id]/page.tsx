@@ -188,6 +188,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             prompt,
             chat_history: chatHistory,
             model: selectedModel,
+            mode: "phased",
           }),
           signal: controller.signal,
         });
@@ -208,6 +209,8 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         let streamingGenerationId: number | null = null;
         let hasCode = false;
         let hasChat = false;
+        let hasPhasedCode = false;
+        const phasedFiles: Record<string, string> = {};
 
         function processLine(line: string) {
           const trimmed = line.trim();
@@ -219,6 +222,57 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             chunk = JSON.parse(jsonStr);
           } catch {
             return;
+          }
+
+          if (chunk.type === "thinking" && chunk.content) {
+            setGenProgress((prev) => ({
+              ...prev,
+              phase: "planning" as const,
+              thinking: chunk.content,
+            }));
+          }
+
+          if (chunk.type === "plan" && chunk.tasks) {
+            setGenProgress((prev) => ({
+              ...prev,
+              phase: "writing-files" as const,
+              tasks: chunk.tasks,
+              currentTaskIndex: -1,
+              completedFiles: [],
+            }));
+          }
+
+          if (chunk.type === "task_start") {
+            setGenProgress((prev) => ({
+              ...prev,
+              phase: "writing-files" as const,
+              currentTaskIndex: chunk.index ?? 0,
+              currentTaskFile: chunk.file_path,
+              charsReceived: 0,
+            }));
+          }
+
+          if (chunk.type === "file_chunk" && chunk.content) {
+            setGenProgress((prev) => ({
+              ...prev,
+              charsReceived: (prev.charsReceived || 0) + chunk.content!.length,
+            }));
+          }
+
+          if (chunk.type === "task_done" && chunk.file_path) {
+            hasPhasedCode = true;
+            const filePath = chunk.file_path;
+            const fileContent = chunk.content || "";
+            if (fileContent) {
+              phasedFiles[filePath] = fileContent;
+              setCurrentFiles((prev) => ({ ...prev, [filePath]: fileContent }));
+              setGenerationKey((k) => k + 1);
+            }
+            setGenProgress((prev) => ({
+              ...prev,
+              completedFiles: [...(prev.completedFiles || []), filePath],
+              currentTaskIndex: (prev.currentTaskIndex ?? -1) + 1,
+            }));
           }
 
           if (chunk.type === "text" && chunk.content) {
@@ -305,7 +359,46 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           }
         }
 
-        // Finalize
+        // Finalize — phased mode: files already updated progressively per task_done
+        if (hasPhasedCode) {
+          const finalFiles = { ...currentFilesRef.current, ...phasedFiles };
+          currentFilesRef.current = finalFiles;
+          setCurrentFiles(finalFiles);
+          setGenerationKey((k) => k + 1);
+          setGenProgress((prev) => ({ ...prev, phase: "mounting" }));
+
+          if (window.innerWidth < 768) {
+            setMobileView("preview");
+            setHasNewPreview(false);
+          } else {
+            setHasNewPreview(true);
+          }
+
+          try {
+            await apiPatch(`/projects/${projectId}/`, {
+              file_map: finalFiles,
+              ...(streamingGenerationId ? { generation_id: streamingGenerationId } : {}),
+            });
+          } catch {
+            console.error("Failed to save file_map");
+          }
+
+          const fileCount = getFileCount(finalFiles);
+          const codeMessage: Message = {
+            id: crypto.randomUUID(),
+            role: "assistant" as const,
+            content: `Generated ${fileCount} file${fileCount !== 1 ? "s" : ""} and rendered in preview.`,
+            timestamp: Date.now(),
+            usage: receivedUsage ?? undefined,
+            rawCode: serializeFileMap(finalFiles),
+            type: "code" as const,
+            generationId: streamingGenerationId ?? undefined,
+          };
+          setMessages((prev) => [...prev, codeMessage]);
+          autoFixCountRef.current = 0;
+        }
+
+        // Finalize — standard mode
         if (hasCode && codeRef.current.trim()) {
           const { files: incomingFiles, deletions } = parseMultiFileOutput(codeRef.current);
           const existingFiles = currentFilesRef.current;

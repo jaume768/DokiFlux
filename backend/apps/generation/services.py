@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from decimal import Decimal
 from typing import AsyncGenerator, Any
 
@@ -152,6 +153,257 @@ async def stream_generation(
             project=project,
             prompt=prompt,
             messages=messages,
+            model=model,
+        )
+
+
+def _build_file_messages(
+    prompt: str,
+    file_path: str,
+    current_project: str | None,
+    already_generated: str | None,
+    chat_history: list[dict],
+) -> list[dict]:
+    """Build the message list for generating a single file."""
+    context_parts = [f"User request: {prompt}"]
+    if current_project:
+        context_parts.append(f"Existing project files:\n{current_project}")
+    if already_generated:
+        context_parts.append(f"Files already generated in this session:\n{already_generated}")
+    context_parts.append(f"\nYour task: Generate ONLY the file '{file_path}'.")
+
+    messages = [{"role": "developer", "content": "\n\n".join(context_parts)}]
+    for msg in chat_history[-4:]:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": f"Generate the file {file_path}"})
+    return messages
+
+
+def _extract_file_content(raw_tool_args: str) -> str:
+    """
+    Unescape tool call args JSON and return the code string (WITH its // --- FILE marker).
+    Input: partial or full streamed JSON like {"code": "// --- FILE: /App.tsx ---\\nexport..."}
+    Output: "// --- FILE: /App.tsx ---\nexport..."
+    """
+    raw = raw_tool_args.strip()
+    if not raw:
+        return ""
+    try:
+        parsed = json.loads(raw)
+        return parsed.get("code", "")
+    except (json.JSONDecodeError, ValueError):
+        raw = re.sub(r'^\s*\{\s*"code"\s*:\s*"', "", raw)
+        raw = re.sub(r'"\s*\}\s*$', "", raw)
+        return (
+            raw.replace("\\n", "\n")
+            .replace("\\t", "\t")
+            .replace('\\"', '"')
+            .replace("\\\\", "\\")
+        )
+
+
+def _get_file_from_code(code: str, file_path: str) -> str:
+    """
+    Extract the content of a specific file from multi-file formatted code.
+    If the AI included multiple files, returns only the requested one.
+    Falls back to the full code (minus the first marker) if file not found.
+    """
+    escaped = re.escape(file_path)
+    pattern = rf"//\s*---\s*FILE:\s*{escaped}\s*---\s*\n(.*?)(?=//\s*---\s*(?:FILE|DELETE):|$)"
+    match = re.search(pattern, code, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return re.sub(r"^//\s*---\s*FILE:[^\n]*---\s*\n", "", code.strip())
+
+
+async def stream_phased_generation(
+    user,
+    project: Project,
+    prompt: str,
+    chat_history: list[dict],
+    model: str = "gpt-5.4",
+) -> AsyncGenerator[dict[str, Any], None]:
+    """
+    v0-style phased generation:
+    1. Planning call → AI returns list of files to create/modify
+    2. Per-file streaming → one stream_generate call per file with progress events
+    """
+    # 1. Pre-check credits
+    balance = await sync_to_async(get_balance)(user)
+    if balance < MIN_COST_ESTIMATE:
+        yield {"type": "error", "error": "Insufficient credits. Please upgrade your plan or purchase more credits."}
+        return
+
+    # 2. Serialize current project state
+    file_map = await sync_to_async(lambda: project.file_map or {})()
+    current_project = None
+    if file_map:
+        current_project = "\n\n".join(
+            f"// --- FILE: {path} ---\n{content}"
+            for path, content in file_map.items()
+        )
+
+    # 3. Build planner messages (same structure as standard, without system prompt override)
+    planner_messages = build_messages(prompt, current_project, chat_history)
+
+    # 4. Create generation record
+    generation = await _create_generation(user, project, prompt, model, file_map or {})
+    yield {"type": "generation_id", "id": generation.id}
+    generation.status = "streaming"
+    await _save_generation(generation)
+
+    provider = get_provider(model)
+    model_config = get_model_config(model)
+    max_tokens = model_config["max_output_tokens"]
+    file_max_tokens = min(max_tokens, 12000)
+
+    total_input_tokens = 0
+    total_output_tokens = 0
+    error_occurred = False
+    completed_normally = False
+    accumulated_files: dict[str, str] = {}
+    full_code = ""
+
+    try:
+        # 5. Planning phase — fast non-streaming call
+        plan = await provider.call_planner(planner_messages, model)
+
+        plan_usage = plan.get("usage", {})
+        total_input_tokens += plan_usage.get("inputTokens", 0)
+        total_output_tokens += plan_usage.get("outputTokens", 0)
+
+        thinking = plan.get("thinking", "")
+        files = plan.get("files", [])
+
+        if thinking:
+            yield {"type": "thinking", "content": thinking}
+
+        if not files:
+            # Planner returned empty list — fall back to standard single-shot generation
+            async for chunk in provider.stream_generate(planner_messages, model=model, max_tokens=max_tokens):
+                if chunk["type"] == "usage":
+                    u = chunk.get("usage", {})
+                    total_input_tokens += u.get("inputTokens", 0)
+                    total_output_tokens += u.get("outputTokens", 0)
+                    cost = calculate_cost(total_input_tokens, total_output_tokens, model)
+                    yield {
+                        "type": "usage",
+                        "usage": {
+                            "inputTokens": total_input_tokens,
+                            "outputTokens": total_output_tokens,
+                            "cost": float(cost),
+                        },
+                    }
+                elif chunk["type"] == "text":
+                    full_code += chunk.get("content", "")
+                    yield chunk
+                elif chunk["type"] == "error":
+                    error_occurred = True
+                    yield chunk
+                else:
+                    yield chunk
+            completed_normally = True
+            return
+
+        # 6. Emit plan to frontend
+        tasks = [
+            {
+                "file_path": fp,
+                "label": ("Updating" if fp in (file_map or {}) else "Creating") + f" {fp}",
+            }
+            for fp in files
+        ]
+        yield {"type": "plan", "tasks": tasks}
+
+        # 7. Per-file generation loop
+        for idx, file_path in enumerate(files):
+            yield {"type": "task_start", "file_path": file_path, "index": idx, "total": len(files)}
+
+            already_gen_ctx = (
+                "\n\n".join(
+                    f"// --- FILE: {p} ---\n{c}"
+                    for p, c in accumulated_files.items()
+                )
+                if accumulated_files
+                else None
+            )
+
+            file_messages = _build_file_messages(
+                prompt=prompt,
+                file_path=file_path,
+                current_project=current_project,
+                already_generated=already_gen_ctx,
+                chat_history=chat_history,
+            )
+
+            file_raw = ""
+            async for chunk in provider.stream_generate(
+                file_messages, model=model, max_tokens=file_max_tokens
+            ):
+                if chunk["type"] == "text":
+                    file_raw += chunk.get("content", "")
+                    yield {"type": "file_chunk", "content": chunk["content"], "file_path": file_path}
+                elif chunk["type"] == "usage":
+                    u = chunk.get("usage", {})
+                    total_input_tokens += u.get("inputTokens", 0)
+                    total_output_tokens += u.get("outputTokens", 0)
+                elif chunk["type"] == "error":
+                    error_occurred = True
+                    yield chunk
+                # skip "done" and "chat" from individual file calls
+
+            # Parse and store the generated file
+            code_with_marker = _extract_file_content(file_raw)
+            if code_with_marker:
+                content_only = _get_file_from_code(code_with_marker, file_path)
+                accumulated_files[file_path] = content_only
+                full_code += f"// --- FILE: {file_path} ---\n{content_only}\n\n"
+                yield {
+                    "type": "task_done",
+                    "file_path": file_path,
+                    "content": content_only,
+                }
+            else:
+                yield {"type": "task_done", "file_path": file_path, "content": ""}
+
+        # 8. Emit total accumulated usage
+        cost = calculate_cost(total_input_tokens, total_output_tokens, model)
+        yield {
+            "type": "usage",
+            "usage": {
+                "inputTokens": total_input_tokens,
+                "outputTokens": total_output_tokens,
+                "cost": float(cost),
+            },
+        }
+        yield {"type": "done"}
+        completed_normally = True
+
+    finally:
+        cancelled = not completed_normally and not error_occurred
+        cost = calculate_cost(total_input_tokens, total_output_tokens, model)
+        usage_data = (
+            {
+                "inputTokens": total_input_tokens,
+                "outputTokens": total_output_tokens,
+                "cost": float(cost),
+            }
+            if (total_input_tokens > 0 or total_output_tokens > 0)
+            else None
+        )
+        await _finalize_generation(
+            generation=generation,
+            usage_data=usage_data,
+            has_code=bool(full_code.strip()),
+            has_chat=False,
+            full_code=full_code,
+            chat_text="",
+            error_occurred=error_occurred,
+            cancelled=cancelled,
+            user=user,
+            project=project,
+            prompt=prompt,
+            messages=planner_messages,
             model=model,
         )
 

@@ -1,3 +1,5 @@
+import json
+import re
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator, Any
 
@@ -25,3 +27,34 @@ class BaseProvider(ABC):
         {"type": "error", "error": "..."}
         """
         ...  # pragma: no cover
+
+    @abstractmethod
+    async def call_planner(
+        self,
+        messages: list[dict],
+        model: str,
+    ) -> dict:
+        """
+        Non-streaming planner call. Returns:
+        {
+            "thinking": "Brief reasoning string",
+            "files": ["/App.tsx", "/components/Hero.tsx", ...],
+            "usage": {"inputTokens": int, "outputTokens": int}
+        }
+        """
+        ...  # pragma: no cover
+
+    @staticmethod
+    def _parse_plan(text: str) -> dict:
+        """Parse planner JSON response into a normalized plan dict."""
+        cleaned = re.sub(r"```json\s*", "", text)
+        cleaned = re.sub(r"```\s*", "", cleaned).strip()
+        try:
+            parsed = json.loads(cleaned)
+            return {
+                "thinking": str(parsed.get("thinking", "")),
+                "files": [f for f in parsed.get("files", []) if isinstance(f, str)],
+            }
+        except (json.JSONDecodeError, KeyError, TypeError):
+            files = re.findall(r'"(/[^"]+\.\w+)"', text)
+            return {"thinking": "", "files": files}

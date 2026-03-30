@@ -111,6 +111,138 @@ ANTHROPIC_GENERATE_UI_TOOL = {
     },
 }
 
+
+# ---------- Phased generation prompts ----------
+
+PLANNER_SYSTEM_PROMPT = """You are a project architect for UI generation. Given a user request and the current project state, decide which files to create or modify.
+
+Respond with ONLY a valid JSON object — no markdown fences, no explanation:
+{"thinking": "1-2 sentence description of your approach", "files": ["/App.tsx", "/components/Hero.tsx"]}
+
+Rules:
+- Always include /App.tsx when creating a new project from scratch
+- List files in dependency order: utilities/types first, then components, entry point last
+- Maximum 8 files per generation
+- For iterations on existing projects, list ONLY files that need to change
+- Use .tsx for React components, .ts for logic/types, .css for global styles"""
+
+FILE_GEN_SYSTEM_PROMPT = """You are an elite UI engineer generating ONE specific file for a React + TypeScript + Tailwind project.
+
+Generate ONLY the requested file. Output it in multi-file format:
+// --- FILE: /path/to/file.tsx ---
+<file content here>
+
+Rules:
+- Use named exports for all files EXCEPT /App.tsx (which uses export default)
+- No Router wrappers — BrowserRouter is provided by the environment
+- Tailwind CSS for all styling, lucide-react for icons
+- Keep imports consistent with the other files described in context"""
+
+
+# ---------- Planner tool per provider ----------
+
+OPENAI_PLANNER_TOOL = {
+    "type": "function",
+    "name": "create_plan",
+    "description": PLANNER_SYSTEM_PROMPT,
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "thinking": {"type": "string"},
+            "files": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["thinking", "files"],
+        "additionalProperties": False,
+    },
+    "strict": True,
+}
+
+ANTHROPIC_PLANNER_TOOL = {
+    "name": "create_plan",
+    "description": PLANNER_SYSTEM_PROMPT,
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "thinking": {"type": "string"},
+            "files": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["thinking", "files"],
+    },
+}
+
+GEMINI_PLANNER_TOOL = {
+    "function_declarations": [
+        {
+            "name": "create_plan",
+            "description": PLANNER_SYSTEM_PROMPT,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "thinking": {"type": "string"},
+                    "files": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["thinking", "files"],
+            },
+        }
+    ]
+}
+
+
+# ---------- Single-file generation tool per provider ----------
+
+OPENAI_FILE_GEN_TOOL = {
+    "type": "function",
+    "name": "write_file",
+    "description": "Write the content of a single file",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "content": {
+                "type": "string",
+                "description": "Full source code for this file, including the // --- FILE: /path --- marker at the top",
+            },
+        },
+        "required": ["content"],
+        "additionalProperties": False,
+    },
+    "strict": True,
+}
+
+ANTHROPIC_FILE_GEN_TOOL = {
+    "name": "write_file",
+    "description": "Write the content of a single file",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "content": {
+                "type": "string",
+                "description": "Full source code for this file, including the // --- FILE: /path --- marker at the top",
+            },
+        },
+        "required": ["content"],
+    },
+}
+
+GEMINI_FILE_GEN_TOOL = {
+    "function_declarations": [
+        {
+            "name": "write_file",
+            "description": "Write the content of a single file",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "description": "Full source code for this file, including the // --- FILE: /path --- marker at the top",
+                    },
+                },
+                "required": ["content"],
+            },
+        }
+    ]
+}
+
+
 # Google Gemini API format
 GEMINI_GENERATE_UI_TOOL = {
     "function_declarations": [

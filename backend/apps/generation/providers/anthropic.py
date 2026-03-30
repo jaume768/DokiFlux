@@ -6,7 +6,7 @@ import httpx
 
 from .base import BaseProvider
 from .key_pool import get_anthropic_key
-from .prompts import SYSTEM_PROMPT, ANTHROPIC_GENERATE_UI_TOOL
+from .prompts import SYSTEM_PROMPT, ANTHROPIC_GENERATE_UI_TOOL, PLANNER_SYSTEM_PROMPT
 from .registry import calculate_cost, get_model_config
 
 logger = logging.getLogger(__name__)
@@ -201,6 +201,46 @@ class AnthropicProvider(BaseProvider):
                 "type": "error",
                 "error": "Something went wrong. Please try again.",
             }
+
+    async def call_planner(self, messages: list[dict], model: str) -> dict:
+        """Non-streaming planner call via Anthropic Messages API."""
+        config = get_model_config(model)
+        api_model = config["api_model"]
+
+        anthropic_messages = self._convert_messages(messages)
+
+        payload = {
+            "model": api_model,
+            "max_tokens": 600,
+            "system": PLANNER_SYSTEM_PROMPT,
+            "messages": anthropic_messages,
+        }
+
+        api_key = get_anthropic_key()
+        headers = {
+            "x-api-key": api_key,
+            "anthropic-version": ANTHROPIC_VERSION,
+            "content-type": "application/json",
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+                resp = await client.post(ANTHROPIC_API_URL, json=payload, headers=headers)
+                data = resp.json()
+                text = ""
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        text += block.get("text", "")
+                usage_raw = data.get("usage", {})
+                plan = self._parse_plan(text)
+                plan["usage"] = {
+                    "inputTokens": usage_raw.get("input_tokens", 0),
+                    "outputTokens": usage_raw.get("output_tokens", 0),
+                }
+                return plan
+        except Exception as e:
+            logger.error("Anthropic planner error: %s", str(e), exc_info=True)
+            return {"thinking": "", "files": [], "usage": {"inputTokens": 0, "outputTokens": 0}}
 
     @staticmethod
     def _convert_messages(messages: list[dict]) -> list[dict]:
