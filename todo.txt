@@ -1,30 +1,20 @@
-1- Rate limit en post /api/generate (arreglar)
-2- Sin Autenticación ni Autorización (arreglar cuando el sistema tenga backend, login y demás)
 3- Sin Validación del Tamaño del Payload (arreglar, que sea grande pero tampoco inmenso)
 8- Persistencia de proyectos (Al tener el backend con django):
     - Arquitectura típica:
        Usuario → Frontend → API Backend → Base de datos
                               → Object Storage (S3, falta almacenar los proyectos de los usuarios en el s3, ahora es en el backend)
                               → LLM (OpenAI, Anthropic...)
-9- pricing (falta incluir stripe para cobrar y demas):
-    - Free: $0/mes, incluye $5/mes en créditos (y límites como 7 mensajes/día según pricing page) (badge “Built with Dokiflux” por defecto en free).
-    - Premium: $20/mes, con $20/mes en créditos (documentación + post oficial de pricing).
-    - Business: Personalizado según la empresa.
-    - Comprar Créditos: Poder comprar créditos adicionales.
-    - Créditos no usados roll over y expiran tras 65 días (mensuales) y los comprados expiran a 1 año (shared pool).
+9- pricing (falta revisar los pricing y compra de craditos adicionales):
 12- “Si la generación no modifica archivos o falla sin producir avance, no se cobra (o se cobra 0)” (revisar esta estrategia)
 13- Que hacer cuando el usuario quiere iterar sobre un proyecto grande? Limite de los modelos en el output/input? (multi api keys y ir cambiando de uno a otro según el rate limit)
 15- Capacidad de volver al estado anterior (con backend)
-17- Estrategia Marketing: 
-    - “iterar sin miedo”: coste controlado, consentimiento, y estabilidad en proyectos largos.
-    - “AI app builder para equipos pequeños/agencias orientado a entregables y mantenimiento, con billing predecible y control de agente”.
 18- Integraciones mínimas orientadas a valor:
 
     - Auth + pagos (por ejemplo Stripe), DB provider popular (por ejemplo Supabase) y logging/errores (por ejemplo Sentry), 
     pero con setup explícito y guardrails. (El objetivo no es “100 integraciones”, es “3 que eviten re‑prompts”).    
+    
 19- Incluir selector de modelos de ia gratis?
-21- Mejorar rendimiento general y experiencia de usuario
-22- Ajustar precios (para que sea rentable) y cambiar un poco la estetica para no parecer tanto a v0
+22- Cambiar un poco la estetica para no parecer tanto a v0
 23- Añadir templates y poder hacer proyectos "Del staff" como templates con los prompts
 24- Enseñar anuncios si se genera con ia gratis?
 25- Oauth con google y github y envio de mail con Brevo
@@ -36,7 +26,8 @@
 31- algunas veces se queda la preview en blanco porque el error solo esta en la consola y no se hace el auto arreglo
 32- Si inicio una generación y salgo del chat, que se siga generando en segundo plano y en el chat salga algo como que se esta haciendo, como en chatgpt
 33- Hacer que los modelos de Anthropic y google sean como los de OpenAI, para tener codigo preview mientras se genera
-34- Revisar si en los modelos de google/antrhopic se pasa el codigo anterior de contexto, creo que no, solo en openai
+35- Hacer auditoria de SEO
+36- Mirar apis locals
 
 Usar DokiFlux como motor interno + demo para vender una productized service premium:
 “Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.

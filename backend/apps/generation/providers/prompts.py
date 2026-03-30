@@ -63,10 +63,15 @@ GENERAL RULES:
 7. Always include proper TypeScript types.
 8. For multi-page apps, use react-router-dom for URL-based navigation.
 
+ROUTER RULES (CRITICAL — NEVER VIOLATE):
+- NEVER use <BrowserRouter>, <HashRouter>, <MemoryRouter>, or ANY <Router> wrapper anywhere in the generated code.
+- The execution environment already provides a BrowserRouter at the top level. Adding another one causes a fatal crash.
+- Only use <Routes>, <Route>, <Link>, <NavLink>, useNavigate(), useLocation(), useParams() directly.
+
 AVAILABLE IMPORTS:
 - "lucide-react" — for icons
 - "react" — for hooks and React itself
-- "react-router-dom" — for routing (app is already wrapped in BrowserRouter)"""
+- "react-router-dom" — <Routes>, <Route>, <Link>, <NavLink>, useNavigate, useLocation, useParams (NO Router wrappers)"""
 
 
 # ---------- Tool definitions per provider format ----------

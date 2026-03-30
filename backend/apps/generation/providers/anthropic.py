@@ -40,13 +40,19 @@ class AnthropicProvider(BaseProvider):
         if tools is None:
             tools = [ANTHROPIC_GENERATE_UI_TOOL]
 
+        # Extract project context from "developer" role messages and append to system prompt
+        project_context = "\n\n".join(
+            msg["content"] for msg in messages if msg.get("role") == "developer"
+        )
+        system_prompt = f"{SYSTEM_PROMPT}\n\n{project_context}" if project_context else SYSTEM_PROMPT
+
         # Convert messages from OpenAI format to Anthropic format
         anthropic_messages = self._convert_messages(messages)
 
         payload = {
             "model": api_model,
             "max_tokens": max_tokens,
-            "system": SYSTEM_PROMPT,
+            "system": system_prompt,
             "messages": anthropic_messages,
             "tools": tools,
             "stream": True,

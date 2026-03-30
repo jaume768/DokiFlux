@@ -39,12 +39,18 @@ class GeminiProvider(BaseProvider):
         if tools is None:
             tools = [GEMINI_GENERATE_UI_TOOL]
 
+        # Extract project context from "developer" role messages and append to system instruction
+        project_context = "\n\n".join(
+            msg["content"] for msg in messages if msg.get("role") == "developer"
+        )
+        system_text = f"{SYSTEM_PROMPT}\n\n{project_context}" if project_context else SYSTEM_PROMPT
+
         # Convert messages from OpenAI/internal format to Gemini format
         contents = self._convert_messages(messages)
 
         payload = {
             "system_instruction": {
-                "parts": [{"text": SYSTEM_PROMPT}],
+                "parts": [{"text": system_text}],
             },
             "contents": contents,
             "tools": tools,
