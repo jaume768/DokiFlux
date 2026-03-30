@@ -152,6 +152,7 @@ async def stream_generation(
             project=project,
             prompt=prompt,
             messages=messages,
+            model=model,
         )
 
 
@@ -175,6 +176,11 @@ def _save_generation(generation):
 
 
 @sync_to_async
+def _update_project_model(project, model):
+    project.__class__.objects.filter(pk=project.pk).update(last_used_model=model)
+
+
+@sync_to_async
 def _create_message(project, role, content, message_type, usage=None, raw_code="", generation_id=None):
     return ChatMessage.objects.create(
         project=project,
@@ -190,7 +196,7 @@ def _create_message(project, role, content, message_type, usage=None, raw_code="
 async def _finalize_generation(
     generation, usage_data, has_code, has_chat,
     full_code, chat_text, error_occurred, cancelled,
-    user, project, prompt, messages,
+    user, project, prompt, messages, model="",
 ):
     """Handle billing and record updates after streaming ends (normally, cancelled, or error)."""
 
@@ -257,6 +263,9 @@ async def _finalize_generation(
                     "Failed to deduct credits for generation %s (user %s, cost %s)",
                     generation.id, user.email, actual_cost,
                 )
+
+        if model:
+            await _update_project_model(project, model)
 
         await _create_message(project=project, role="user", content=prompt, message_type="chat")
         await _create_message(

@@ -16,6 +16,9 @@ import {
   Code2,
   Eye,
   PenLine,
+  Rocket,
+  ShieldCheck,
+  Clock,
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { LandingNavbar, Footer, FeatureCard, TemplateCard, PlanCard } from "@/components/landing";
@@ -52,7 +55,7 @@ export default function LandingPage() {
             <motion.div variants={fadeUp} custom={0}>
               <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground">
                 <Sparkles className="h-3 w-3" />
-                Generador de UI con IA
+                Plataforma de prototipado con IA
               </span>
             </motion.div>
 
@@ -61,9 +64,9 @@ export default function LandingPage() {
               custom={1}
               className="mx-auto max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
             >
-              De prompt a proyecto{" "}
+              De idea a prototipo en segundos.{" "}
               <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                en segundos
+                De prototipo a producción con nosotros.
               </span>
             </motion.h1>
 
@@ -72,9 +75,9 @@ export default function LandingPage() {
               custom={2}
               className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl"
             >
-              Describe tu idea en lenguaje natural. DokiFlux genera proyectos
-              React + Tailwind completos con vista previa en vivo directamente
-              en el navegador.
+              Genera prototipos React funcionales con IA en segundos. Valídalos
+              con tu equipo o clientes. Cuando estés listo, nuestro equipo los
+              convierte en software real listo para producción.
             </motion.p>
 
             <motion.div
@@ -189,11 +192,11 @@ export default function LandingPage() {
               Cómo funciona
             </h2>
             <p className="mt-3 text-muted-foreground">
-              Tres pasos. Sin configuración. Sin servidor.
+              Del prompt al producto en cuatro pasos.
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-4">
             {[
               {
                 icon: PenLine,
@@ -205,13 +208,19 @@ export default function LandingPage() {
                 icon: Code2,
                 step: "2",
                 title: "Genera",
-                desc: "La IA genera código React multiarchivo en streaming, archivo por archivo",
+                desc: "La IA genera código React multiarchivo en streaming con vista previa en vivo",
               },
               {
-                icon: Eye,
+                icon: RefreshCw,
                 step: "3",
-                title: "Previsualiza",
-                desc: "Vista previa en vivo ejecutada con WebContainers directamente en el navegador",
+                title: "Itera y valida",
+                desc: "Refina con chat, auto-fix de errores y comparte con tu equipo o clientes",
+              },
+              {
+                icon: Rocket,
+                step: "4",
+                title: "Pasa a producción",
+                desc: "¿Validado? Nuestro equipo lo lleva a un producto real en 2–6 semanas",
               },
             ].map((item) => (
               <motion.div
@@ -241,10 +250,10 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-12 text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Todo lo que necesitas
+              Todo lo que necesitas para prototipar
             </h2>
             <p className="mt-3 text-muted-foreground">
-              Herramientas profesionales para generar y iterar sobre interfaces
+              Herramientas profesionales para generar, iterar y validar interfaces rápidamente
             </p>
           </div>
 
@@ -293,8 +302,8 @@ export default function LandingPage() {
               },
               {
                 icon: Download,
-                title: "Descarga ZIP",
-                desc: "Exporta como proyecto Vite + React listo para producción",
+                title: "Exporta tu prototipo",
+                desc: "Descarga como proyecto Vite + React o pide ayuda para llevarlo a producción",
               },
             ].map((f, i) => (
               <motion.div key={f.title} variants={fadeUp} custom={i}>
@@ -329,8 +338,91 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── Prototype to Production ─── */}
+      <section id="produccion" className="scroll-mt-16 border-t py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mb-12 text-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full border bg-primary/10 px-3 py-1 text-xs font-medium text-primary mb-4">
+              <Rocket className="h-3 w-3" />
+              Servicio profesional
+            </span>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              ¿Prototipo validado? Lo llevamos a producción
+            </h2>
+            <p className="mt-3 max-w-2xl mx-auto text-muted-foreground">
+              DokiFlux es el primer paso. Con nuestros packs de desarrollo pasas
+              de un prototipo IA a un producto B2B real con auth, base de datos,
+              CI/CD, seguridad y despliegue.
+            </p>
+          </div>
+
+          <div className="relative flex flex-col gap-4 md:flex-row md:items-stretch md:gap-0">
+            {[
+              {
+                icon: Clock,
+                step: "01",
+                title: "Sprint de validación",
+                desc: "Partimos de tu prototipo DokiFlux, definimos el backlog y estimamos el producto real. Salimos con un plan claro y el repositorio base listo.",
+              },
+              {
+                icon: Rocket,
+                step: "02",
+                title: "Construcción del producto",
+                desc: "Desarrollamos la aplicación con auth, base de datos, CI/CD, seguridad y despliegue en producción. Handover completo al terminar.",
+              },
+              {
+                icon: ShieldCheck,
+                step: "03",
+                title: "Mantenimiento & Evolución",
+                desc: "Una vez en producción, seguimos contigo: nuevas features, monitorización, actualizaciones de seguridad y soporte técnico continuo.",
+              },
+            ].map((step, i, arr) => (
+              <div key={step.step} className="relative flex flex-1 flex-col md:flex-row">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.4, delay: i * 0.12 }}
+                  className="flex flex-1 flex-col gap-4 rounded-2xl border bg-card p-6"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-black text-primary/20 leading-none">{step.step}</span>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                      <step.icon className="h-4 w-4 text-primary" />
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-base">{step.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                </motion.div>
+
+                {/* Arrow connector between steps */}
+                {i < arr.length - 1 && (
+                  <div className="flex items-center justify-center md:px-3 py-2 md:py-0">
+                    <ArrowRight className="h-5 w-5 rotate-90 md:rotate-0 text-primary/40 shrink-0" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 text-center">
+            <a
+              href="mailto:hola@dokiflux.app"
+              className={buttonVariants({
+                variant: "outline",
+                size: "lg",
+                className: "rounded-xl gap-2",
+              })}
+            >
+              Hablar con el equipo
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ─── Pricing preview ─── */}
-      <section className="py-20">
+      <section className="py-20 border-t bg-muted/20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-12 text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -389,12 +481,12 @@ export default function LandingPage() {
       <section className="border-t bg-muted/20 py-20">
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            ¿Listo para crear?
+            Genera tu primer prototipo gratis.
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Regístrate gratis y genera tu primer proyecto en menos de un minuto
+            Cuando estés listo para dar el salto a producción, nuestro equipo estará ahí para ayudarte.
           </p>
-          <div className="mt-8">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/register"
               className={buttonVariants({
@@ -405,6 +497,16 @@ export default function LandingPage() {
               Empieza gratis
               <ArrowRight className="h-4 w-4" />
             </Link>
+            <a
+              href="#produccion"
+              className={buttonVariants({
+                variant: "outline",
+                size: "lg",
+                className: "rounded-xl text-base",
+              })}
+            >
+              Ver servicios de producción
+            </a>
           </div>
         </div>
       </section>

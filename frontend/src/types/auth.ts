@@ -87,6 +87,7 @@ export interface ProjectDetail {
   name: string;
   description: string;
   file_map: Record<string, string>;
+  last_used_model?: string;
   created_at: string;
   updated_at: string;
   message_count?: number;

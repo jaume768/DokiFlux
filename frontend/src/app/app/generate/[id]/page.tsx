@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ModelSelector } from "@/components/ModelSelector";
 import { DEFAULT_MODEL, type ModelId } from "@/lib/pricing";
 import { useModels } from "@/context/ModelsContext";
+import { LimitReachedModal, type LimitType } from "@/components/LimitReachedModal";
 
 type MobileView = "chat" | "preview";
 
@@ -55,6 +56,8 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const [mobileView, setMobileView] = useState<MobileView>("chat");
   const [chatCollapsed, setChatCollapsed] = useState(false);
   const [hasNewPreview, setHasNewPreview] = useState(false);
+  const [limitModal, setLimitModal] = useState<{ open: boolean; type: LimitType } | null>(null);
+  const [modelLocked, setModelLocked] = useState(false);
   const modelParam = searchParams.get("model");
   const [selectedModel, setSelectedModel] = useState<ModelId>(
     modelParam && isValidModelId(modelParam) ? modelParam : (defaultModel || DEFAULT_MODEL)
@@ -82,6 +85,10 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           setCurrentFiles(project.file_map);
           currentFilesRef.current = project.file_map;
           setGenerationKey((k) => k + 1);
+        }
+        if (project.last_used_model && isValidModelId(project.last_used_model)) {
+          setSelectedModel(project.last_used_model);
+          setModelLocked(true);
         }
 
         // Load chat history
@@ -264,7 +271,16 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           }
 
           if (chunk.type === "error") {
-            throw new Error(chunk.error || "Generation error");
+            const msg = chunk.error || "Generation error";
+            if (msg.includes("Insufficient credits")) {
+              setLimitModal({ open: true, type: "credits" });
+              return;
+            }
+            if (msg.includes("Daily generation limit") || msg.includes("daily") && msg.includes("limit")) {
+              setLimitModal({ open: true, type: "daily" });
+              return;
+            }
+            throw new Error(msg);
           }
         }
 
@@ -621,7 +637,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           <ModelSelector
             value={selectedModel}
             onChange={setSelectedModel}
-            disabled={isLoading}
+            disabled={isLoading || modelLocked}
           />
           {balance !== null && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
@@ -687,6 +703,12 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           />
         </div>
       </div>
+      {limitModal?.open && (
+        <LimitReachedModal
+          type={limitModal.type}
+          onClose={() => setLimitModal(null)}
+        />
+      )}
     </div>
   );
 }

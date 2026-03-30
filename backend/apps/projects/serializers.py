@@ -36,6 +36,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "file_map",
+            "last_used_model",
             "created_at",
             "updated_at",
             "message_count",
@@ -43,6 +44,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
+            "last_used_model",
             "created_at",
             "updated_at",
             "message_count",

@@ -28,6 +28,8 @@
 33- Hacer que los modelos de Anthropic y google sean como los de OpenAI, para tener codigo preview mientras se genera
 35- Hacer auditoria de SEO
 36- Mirar apis locals
+38- Revisar si a la hora de iterar se envia el system prompt
+39- Estrategia de dividir el proyecto en fases para no llegar al limite de tokens de los modelos
 
 Usar DokiFlux como motor interno + demo para vender una productized service premium:
 “Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.
