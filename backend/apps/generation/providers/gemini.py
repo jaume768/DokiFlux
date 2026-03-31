@@ -6,7 +6,7 @@ import httpx
 
 from .base import BaseProvider
 from .key_pool import get_gemini_key
-from .prompts import SYSTEM_PROMPT, GEMINI_GENERATE_UI_TOOL, PLANNER_SYSTEM_PROMPT
+from .prompts import TEXT_GENERATION_SYSTEM_PROMPT, PLANNER_SYSTEM_PROMPT
 from .registry import calculate_cost, get_model_config
 
 logger = logging.getLogger(__name__)
@@ -26,8 +26,12 @@ class GeminiProvider(BaseProvider):
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Stream from Gemini streamGenerateContent API and yield SSE-compatible chunks.
-        Translates Gemini's response format to our standard:
-        - {"type": "text", "content": "..."} for code (functionCall args)
+        Uses direct text generation (no function calling) because Gemini does NOT stream
+        function call arguments — they arrive as one complete object at the end.
+        Mode is detected from content: responses starting with '// --- FILE:' are code.
+
+        Yields:
+        - {"type": "text", "content": "..."} for code output
         - {"type": "chat", "content": "..."} for conversation text
         - {"type": "usage", "usage": {...}} at the end
         - {"type": "done"} when finished
@@ -36,24 +40,25 @@ class GeminiProvider(BaseProvider):
         config = get_model_config(model)
         api_model = config["api_model"]
 
-        if tools is None:
-            tools = [GEMINI_GENERATE_UI_TOOL]
-
         # Extract project context from "developer" role messages and append to system instruction
         project_context = "\n\n".join(
             msg["content"] for msg in messages if msg.get("role") == "developer"
         )
-        system_text = f"{SYSTEM_PROMPT}\n\n{project_context}" if project_context else SYSTEM_PROMPT
+        system_text = (
+            f"{TEXT_GENERATION_SYSTEM_PROMPT}\n\n{project_context}"
+            if project_context
+            else TEXT_GENERATION_SYSTEM_PROMPT
+        )
 
         # Convert messages from OpenAI/internal format to Gemini format
         contents = self._convert_messages(messages)
 
+        # No tools — use plain text generation so Gemini streams text incrementally
         payload = {
             "system_instruction": {
                 "parts": [{"text": system_text}],
             },
             "contents": contents,
-            "tools": tools,
             "generation_config": {
                 "max_output_tokens": max_tokens,
             },
@@ -96,11 +101,17 @@ class GeminiProvider(BaseProvider):
                         yield {"type": "error", "error": error_msg}
                         return
 
-                    buffer = ""
+                    # Mode detection: buffer first chars to decide chat vs code
+                    # Code responses start with "// --- FILE:", chat responses don't.
+                    _MODE_DETECT_CHARS = 32
+                    prefix_buf = ""
+                    mode = "detecting"  # "detecting" | "chat" | "code"
+
+                    line_buf = ""
                     async for chunk in response.aiter_text():
-                        buffer += chunk
-                        while "\n" in buffer:
-                            line, buffer = buffer.split("\n", 1)
+                        line_buf += chunk
+                        while "\n" in line_buf:
+                            line, line_buf = line_buf.split("\n", 1)
                             line = line.strip()
 
                             if not line or not line.startswith("data: "):
@@ -120,23 +131,26 @@ class GeminiProvider(BaseProvider):
                                 parts = content.get("parts", [])
 
                                 for part in parts:
-                                    # Text response (conversation mode)
-                                    if "text" in part:
-                                        yield {
-                                            "type": "chat",
-                                            "content": part["text"],
-                                        }
+                                    if "text" not in part:
+                                        continue
+                                    text = part["text"]
+                                    if not text:
+                                        continue
 
-                                    # Function call (code generation)
-                                    elif "functionCall" in part:
-                                        fc = part["functionCall"]
-                                        args = fc.get("args", {})
-                                        code = args.get("code", "")
-                                        if code:
-                                            yield {
-                                                "type": "text",
-                                                "content": code,
-                                            }
+                                    if mode == "detecting":
+                                        prefix_buf += text
+                                        if "// --- FILE:" in prefix_buf:
+                                            mode = "code"
+                                            yield {"type": "text", "content": prefix_buf}
+                                            prefix_buf = ""
+                                        elif len(prefix_buf) >= _MODE_DETECT_CHARS:
+                                            mode = "chat"
+                                            yield {"type": "chat", "content": prefix_buf}
+                                            prefix_buf = ""
+                                    elif mode == "chat":
+                                        yield {"type": "chat", "content": text}
+                                    else:
+                                        yield {"type": "text", "content": text}
 
                             # Extract usage metadata
                             usage_meta = event.get("usageMetadata", {})
@@ -147,6 +161,11 @@ class GeminiProvider(BaseProvider):
                                 output_tokens = usage_meta.get(
                                     "candidatesTokenCount", output_tokens
                                 )
+
+                    # Flush any remaining prefix buffer (short response)
+                    if prefix_buf:
+                        chunk_type = "text" if "// --- FILE:" in prefix_buf else "chat"
+                        yield {"type": chunk_type, "content": prefix_buf}
 
             # Emit usage
             cost = calculate_cost(input_tokens, output_tokens, model)

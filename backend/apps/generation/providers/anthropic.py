@@ -6,7 +6,7 @@ import httpx
 
 from .base import BaseProvider
 from .key_pool import get_anthropic_key
-from .prompts import SYSTEM_PROMPT, ANTHROPIC_GENERATE_UI_TOOL, PLANNER_SYSTEM_PROMPT
+from .prompts import TEXT_GENERATION_SYSTEM_PROMPT, PLANNER_SYSTEM_PROMPT
 from .registry import calculate_cost, get_model_config
 
 logger = logging.getLogger(__name__)
@@ -27,8 +27,13 @@ class AnthropicProvider(BaseProvider):
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Stream from Anthropic Messages API and yield SSE-compatible chunks.
-        Translates Anthropic's event format to our standard:
-        - {"type": "text", "content": "..."} for code (tool_use input)
+        Uses direct text generation (no tool calls) because Claude 4.x hybrid-reasoning
+        models buffer internally before starting to stream tool call args, causing a long
+        pause then rapid delivery. Text generation starts streaming immediately.
+        Mode is detected from content: responses starting with '// --- FILE:' are code.
+
+        Yields:
+        - {"type": "text", "content": "..."} for code output
         - {"type": "chat", "content": "..."} for conversation text
         - {"type": "usage", "usage": {...}} at the end
         - {"type": "done"} when finished
@@ -37,24 +42,25 @@ class AnthropicProvider(BaseProvider):
         config = get_model_config(model)
         api_model = config["api_model"]
 
-        if tools is None:
-            tools = [ANTHROPIC_GENERATE_UI_TOOL]
-
         # Extract project context from "developer" role messages and append to system prompt
         project_context = "\n\n".join(
             msg["content"] for msg in messages if msg.get("role") == "developer"
         )
-        system_prompt = f"{SYSTEM_PROMPT}\n\n{project_context}" if project_context else SYSTEM_PROMPT
+        system_prompt = (
+            f"{TEXT_GENERATION_SYSTEM_PROMPT}\n\n{project_context}"
+            if project_context
+            else TEXT_GENERATION_SYSTEM_PROMPT
+        )
 
         # Convert messages from OpenAI format to Anthropic format
         anthropic_messages = self._convert_messages(messages)
 
+        # No tools — plain text generation so streaming starts immediately
         payload = {
             "model": api_model,
             "max_tokens": max_tokens,
             "system": system_prompt,
             "messages": anthropic_messages,
-            "tools": tools,
             "stream": True,
         }
 
@@ -67,7 +73,6 @@ class AnthropicProvider(BaseProvider):
 
         input_tokens = 0
         output_tokens = 0
-        current_block_type = None  # "text" or "tool_use"
 
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
@@ -94,6 +99,12 @@ class AnthropicProvider(BaseProvider):
                         )
                         yield {"type": "error", "error": error_msg}
                         return
+
+                    # Mode detection: buffer first chars to decide chat vs code
+                    # Code responses start with "// --- FILE:", chat responses don't.
+                    _MODE_DETECT_CHARS = 32
+                    prefix_buf = ""
+                    mode = "detecting"  # "detecting" | "chat" | "code"
 
                     buffer = ""
                     async for chunk in response.aiter_text():
@@ -122,41 +133,33 @@ class AnthropicProvider(BaseProvider):
 
                             # message_start — extract input tokens
                             if event_type == "message_start":
-                                msg = event.get("message", {})
-                                usage = msg.get("usage", {})
+                                msg_data = event.get("message", {})
+                                usage = msg_data.get("usage", {})
                                 input_tokens = usage.get("input_tokens", 0)
 
-                            # content_block_start — detect block type
-                            elif event_type == "content_block_start":
-                                block = event.get("content_block", {})
-                                current_block_type = block.get("type")
-
-                            # content_block_delta — stream content
+                            # content_block_delta — stream text content
                             elif event_type == "content_block_delta":
                                 delta = event.get("delta", {})
-                                delta_type = delta.get("type", "")
+                                if delta.get("type") != "text_delta":
+                                    continue
+                                text = delta.get("text", "")
+                                if not text:
+                                    continue
 
-                                if delta_type == "text_delta":
-                                    # Conversation text
-                                    text = delta.get("text", "")
-                                    if text:
-                                        yield {
-                                            "type": "chat",
-                                            "content": text,
-                                        }
-
-                                elif delta_type == "input_json_delta":
-                                    # Tool use (code generation) — partial JSON
-                                    partial = delta.get("partial_json", "")
-                                    if partial:
-                                        yield {
-                                            "type": "text",
-                                            "content": partial,
-                                        }
-
-                            # content_block_stop
-                            elif event_type == "content_block_stop":
-                                current_block_type = None
+                                if mode == "detecting":
+                                    prefix_buf += text
+                                    if "// --- FILE:" in prefix_buf:
+                                        mode = "code"
+                                        yield {"type": "text", "content": prefix_buf}
+                                        prefix_buf = ""
+                                    elif len(prefix_buf) >= _MODE_DETECT_CHARS:
+                                        mode = "chat"
+                                        yield {"type": "chat", "content": prefix_buf}
+                                        prefix_buf = ""
+                                elif mode == "chat":
+                                    yield {"type": "chat", "content": text}
+                                else:
+                                    yield {"type": "text", "content": text}
 
                             # message_delta — extract output tokens
                             elif event_type == "message_delta":
@@ -165,9 +168,10 @@ class AnthropicProvider(BaseProvider):
                                     "output_tokens", output_tokens
                                 )
 
-                            # message_stop — end of message
-                            elif event_type == "message_stop":
-                                pass
+                    # Flush any remaining prefix buffer (short response)
+                    if prefix_buf:
+                        chunk_type = "text" if "// --- FILE:" in prefix_buf else "chat"
+                        yield {"type": chunk_type, "content": prefix_buf}
 
             # Emit usage
             cost = calculate_cost(input_tokens, output_tokens, model)

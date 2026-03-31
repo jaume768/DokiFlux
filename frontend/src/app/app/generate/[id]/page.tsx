@@ -246,13 +246,18 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
 
   function unescapeStreamingCode(raw: string): string {
     let s = raw;
-    s = s.replace(/^\s*\{\s*"code"\s*:\s*"/, "");
-    s = s.replace(/"\s*\}\s*$/, "");
-    s = s
-      .replace(/\\n/g, "\n")
-      .replace(/\\t/g, "\t")
-      .replace(/\\"/g, '"')
-      .replace(/\\\\/g, "\\");
+    // Only apply JSON unescaping if the content looks like a JSON tool call wrapper.
+    // Plain text output (Anthropic/Gemini text-mode) starts with "// --- FILE:" directly
+    // and must NOT have its trailing "}" stripped (would break code ending with "}).
+    if (/^\s*\{/.test(s)) {
+      s = s.replace(/^\s*\{\s*"code"\s*:\s*"/, "");
+      s = s.replace(/"\s*\}\s*$/, "");
+      s = s
+        .replace(/\\n/g, "\n")
+        .replace(/\\t/g, "\t")
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, "\\");
+    }
     return s;
   }
 
@@ -315,6 +320,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         let hasChat = false;
         let hasPhasedCode = false;
         const phasedFiles: Record<string, string> = {};
+        let currentFileCodeRaw = "";
 
         function processLine(line: string) {
           const trimmed = line.trim();
@@ -347,24 +353,33 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           }
 
           if (chunk.type === "task_start") {
+            currentFileCodeRaw = "";
             setGenProgress((prev) => ({
               ...prev,
               phase: "writing-files" as const,
               currentTaskIndex: chunk.index ?? 0,
               currentTaskFile: chunk.file_path,
               charsReceived: 0,
+              streamingCode: "",
             }));
           }
 
           if (chunk.type === "file_chunk" && chunk.content) {
+            currentFileCodeRaw += chunk.content;
+            const unescapedFile = unescapeStreamingCode(currentFileCodeRaw);
+            const fileMatches = unescapedFile.match(/--- FILE: [^\n]+/g);
+            const filesDetected = fileMatches?.length || 0;
             setGenProgress((prev) => ({
               ...prev,
               charsReceived: (prev.charsReceived || 0) + chunk.content!.length,
+              filesDetected,
+              streamingCode: unescapedFile,
             }));
           }
 
           if (chunk.type === "task_done" && chunk.file_path) {
             hasPhasedCode = true;
+            currentFileCodeRaw = "";
             const filePath = chunk.file_path;
             const fileContent = chunk.content || "";
             if (fileContent) {
@@ -374,6 +389,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             }
             setGenProgress((prev) => ({
               ...prev,
+              streamingCode: "",
               completedFiles: [...(prev.completedFiles || []), filePath],
               currentTaskIndex: (prev.currentTaskIndex ?? -1) + 1,
             }));

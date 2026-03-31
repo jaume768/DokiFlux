@@ -245,79 +245,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Features ─── */}
-      <section id="features" className="scroll-mt-16 py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Todo lo que necesitas para prototipar
-            </h2>
-            <p className="mt-3 text-muted-foreground">
-              Herramientas profesionales para generar, iterar y validar interfaces rápidamente
-            </p>
-          </div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={stagger}
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          >
-            {[
-              {
-                icon: Zap,
-                title: "Streaming en tiempo real",
-                desc: "Código generado archivo por archivo con visor tipo IDE",
-              },
-              {
-                icon: MessageSquare,
-                title: "Modo dual Chat + Código",
-                desc: "La IA conversa para aclarar y genera cuando está lista",
-              },
-              {
-                icon: Monitor,
-                title: "Vista previa en vivo",
-                desc: "WebContainers ejecutan tu proyecto en el navegador",
-              },
-              {
-                icon: RefreshCw,
-                title: "Iteración inteligente",
-                desc: "Solo se regeneran los archivos modificados",
-              },
-              {
-                icon: Bug,
-                title: "Auto-fix de errores",
-                desc: "Detecta errores de compilación y los corrige automáticamente",
-              },
-              {
-                icon: LayoutTemplate,
-                title: "Templates de inicio",
-                desc: "Empieza rápido con plantillas predefinidas",
-              },
-              {
-                icon: Moon,
-                title: "Dark / Light mode",
-                desc: "Tema adaptable con toggle instantáneo",
-              },
-              {
-                icon: Download,
-                title: "Exporta tu prototipo",
-                desc: "Descarga como proyecto Vite + React o pide ayuda para llevarlo a producción",
-              },
-            ].map((f, i) => (
-              <motion.div key={f.title} variants={fadeUp} custom={i}>
-                <FeatureCard
-                  icon={f.icon}
-                  title={f.title}
-                  description={f.desc}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
       {/* ─── Templates ─── */}
       <section id="templates" className="scroll-mt-16 border-t bg-muted/20 py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -351,7 +278,7 @@ export default function LandingPage() {
             </h2>
             <p className="mt-3 max-w-2xl mx-auto text-muted-foreground">
               DokiFlux es el primer paso. Con nuestros packs de desarrollo pasas
-              de un prototipo IA a un producto B2B real con auth, base de datos,
+              de un prototipo IA a un producto real con auth, base de datos,
               CI/CD, seguridad y despliegue.
             </p>
           </div>

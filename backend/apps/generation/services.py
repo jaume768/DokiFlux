@@ -183,13 +183,19 @@ def _build_file_messages(
 
 def _extract_file_content(raw_tool_args: str) -> str:
     """
-    Unescape tool call args JSON and return the code string (WITH its // --- FILE marker).
-    Input: partial or full streamed JSON like {"code": "// --- FILE: /App.tsx ---\\nexport..."}
-    Output: "// --- FILE: /App.tsx ---\nexport..."
+    Extract the code string (WITH its // --- FILE marker) from raw streamed content.
+
+    Handles two formats:
+    - Plain text (Anthropic/Gemini text-mode): content starts with '// --- FILE:' directly
+    - JSON tool call (OpenAI): '{"code": "// --- FILE: /App.tsx ---\\nexport..."}'
     """
     raw = raw_tool_args.strip()
     if not raw:
         return ""
+    # Plain text output — starts with file marker, no JSON wrapper to strip
+    if raw.startswith("// ---") or raw.startswith("//---"):
+        return raw
+    # JSON tool call format (OpenAI) — try to parse and extract the code field
     try:
         parsed = json.loads(raw)
         return parsed.get("code", "")
