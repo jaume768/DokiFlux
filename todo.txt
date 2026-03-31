@@ -18,11 +18,9 @@
 23- Añadir templates y poder hacer proyectos "Del staff" como templates con los prompts
 24- Enseñar anuncios si se genera con ia gratis?
 25- Oauth con google y github y envio de mail con Brevo
-26- Hacer auditoria de seguridad y posibles refactorizaciones
 27- Multi framework (Next.js, React (opcion gratis), Vue, Angular, Svelte, etc.) en premium.
 28- Añadir que la gente pueda hacer tickets
 29- Añadir django-hijacker para que los admins puedan ver como un usuario
-35- Hacer auditoria de SEO
 36- Mirar apis locals
 40- Multiidioma a Español y el Ingles
 
@@ -59,10 +57,3 @@ Para la empresa:
 
 Productized service + retainer
 Oferta ejemplo (España/UE, rangos realistas):
-
-- Sprint “Prototipo validable” (5–10 días): 1.500€–4.000€
-Entrega: prototipo UI navegable + backlog + estimación + repo base.
-- “De prototipo a producción” (2–6 semanas): 8.000€–30.000€
-Entrega: app deployada, auth, base de datos, CI/CD, observabilidad básica, handover.
-- Mantenimiento: 500€–3.000€/mes (según SLA y volumen)
-Incluye bolsa de horas, parches, updates, pequeñas mejoras.
