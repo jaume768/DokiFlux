@@ -26,6 +26,7 @@ import {
   Monitor,
   Smartphone,
   RotateCcw,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +79,7 @@ interface CodePreviewProps {
   files: FileMap;
   generationKey: number;
   isIOS?: boolean;
+  isMobile?: boolean;
   onBuildError?: (error: string) => void;
   onRuntimeError?: (error: string) => void;
   genProgress?: GenerationProgress;
@@ -279,10 +281,11 @@ function IterationDiffView({ content, oldContent, isStreaming, codeEndRef }: Ite
   );
 }
 
-export function CodePreview({ files, generationKey, isIOS = false, onBuildError, onRuntimeError, genProgress }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, isIOS = false, isMobile = false, onBuildError, onRuntimeError, genProgress }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
+  const [fileTreeOpen, setFileTreeOpen] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframePath, setIframePath] = useState("/");
   const [urlInput, setUrlInput] = useState("/");
@@ -878,28 +881,70 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
             />
           ) : (
             <div className="flex flex-1 min-h-0 overflow-hidden">
-              {/* File tree sidebar – always visible, enhanced with streaming indicators */}
+              {/* File tree sidebar – desktop: always visible, mobile: overlay */}
               {(isMultiFile || isIterationStreaming) && (
-                <div className="hidden md:block w-48 shrink-0 border-r border-white/10 bg-[#181825] overflow-auto">
-                  <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-gray-500 font-semibold">
-                    Explorer
-                  </div>
-                  <FileTreeView
-                    files={isIterationStreaming ? mergedTreeFiles : displayFiles}
-                    selectedFile={selectedFile}
-                    onSelectFile={(path) => {
-                      if (isIterationStreaming) userPickedFileRef.current = true;
-                      setSelectedFile(path);
-                    }}
-                    streamingMap={isIterationStreaming ? streamingMap : undefined}
-                    activeStreamingPath={isIterationStreaming ? activeStreamingPath : undefined}
-                    originalFiles={isIterationStreaming ? displayFiles : undefined}
-                  />
-                </div>
+                <>
+                  {/* Desktop sidebar — only rendered when not on mobile */}
+                  {!isMobile && (
+                    <div className="w-48 shrink-0 border-r border-white/10 bg-[#181825] overflow-auto">
+                      <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-gray-500 font-semibold">
+                        Explorer
+                      </div>
+                      <FileTreeView
+                        files={isIterationStreaming ? mergedTreeFiles : displayFiles}
+                        selectedFile={selectedFile}
+                        onSelectFile={(path) => {
+                          if (isIterationStreaming) userPickedFileRef.current = true;
+                          setSelectedFile(path);
+                        }}
+                        streamingMap={isIterationStreaming ? streamingMap : undefined}
+                        activeStreamingPath={isIterationStreaming ? activeStreamingPath : undefined}
+                        originalFiles={isIterationStreaming ? displayFiles : undefined}
+                      />
+                    </div>
+                  )}
+                  {/* Mobile overlay — rendered as absolute overlay when fileTreeOpen */}
+                  {isMobile && fileTreeOpen && (
+                    <div className="absolute inset-0 z-20 bg-[#181825] flex flex-col overflow-hidden">
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 shrink-0">
+                        <span className="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Explorer</span>
+                        <button
+                          onClick={() => setFileTreeOpen(false)}
+                          className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-gray-200 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-auto">
+                        <FileTreeView
+                          files={isIterationStreaming ? mergedTreeFiles : displayFiles}
+                          selectedFile={selectedFile}
+                          onSelectFile={(path) => {
+                            if (isIterationStreaming) userPickedFileRef.current = true;
+                            setSelectedFile(path);
+                            setFileTreeOpen(false);
+                          }}
+                          streamingMap={isIterationStreaming ? streamingMap : undefined}
+                          activeStreamingPath={isIterationStreaming ? activeStreamingPath : undefined}
+                          originalFiles={isIterationStreaming ? displayFiles : undefined}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
               <div className="flex-1 flex flex-col overflow-hidden bg-[#1e1e2e]">
                 {/* File tab bar */}
                 <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/10 bg-[#252536] shrink-0">
+                  {isMobile && (isMultiFile || isIterationStreaming) && (
+                    <button
+                      onClick={() => setFileTreeOpen((v) => !v)}
+                      className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-gray-200 transition-colors shrink-0"
+                      title="Toggle file explorer"
+                    >
+                      <FolderTree className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {isIterationStreaming && activeStreamingPath === selectedFile ? (
                     <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-amber-400" />
                   ) : (

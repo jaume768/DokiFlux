@@ -27,6 +27,8 @@
 35- Hacer auditoria de SEO
 36- Mirar apis locals
 40- Multiidioma a Español y el Ingles
+41- Revisar porque los modelos de anthropic y google llega el codigo de golpe y no se ve el code preview pero en open ai si 
+   - en open ai no hace el thinking y directamente hace codigo, también investigar
 
 Usar DokiFlux como motor interno + demo para vender una productized service premium:
 “Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.

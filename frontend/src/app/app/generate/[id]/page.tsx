@@ -260,6 +260,9 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     async (prompt: string, isAutofix = false) => {
       setIsLoading(true);
       setGenProgress({ phase: "analyzing", filesDetected: 0, charsReceived: 0, streamingCode: "" });
+      if (window.innerWidth < 768) {
+        setMobileView("preview");
+      }
       const controller = new AbortController();
       abortRef.current = controller;
 
@@ -898,6 +901,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             files={currentFiles}
             generationKey={generationKey}
             isIOS={isIOS}
+            isMobile={isMobile}
             onBuildError={handleBuildError}
             onRuntimeError={handleRuntimeError}
             genProgress={genProgress}
