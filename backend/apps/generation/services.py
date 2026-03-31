@@ -276,6 +276,7 @@ async def stream_phased_generation(
     completed_normally = False
     accumulated_files: dict[str, str] = {}
     full_code = ""
+    chat_text = ""
 
     try:
         # 5. Planning phase — fast non-streaming call
@@ -309,6 +310,9 @@ async def stream_phased_generation(
                     }
                 elif chunk["type"] == "text":
                     full_code += chunk.get("content", "")
+                    yield chunk
+                elif chunk["type"] == "chat":
+                    chat_text += chunk.get("content", "")
                     yield chunk
                 elif chunk["type"] == "error":
                     error_occurred = True
@@ -398,13 +402,24 @@ async def stream_phased_generation(
         # Client disconnected mid-stream → hand off to Celery instead of cancelling
         if cancelled and not error_occurred:
             try:
+                # Reload from DB: if the user explicitly cancelled via the API
+                # (cancel_generation_view) before we got here, don't launch a background task.
+                await sync_to_async(generation.refresh_from_db)(fields=["status"])
+                if generation.status == "cancelled":
+                    logger.info(
+                        "Generation %s was explicitly cancelled, skipping background task launch",
+                        generation.id,
+                    )
+                    return
                 generation.status = "pending"
                 await _save_generation(generation)
                 from .tasks import run_background_generation  # deferred to avoid circular import
-                run_background_generation.delay(generation.id)
+                task = run_background_generation.delay(generation.id)
+                generation.celery_task_id = task.id
+                await _save_generation(generation)
                 logger.info(
-                    "Client disconnected — background task launched for generation %s",
-                    generation.id,
+                    "Client disconnected — background task launched for generation %s (task %s)",
+                    generation.id, task.id,
                 )
                 return
             except Exception as exc:
@@ -428,9 +443,9 @@ async def stream_phased_generation(
             generation=generation,
             usage_data=usage_data,
             has_code=bool(full_code.strip()),
-            has_chat=False,
+            has_chat=bool(chat_text.strip()),
             full_code=full_code,
-            chat_text="",
+            chat_text=chat_text,
             error_occurred=error_occurred,
             cancelled=cancelled,
             user=user,
@@ -439,6 +454,7 @@ async def stream_phased_generation(
             messages=planner_messages,
             model=model,
             is_autofix=is_autofix,
+            user_msg_already_saved=True,
         )
 
 
@@ -485,7 +501,7 @@ async def _finalize_generation(
     generation, usage_data, has_code, has_chat,
     full_code, chat_text, error_occurred, cancelled,
     user, project, prompt, messages, model="",
-    is_autofix=False,
+    is_autofix=False, user_msg_already_saved=False,
 ):
     """Handle billing and record updates after streaming ends (normally, cancelled, or error)."""
 
@@ -579,13 +595,15 @@ async def _finalize_generation(
                 generation_id=generation.id,
             )
 
-        await _create_message(project=project, role="user", content=prompt, message_type="chat")
+        if not user_msg_already_saved:
+            await _create_message(project=project, role="user", content=prompt, message_type="chat")
         await _create_message(
             project=project,
             role="assistant",
             content=chat_text,
             message_type="chat",
             usage=usage_data,
+            generation_id=generation.id,
         )
 
     else:

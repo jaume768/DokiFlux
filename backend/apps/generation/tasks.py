@@ -64,6 +64,12 @@ def run_background_generation(self, generation_id: int):
             loop.close()
 
     try:
+        # Check if already cancelled before starting
+        generation.refresh_from_db(fields=["status"])
+        if generation.status == "cancelled":
+            logger.info("Generation %s was cancelled before task started", generation_id)
+            return
+
         generation.status = "streaming"
         generation.save(update_fields=["status"])
 
@@ -85,6 +91,12 @@ def run_background_generation(self, generation_id: int):
 
         # 2. Per-file generation
         for file_path in files:
+            # Check for cancellation between files
+            generation.refresh_from_db(fields=["status"])
+            if generation.status == "cancelled":
+                logger.info("Generation %s cancelled mid-run, stopping at file %s", generation_id, file_path)
+                return
+
             already_gen_ctx = (
                 "\n\n".join(f"// --- FILE: {p} ---\n{c}" for p, c in accumulated_files.items())
                 if accumulated_files else None

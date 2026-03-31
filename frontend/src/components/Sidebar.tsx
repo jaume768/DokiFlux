@@ -15,7 +15,9 @@ import {
   LogOut,
   Coins,
   Plus,
+  Loader2,
 } from "lucide-react";
+import { useActiveGenerations } from "@/context/ActiveGenerationsContext";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -32,6 +34,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [showRecent, setShowRecent] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const { isActive: isProjectGenerating } = useActiveGenerations();
 
   const loadProjects = useCallback(async () => {
     try {
@@ -149,7 +152,12 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                           : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                       }`}
                     >
-                      <div className="truncate">{project.name}</div>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="truncate flex-1">{project.name}</span>
+                        {isProjectGenerating(project.id) && (
+                          <Loader2 className="w-3 h-3 shrink-0 animate-spin text-blue-500" />
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 mt-0.5 text-[10px] opacity-70">
                         <MessageSquare className="w-2.5 h-2.5" />
                         {project.message_count}

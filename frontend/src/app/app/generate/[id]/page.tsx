@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { apiGet, apiPatch, apiPost, API_BASE, getActiveGeneration, getGenerationStatus } from "@/lib/api";
+import { apiGet, apiPatch, apiPost, API_BASE, getActiveGeneration, getGenerationStatus, cancelGeneration } from "@/lib/api";
 import type { ProjectDetail, ChatMessageResponse, PaginatedResponse } from "@/types/auth";
 import { ChatPanel } from "@/components/ChatPanel";
 import { PromptInput } from "@/components/PromptInput";
@@ -20,6 +20,7 @@ import { DEFAULT_MODEL, type ModelId } from "@/lib/pricing";
 import { useModels } from "@/context/ModelsContext";
 import { LimitReachedModal, type LimitType } from "@/components/LimitReachedModal";
 import { useMobileSidebar } from "@/context/MobileSidebarContext";
+import { useActiveGenerations } from "@/context/ActiveGenerationsContext";
 
 type MobileView = "chat" | "preview";
 
@@ -43,6 +44,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const [backgroundGenId, setBackgroundGenId] = useState<number | null>(null);
   const codeRef = useRef("");
   const abortRef = useRef<AbortController | null>(null);
+  const streamingGenIdRef = useRef<number | null>(null);
   const currentFilesRef = useRef<FileMap>({});
   const messagesRef = useRef<Message[]>([]);
   const autoFixCountRef = useRef(0);
@@ -74,6 +76,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const isMobile = useIsMobile();
   const isIOS = useIsIOS();
   const { toggle: toggleSidebar } = useMobileSidebar();
+  const { register: registerBgGen, unregister: unregisterBgGen } = useActiveGenerations();
 
   currentFilesRef.current = currentFiles;
   messagesRef.current = messages;
@@ -166,6 +169,18 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isLoading, isLoadingProject, messages.length]);
+
+  // Sync background gen state into shared context so the Sidebar can show an indicator
+  useEffect(() => {
+    if (backgroundGenId) {
+      registerBgGen(projectId, backgroundGenId);
+    } else {
+      unregisterBgGen(projectId);
+    }
+    return () => {
+      unregisterBgGen(projectId);
+    };
+  }, [backgroundGenId, projectId, registerBgGen, unregisterBgGen]);
 
   // Poll background generation status
   useEffect(() => {
@@ -442,6 +457,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
 
           if (chunk.type === "generation_id" && chunk.id) {
             streamingGenerationId = chunk.id;
+            streamingGenIdRef.current = chunk.id;
           }
 
           if (chunk.type === "error") {
@@ -626,6 +642,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
       } finally {
         codeRef.current = "";
         abortRef.current = null;
+        streamingGenIdRef.current = null;
         setIsLoading(false);
         setIsAutoFixing(false);
         setGenProgress({ phase: null, filesDetected: 0, charsReceived: 0, streamingCode: "" });
@@ -735,6 +752,41 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     (errorText: string) => handleAutoFix(errorText, "runtime"),
     [handleAutoFix]
   );
+
+  const handleCancel = useCallback(async () => {
+    if (backgroundGenId) {
+      try {
+        await cancelGeneration(backgroundGenId);
+      } catch (err) {
+        console.error("Failed to cancel background generation:", err);
+      }
+      setBackgroundGenId(null);
+      setIsLoading(false);
+      setGenProgress({ phase: null, filesDetected: 0, charsReceived: 0, streamingCode: "" });
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant" as const,
+          content: "Generation cancelled.",
+          timestamp: Date.now(),
+          type: "error" as const,
+        },
+      ]);
+    } else {
+      // Pre-cancel on the backend so it won't launch a background task when
+      // it detects the client disconnect in the finally block.
+      const genId = streamingGenIdRef.current;
+      if (genId) {
+        try {
+          await cancelGeneration(genId);
+        } catch (err) {
+          console.error("Failed to pre-cancel streaming generation:", err);
+        }
+      }
+      abortRef.current?.abort();
+    }
+  }, [backgroundGenId]);
 
   if (isLoadingProject) {
     return (
@@ -890,7 +942,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           />
           <PromptInput
             onSubmit={handleSubmit}
-            onCancel={() => abortRef.current?.abort()}
+            onCancel={handleCancel}
             isLoading={isLoading}
             projectId={projectId}
             currentProject={Object.keys(currentFiles).length > 0 ? serializeFileMap(currentFiles) : undefined}

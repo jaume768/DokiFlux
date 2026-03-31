@@ -3,6 +3,7 @@
 import { Sidebar } from "@/components/Sidebar";
 import { ModelsProvider } from "@/context/ModelsContext";
 import { MobileSidebarProvider, useMobileSidebar } from "@/context/MobileSidebarContext";
+import { ActiveGenerationsProvider } from "@/context/ActiveGenerationsContext";
 
 function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const { isOpen, close } = useMobileSidebar();
@@ -30,9 +31,11 @@ export default function AppLayout({
 }) {
   return (
     <ModelsProvider>
-      <MobileSidebarProvider>
-        <AppLayoutInner>{children}</AppLayoutInner>
-      </MobileSidebarProvider>
+      <ActiveGenerationsProvider>
+        <MobileSidebarProvider>
+          <AppLayoutInner>{children}</AppLayoutInner>
+        </MobileSidebarProvider>
+      </ActiveGenerationsProvider>
     </ModelsProvider>
   );
 }

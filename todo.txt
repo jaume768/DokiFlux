@@ -22,13 +22,9 @@
 27- Multi framework (Next.js, React (opcion gratis), Vue, Angular, Svelte, etc.) en premium.
 28- Añadir que la gente pueda hacer tickets
 29- Añadir django-hijacker para que los admins puedan ver como un usuario
-31- algunas veces se queda la preview en blanco porque el error solo esta en la consola y no se hace el auto arreglo
-32- Si inicio una generación y salgo del chat, que se siga generando en segundo plano y en el chat salga algo como que se esta haciendo, como en chatgpt
 35- Hacer auditoria de SEO
 36- Mirar apis locals
 40- Multiidioma a Español y el Ingles
-41- Revisar porque los modelos de anthropic y google llega el codigo de golpe y no se ve el code preview pero en open ai si 
-   - en open ai no hace el thinking y directamente hace codigo, también investigar
 
 Usar DokiFlux como motor interno + demo para vender una productized service premium:
 “Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.

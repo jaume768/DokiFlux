@@ -312,6 +312,52 @@ async def active_generation_view(request, project_id: int):
     })
 
 
+@csrf_exempt
+async def cancel_generation_view(request, generation_id: int):
+    """
+    POST /api/generate/<generation_id>/cancel/
+    Cancels an active (pending/streaming) background generation.
+    Revokes the Celery task if a task ID is stored.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    user = request.user
+    if not user.is_authenticated:
+        return JsonResponse({"error": "Authentication required"}, status=401)
+
+    from .models import Generation
+
+    try:
+        generation = await sync_to_async(
+            Generation.objects.get
+        )(id=generation_id, user=user)
+    except Generation.DoesNotExist:
+        return JsonResponse({"error": "Generation not found"}, status=404)
+
+    if generation.status not in ("pending", "streaming"):
+        return JsonResponse({"error": f"Generation is already {generation.status}"}, status=400)
+
+    # Revoke the Celery task if we have its ID
+    if generation.celery_task_id:
+        try:
+            from celery.app import app_or_default
+            celery_app = app_or_default()
+            await sync_to_async(celery_app.control.revoke)(
+                generation.celery_task_id, terminate=True, signal="SIGTERM"
+            )
+        except Exception as exc:
+            logger.warning("Failed to revoke Celery task %s: %s", generation.celery_task_id, exc)
+
+    generation.status = "cancelled"
+    from django.utils.timezone import now
+    generation.completed_at = now()
+    await sync_to_async(generation.save)(update_fields=["status", "completed_at"])
+
+    logger.info("Generation %s cancelled by user %s", generation_id, user.email)
+    return JsonResponse({"cancelled": True, "generation_id": generation_id})
+
+
 def _sse_error(message: str):
     """Helper to yield a single SSE error event."""
     data = json.dumps({"type": "error", "error": message})

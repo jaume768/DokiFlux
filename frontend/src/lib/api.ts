@@ -154,4 +154,8 @@ export function getActiveGeneration(projectId: number): Promise<ActiveGeneration
   return apiGet<ActiveGeneration>(`/projects/${projectId}/active-generation/`);
 }
 
+export function cancelGeneration(generationId: number): Promise<{ cancelled: boolean; generation_id: number }> {
+  return apiPost(`/generate/${generationId}/cancel/`);
+}
+
 export { API_BASE };
