@@ -54,7 +54,8 @@ class BaseProvider(ABC):
             return {
                 "thinking": str(parsed.get("thinking", "")),
                 "files": [f for f in parsed.get("files", []) if isinstance(f, str)],
+                "chat_response": str(parsed.get("chat_response", "")),
             }
         except (json.JSONDecodeError, KeyError, TypeError):
             files = re.findall(r'"(/[^"]+\.\w+)"', text)
-            return {"thinking": "", "files": files}
+            return {"thinking": "", "files": files, "chat_response": ""}

@@ -288,9 +288,28 @@ async def stream_phased_generation(
 
         thinking = plan.get("thinking", "")
         files = plan.get("files", [])
+        chat_response = plan.get("chat_response", "").strip()
 
         if thinking:
             yield {"type": "thinking", "content": thinking}
+
+        if not files and chat_response:
+            # Planner decided to ask the user for clarification instead of generating
+            yield {"type": "chat", "content": chat_response}
+            chat_text = chat_response
+            has_chat = True
+            cost = calculate_cost(total_input_tokens, total_output_tokens, model)
+            yield {
+                "type": "usage",
+                "usage": {
+                    "inputTokens": total_input_tokens,
+                    "outputTokens": total_output_tokens,
+                    "cost": float(cost),
+                },
+            }
+            yield {"type": "done"}
+            completed_normally = True
+            return
 
         if not files:
             # Planner returned empty list — fall back to standard single-shot generation

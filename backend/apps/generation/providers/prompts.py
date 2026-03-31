@@ -74,6 +74,13 @@ AVAILABLE IMPORTS:
 - "react-router-dom" — <Routes>, <Route>, <Link>, <NavLink>, useNavigate, useLocation, useParams (NO Router wrappers)"""
 
 
+# Modified CODEGEN_RULES for plain-text generation providers (Anthropic, Gemini).
+# Rule 6 is scoped to CODE GENERATION MODE only so it does not suppress conversation responses.
+TEXT_CODEGEN_RULES = CODEGEN_RULES.replace(
+    "6. Respond ONLY with code using the multi-file format. No markdown fences, no explanations outside of code.",
+    "6. When in CODE GENERATION MODE, respond ONLY with code using the multi-file format. No markdown fences, no explanations outside of code. When in CONVERSATION MODE, respond with plain text.",
+)
+
 TEXT_GENERATION_SYSTEM_PROMPT = """You are Dokiflux, an expert UI/UX assistant and full-stack React engineer.
 
 You have TWO modes of interaction:
@@ -125,7 +132,7 @@ ABSOLUTE RULES:
 - CONVERSATION BREVITY IS MANDATORY. Never exceed 4 sentences total.
 - Respond in the same language the user writes in.
 
-""" + CODEGEN_RULES
+""" + TEXT_CODEGEN_RULES
 
 
 # ---------- Tool definitions per provider format ----------
@@ -168,17 +175,31 @@ ANTHROPIC_GENERATE_UI_TOOL = {
 
 # ---------- Phased generation prompts ----------
 
-PLANNER_SYSTEM_PROMPT = """You are a project architect for UI generation. Given a user request and the current project state, decide which files to create or modify.
+PLANNER_SYSTEM_PROMPT = """You are a project architect for UI generation. Given a user request and the current project state, decide EITHER to list files to generate OR to ask the user for clarification.
 
-Respond with ONLY a valid JSON object — no markdown fences, no explanation:
-{"thinking": "1-2 sentence description of your approach", "files": ["/App.tsx", "/components/Hero.tsx"]}
+Respond with ONLY a valid JSON object — no markdown fences, no explanation.
 
-Rules:
+Option A — Generate files (request has enough detail):
+{"thinking": "1-2 sentence description of approach", "files": ["/App.tsx", "/components/Hero.tsx"], "chat_response": ""}
+
+Option B — Ask for clarification (request is too vague):
+{"thinking": "Request is missing key details.", "files": [], "chat_response": "• Question 1\n• Question 2\n• Question 3"}
+
+Rules for choosing Option B (ask for clarification):
+- A brand-new project request that is missing MOST of: (1) specific content/names/data, (2) visual style or palette, (3) clear app purpose
+- The user is explicitly asking a question rather than giving an order (e.g. message ends with "?" or contains phrases like "what do you need", "what data", "what info", "what should I provide")
+- NEVER use Option B for iterations on an existing project — always generate code
+
+Rules for choosing Option A:
 - Always include /App.tsx when creating a new project from scratch
 - List files in dependency order: utilities/types first, then components, entry point last
 - Maximum 8 files per generation
 - For iterations on existing projects, list ONLY files that need to change
-- Use .tsx for React components, .ts for logic/types, .css for global styles"""
+- Use .tsx for React components, .ts for logic/types, .css for global styles
+
+Rules for chat_response (Option B only):
+- Write 2-3 direct bullet questions, no intro, no filler text
+- Respond in the same language the user wrote in"""
 
 FILE_GEN_SYSTEM_PROMPT = """You are an elite UI engineer generating ONE specific file for a React + TypeScript + Tailwind project.
 
@@ -204,8 +225,12 @@ OPENAI_PLANNER_TOOL = {
         "properties": {
             "thinking": {"type": "string"},
             "files": {"type": "array", "items": {"type": "string"}},
+            "chat_response": {
+                "type": "string",
+                "description": "Clarifying questions for the user when files is empty. Empty string when generating files.",
+            },
         },
-        "required": ["thinking", "files"],
+        "required": ["thinking", "files", "chat_response"],
         "additionalProperties": False,
     },
     "strict": True,
@@ -219,8 +244,12 @@ ANTHROPIC_PLANNER_TOOL = {
         "properties": {
             "thinking": {"type": "string"},
             "files": {"type": "array", "items": {"type": "string"}},
+            "chat_response": {
+                "type": "string",
+                "description": "Clarifying questions for the user when files is empty. Empty string when generating files.",
+            },
         },
-        "required": ["thinking", "files"],
+        "required": ["thinking", "files", "chat_response"],
     },
 }
 
@@ -234,8 +263,12 @@ GEMINI_PLANNER_TOOL = {
                 "properties": {
                     "thinking": {"type": "string"},
                     "files": {"type": "array", "items": {"type": "string"}},
+                    "chat_response": {
+                        "type": "string",
+                        "description": "Clarifying questions for the user when files is empty. Empty string when generating files.",
+                    },
                 },
-                "required": ["thinking", "files"],
+                "required": ["thinking", "files", "chat_response"],
             },
         }
     ]
