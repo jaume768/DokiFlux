@@ -79,9 +79,24 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
 
   // Load project on mount
   useEffect(() => {
+    let cancelled = false;
+
+    // Reset generation state when projectId changes to avoid stale state from previous project
+    setBackgroundGenId(null);
+    setIsLoading(false);
+    setIsAutoFixing(false);
+    setIsLoadingProject(true);
+    setMessages([]);
+    messagesRef.current = [];
+    setCurrentFiles({});
+    currentFilesRef.current = {};
+    setGenProgress({ phase: null, filesDetected: 0, charsReceived: 0, streamingCode: "" });
+    initialPromptSentRef.current = false;
+
     async function loadProject() {
       try {
         const project = await apiGet<ProjectDetail>(`/projects/${projectId}/`);
+        if (cancelled) return;
         setProjectName(project.name);
         if (project.file_map && Object.keys(project.file_map).length > 0) {
           setCurrentFiles(project.file_map);
@@ -97,6 +112,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         const messagesData = await apiGet<PaginatedResponse<ChatMessageResponse>>(
           `/projects/${projectId}/messages/`
         );
+        if (cancelled) return;
         if (messagesData.results.length > 0) {
           const loadedMessages: Message[] = messagesData.results.map((m) => ({
             id: String(m.id),
@@ -113,19 +129,24 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         }
         // Check for active background generation
         const activeGen = await getActiveGeneration(projectId);
+        if (cancelled) return;
         if (activeGen.active && activeGen.generation_id) {
           setBackgroundGenId(activeGen.generation_id);
           setIsLoading(true);
           setGenProgress({ phase: null, filesDetected: 0, charsReceived: 0, streamingCode: "" });
         }
       } catch {
-        router.replace("/app/dashboard");
+        if (!cancelled) router.replace("/app/dashboard");
       } finally {
-        setIsLoadingProject(false);
+        if (!cancelled) setIsLoadingProject(false);
       }
     }
 
     loadProject();
+
+    return () => {
+      cancelled = true;
+    };
   }, [projectId, router]);
 
   // Auto-submit initial prompt from query params
