@@ -212,3 +212,14 @@ GEMINI_API_KEY = config("GEMINI_API_KEY", default="")
 OPENAI_API_KEYS = [k.strip() for k in config("OPENAI_API_KEYS", default="").split(",") if k.strip()]
 ANTHROPIC_API_KEYS = [k.strip() for k in config("ANTHROPIC_API_KEYS", default="").split(",") if k.strip()]
 GEMINI_API_KEYS = [k.strip() for k in config("GEMINI_API_KEYS", default="").split(",") if k.strip()]
+
+# --- Celery ---
+
+CELERY_BROKER_URL = config("REDIS_URL", default="redis://redis:6379/0")
+CELERY_RESULT_BACKEND = config("REDIS_URL", default="redis://redis:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 600  # 10 minutes max per task

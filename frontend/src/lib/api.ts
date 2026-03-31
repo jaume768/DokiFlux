@@ -125,4 +125,33 @@ export function apiDelete<T>(path: string, options?: ApiOptions) {
   return api<T>(path, { ...options, method: "DELETE" });
 }
 
+// --- Generation status polling ---
+
+export interface GenerationStatus {
+  id: number;
+  status: "pending" | "streaming" | "completed" | "cancelled" | "failed" | "no_changes";
+  input_tokens: number;
+  output_tokens: number;
+  cost: number;
+  files_changed: number;
+  created_at: string;
+  completed_at: string | null;
+  result_file_map?: Record<string, string>;
+}
+
+export interface ActiveGeneration {
+  active: boolean;
+  generation_id?: number;
+  status?: string;
+  created_at?: string;
+}
+
+export function getGenerationStatus(generationId: number): Promise<GenerationStatus> {
+  return apiGet<GenerationStatus>(`/generate/status/${generationId}/`);
+}
+
+export function getActiveGeneration(projectId: number): Promise<ActiveGeneration> {
+  return apiGet<ActiveGeneration>(`/projects/${projectId}/active-generation/`);
+}
+
 export { API_BASE };

@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TokenUsageBadge } from "@/components/TokenUsage";
 import { Message, GenerationProgress } from "@/types";
-import { User, Bot, AlertCircle, Loader2, Code2, Brain, FileCode2, Package, RotateCcw, Sparkles } from "lucide-react";
+import { User, Bot, AlertCircle, Loader2, Code2, Brain, FileCode2, Package, RotateCcw, Sparkles, Wrench } from "lucide-react";
 import { TaskProgress } from "@/components/TaskProgress";
 import { Button } from "@/components/ui/button";
 
@@ -15,6 +15,8 @@ interface ChatPanelProps {
   genProgress?: GenerationProgress;
   onRestore?: (generationId: number) => void;
   isRestoring?: boolean;
+  isAutoFixing?: boolean;
+  isBackgroundGen?: boolean;
 }
 
 function AssistantMessage({ msg, onRestore, isRestoring }: { msg: Message; onRestore?: (generationId: number) => void; isRestoring?: boolean }) {
@@ -212,7 +214,7 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
   );
 }
 
-export function ChatPanel({ messages, isLoading, genProgress, onRestore, isRestoring }: ChatPanelProps) {
+export function ChatPanel({ messages, isLoading, genProgress, onRestore, isRestoring, isAutoFixing, isBackgroundGen }: ChatPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -266,20 +268,38 @@ export function ChatPanel({ messages, isLoading, genProgress, onRestore, isResto
           </div>
         ))}
 
-        {isLoading && !isStreamingChat && isGeneratingCode && genProgress && (
+        {isLoading && !isStreamingChat && isGeneratingCode && genProgress && !isBackgroundGen && (
           <GenerationProgressIndicator progress={genProgress} />
         )}
 
-        {isLoading && !isStreamingChat && !isGeneratingCode && (
+        {isLoading && !isStreamingChat && (!isGeneratingCode || isBackgroundGen) && (
           <div className="flex gap-3">
             <div className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
               <Bot className="w-3.5 h-3.5" />
             </div>
             <div className="flex-1 flex items-center gap-2 pt-1">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                Generating...
-              </span>
+              {isAutoFixing ? (
+                <>
+                  <Wrench className="w-3.5 h-3.5 animate-pulse text-amber-500" />
+                  <span className="text-sm text-amber-500">
+                    Fixing error...
+                  </span>
+                </>
+              ) : isBackgroundGen ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                  <span className="text-sm text-blue-500">
+                    Generating in background...
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    Generating...
+                  </span>
+                </>
+              )}
             </div>
           </div>
         )}

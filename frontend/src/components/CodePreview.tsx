@@ -79,6 +79,7 @@ interface CodePreviewProps {
   generationKey: number;
   isIOS?: boolean;
   onBuildError?: (error: string) => void;
+  onRuntimeError?: (error: string) => void;
   genProgress?: GenerationProgress;
 }
 
@@ -278,7 +279,7 @@ function IterationDiffView({ content, oldContent, isStreaming, codeEndRef }: Ite
   );
 }
 
-export function CodePreview({ files, generationKey, isIOS = false, onBuildError, genProgress }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, isIOS = false, onBuildError, onRuntimeError, genProgress }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
@@ -286,7 +287,7 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
   const [iframePath, setIframePath] = useState("/");
   const [urlInput, setUrlInput] = useState("/");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
-  const { status, previewUrl, error, logs, lastBuildError, clearBuildError, mountFiles, restartContainer } = useWebContainer();
+  const { status, previewUrl, error, logs, lastBuildError, lastRuntimeError, clearBuildError, clearRuntimeError, mountFiles, restartContainer } = useWebContainer();
   const [mobileWidth, setMobileWidth] = useState(375);
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);
@@ -419,6 +420,14 @@ export function CodePreview({ files, generationKey, isIOS = false, onBuildError,
       clearBuildError();
     }
   }, [lastBuildError, onBuildError, clearBuildError]);
+
+  // Fire onRuntimeError callback when a new runtime error is detected
+  useEffect(() => {
+    if (lastRuntimeError && onRuntimeError) {
+      onRuntimeError(lastRuntimeError);
+      clearRuntimeError();
+    }
+  }, [lastRuntimeError, onRuntimeError, clearRuntimeError]);
 
   const fileCount = Object.keys(displayFiles).length;
   const isMultiFile = fileCount > 1;

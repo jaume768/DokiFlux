@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { apiGet, apiPatch, apiPost, API_BASE } from "@/lib/api";
+import { apiGet, apiPatch, apiPost, API_BASE, getActiveGeneration, getGenerationStatus } from "@/lib/api";
 import type { ProjectDetail, ChatMessageResponse, PaginatedResponse } from "@/types/auth";
 import { ChatPanel } from "@/components/ChatPanel";
 import { PromptInput } from "@/components/PromptInput";
@@ -39,12 +39,14 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [backgroundGenId, setBackgroundGenId] = useState<number | null>(null);
   const codeRef = useRef("");
   const abortRef = useRef<AbortController | null>(null);
   const currentFilesRef = useRef<FileMap>({});
   const messagesRef = useRef<Message[]>([]);
   const autoFixCountRef = useRef(0);
   const MAX_AUTO_FIX_RETRIES = 3;
+  const [isAutoFixing, setIsAutoFixing] = useState(false);
   const isLoadingRef = useRef(false);
   const initialPromptSentRef = useRef(false);
   const [sessionStats, setSessionStats] = useState<SessionStats>({
@@ -109,6 +111,13 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           setMessages(loadedMessages);
           messagesRef.current = loadedMessages;
         }
+        // Check for active background generation
+        const activeGen = await getActiveGeneration(projectId);
+        if (activeGen.active && activeGen.generation_id) {
+          setBackgroundGenId(activeGen.generation_id);
+          setIsLoading(true);
+          setGenProgress({ phase: null, filesDetected: 0, charsReceived: 0, streamingCode: "" });
+        }
       } catch {
         router.replace("/app/dashboard");
       } finally {
@@ -135,6 +144,72 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isLoading, isLoadingProject, messages.length]);
 
+  // Poll background generation status
+  useEffect(() => {
+    if (!backgroundGenId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const status = await getGenerationStatus(backgroundGenId);
+        
+        if (status.status === "completed") {
+          clearInterval(pollInterval);
+          setBackgroundGenId(null);
+          setIsLoading(false);
+          setGenProgress({ phase: null, filesDetected: 0, charsReceived: 0, streamingCode: "" });
+          
+          // Load the result
+          if (status.result_file_map) {
+            setCurrentFiles(status.result_file_map);
+            currentFilesRef.current = status.result_file_map;
+            setGenerationKey((k) => k + 1);
+            autoFixCountRef.current = 0;
+          }
+          
+          // Add completion message
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "assistant" as const,
+              content: `Background generation completed (${status.files_changed} files changed).`,
+              timestamp: Date.now(),
+              type: "code" as const,
+              usage: {
+                inputTokens: status.input_tokens,
+                outputTokens: status.output_tokens,
+                cost: status.cost,
+              },
+              generationId: status.id,
+            },
+          ]);
+          
+          refreshBalance();
+        } else if (status.status === "failed" || status.status === "cancelled") {
+          clearInterval(pollInterval);
+          setBackgroundGenId(null);
+          setIsLoading(false);
+          setGenProgress({ phase: null, filesDetected: 0, charsReceived: 0, streamingCode: "" });
+          
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "assistant" as const,
+              content: `Background generation ${status.status}.`,
+              timestamp: Date.now(),
+              type: "error" as const,
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to poll generation status:", err);
+      }
+    }, 2000);
+
+    return () => clearInterval(pollInterval);
+  }, [backgroundGenId, refreshBalance]);
+
   const buildCompressedPayload = useCallback(() => {
     const allMsgs = messagesRef.current.filter(
       (m) => m.role === "user" || m.role === "assistant"
@@ -159,19 +234,21 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   }
 
   const handleSubmit = useCallback(
-    async (prompt: string) => {
+    async (prompt: string, isAutofix = false) => {
       setIsLoading(true);
       setGenProgress({ phase: "analyzing", filesDetected: 0, charsReceived: 0, streamingCode: "" });
       const controller = new AbortController();
       abortRef.current = controller;
 
-      const userMessage: Message = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content: prompt,
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
+      if (!isAutofix) {
+        const userMessage: Message = {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: prompt,
+          timestamp: Date.now(),
+        };
+        setMessages((prev) => [...prev, userMessage]);
+      }
 
       const chatHistory = buildCompressedPayload();
       const streamingMsgId = crypto.randomUUID();
@@ -189,6 +266,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             chat_history: chatHistory,
             model: selectedModel,
             mode: "phased",
+            is_autofix: isAutofix,
           }),
           signal: controller.signal,
         });
@@ -507,6 +585,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         codeRef.current = "";
         abortRef.current = null;
         setIsLoading(false);
+        setIsAutoFixing(false);
         setGenProgress({ phase: null, filesDetected: 0, charsReceived: 0, streamingCode: "" });
       }
     },
@@ -570,8 +649,8 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     }
   }
 
-  const handleBuildError = useCallback(
-    (errorText: string) => {
+  const handleAutoFix = useCallback(
+    (errorText: string, errorType: "build" | "runtime") => {
       if (isLoadingRef.current) return;
       if (autoFixCountRef.current >= MAX_AUTO_FIX_RETRIES) {
         setMessages((prev) => [
@@ -579,7 +658,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           {
             id: crypto.randomUUID(),
             role: "assistant" as const,
-            content: `Auto-fix failed after ${MAX_AUTO_FIX_RETRIES} attempts. The build error persists:\n\n\`\`\`\n${errorText}\n\`\`\`\n\nPlease describe the fix you'd like or try a different approach.`,
+            content: `Auto-fix failed after ${MAX_AUTO_FIX_RETRIES} attempts. The ${errorType} error persists:\n\n\`\`\`\n${errorText}\n\`\`\`\n\nPlease describe the fix you'd like or try a different approach.`,
             timestamp: Date.now(),
             type: "error" as const,
           },
@@ -595,23 +674,24 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         ? errorText.slice(0, 1500) + "\n... (truncated)"
         : errorText;
 
-      const fixPrompt = `The preview has a build error (auto-fix attempt ${attempt}/${MAX_AUTO_FIX_RETRIES}):\n\n\`\`\`\n${truncatedError}\n\`\`\`\n\nFix this error. Only modify the files that need changes.`;
+      const fixPrompt = `The preview has a ${errorType} error (auto-fix attempt ${attempt}/${MAX_AUTO_FIX_RETRIES}):\n\n\`\`\`\n${truncatedError}\n\`\`\`\n\nFix this error. Only modify the files that need changes.`;
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "user" as const,
-          content: `Auto-fix (attempt ${attempt}/${MAX_AUTO_FIX_RETRIES}): Build error detected, requesting fix...`,
-          timestamp: Date.now(),
-        },
-      ]);
-
+      setIsAutoFixing(true);
       setTimeout(() => {
-        handleSubmit(fixPrompt);
+        handleSubmit(fixPrompt, true);
       }, 500);
     },
     [handleSubmit]
+  );
+
+  const handleBuildError = useCallback(
+    (errorText: string) => handleAutoFix(errorText, "build"),
+    [handleAutoFix]
+  );
+
+  const handleRuntimeError = useCallback(
+    (errorText: string) => handleAutoFix(errorText, "runtime"),
+    [handleAutoFix]
   );
 
   if (isLoadingProject) {
@@ -761,6 +841,8 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             genProgress={genProgress}
             onRestore={handleRestore}
             isRestoring={isRestoring}
+            isAutoFixing={isAutoFixing}
+            isBackgroundGen={!!backgroundGenId}
           />
           <PromptInput
             onSubmit={handleSubmit}
@@ -792,6 +874,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             generationKey={generationKey}
             isIOS={isIOS}
             onBuildError={handleBuildError}
+            onRuntimeError={handleRuntimeError}
             genProgress={genProgress}
           />
         </div>

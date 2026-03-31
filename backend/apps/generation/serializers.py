@@ -13,6 +13,7 @@ class GenerateRequestSerializer(serializers.Serializer):
     )
     model = serializers.CharField(max_length=50, default=DEFAULT_MODEL, required=False)
     mode = serializers.ChoiceField(choices=["standard", "phased"], default="phased", required=False)
+    is_autofix = serializers.BooleanField(default=False, required=False)
 
     def validate_model(self, value):
         """Ensure model is in the registry."""

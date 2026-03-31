@@ -18,7 +18,9 @@ interface UseWebContainerReturn {
   error: string | null;
   logs: string[];
   lastBuildError: string | null;
+  lastRuntimeError: string | null;
   clearBuildError: () => void;
+  clearRuntimeError: () => void;
   mountFiles: (files: FileMap) => Promise<void>;
   restartContainer: (files: FileMap) => Promise<void>;
 }
@@ -127,6 +129,54 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
+
+// Runtime error capture - send to parent for autofix
+(function setupErrorCapture() {
+  var lastError = "";
+  var errorTimeout = null;
+  
+  function sendError(error) {
+    // Debounce to avoid spam
+    if (error === lastError) return;
+    lastError = error;
+    if (errorTimeout) clearTimeout(errorTimeout);
+    errorTimeout = setTimeout(function() {
+      window.parent.postMessage({ type: "dokiflux-runtime-error", error: error }, "*");
+    }, 500);
+  }
+  
+  window.onerror = function(message, source, lineno, colno, error) {
+    var errorMsg = message + " at " + source + ":" + lineno + ":" + colno;
+    if (error && error.stack) errorMsg += "\\n" + error.stack;
+    sendError(errorMsg);
+    return false;
+  };
+  
+  window.onunhandledrejection = function(event) {
+    var reason = event.reason;
+    var errorMsg = "Unhandled Promise Rejection: ";
+    if (reason instanceof Error) {
+      errorMsg += reason.message;
+      if (reason.stack) errorMsg += "\\n" + reason.stack;
+    } else {
+      errorMsg += String(reason);
+    }
+    sendError(errorMsg);
+  };
+  
+  // Capture console.error as well
+  var originalConsoleError = console.error;
+  console.error = function() {
+    var args = Array.prototype.slice.call(arguments);
+    var errorMsg = args.map(function(arg) {
+      if (arg instanceof Error) return arg.message + (arg.stack ? "\\n" + arg.stack : "");
+      if (typeof arg === "object") return JSON.stringify(arg);
+      return String(arg);
+    }).join(" ");
+    sendError("Console Error: " + errorMsg);
+    originalConsoleError.apply(console, arguments);
+  };
+})();
 
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 root.render(
@@ -318,6 +368,7 @@ export function useWebContainer(): UseWebContainerReturn {
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [lastBuildError, setLastBuildError] = useState<string | null>(null);
+  const [lastRuntimeError, setLastRuntimeError] = useState<string | null>(null);
   const containerRef = useRef<WebContainer | null>(null);
   const serverProcessRef = useRef<any>(null);
   const isInstalledRef = useRef(false);
@@ -333,6 +384,10 @@ export function useWebContainer(): UseWebContainerReturn {
       clearTimeout(errorTimerRef.current);
       errorTimerRef.current = null;
     }
+  }, []);
+
+  const clearRuntimeError = useCallback(() => {
+    setLastRuntimeError(null);
   }, []);
 
   const flushErrorBuffer = useCallback(() => {
@@ -382,6 +437,18 @@ export function useWebContainer(): UseWebContainerReturn {
         serverProcessRef.current = null;
       }
     };
+  }, []);
+
+  // Listen for runtime errors from iframe
+  useEffect(() => {
+    function handleMessage(e: MessageEvent) {
+      if (!e.data || !isMountedRef.current) return;
+      if (e.data.type === "dokiflux-runtime-error" && typeof e.data.error === "string") {
+        setLastRuntimeError(e.data.error);
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, []);
 
   const mountFiles = useCallback(
@@ -539,5 +606,5 @@ export function useWebContainer(): UseWebContainerReturn {
     [mountFiles]
   );
 
-  return { status, previewUrl, error, logs, lastBuildError, clearBuildError, mountFiles, restartContainer };
+  return { status, previewUrl, error, logs, lastBuildError, lastRuntimeError, clearBuildError, clearRuntimeError, mountFiles, restartContainer };
 }

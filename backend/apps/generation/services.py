@@ -66,6 +66,7 @@ async def stream_generation(
     prompt: str,
     chat_history: list[dict],
     model: str = "gpt-5.4",
+    is_autofix: bool = False,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """
     Full generation flow:
@@ -94,7 +95,7 @@ async def stream_generation(
     messages = build_messages(prompt, current_project, chat_history)
 
     # 4. Create Generation record (with snapshot of current state)
-    generation = await _create_generation(user, project, prompt, model, file_map or {})
+    generation = await _create_generation(user, project, prompt, model, file_map or {}, is_autofix, chat_history)
 
     # 5. Send generation_id to frontend immediately so Restore button can be shown
     yield {"type": "generation_id", "id": generation.id}
@@ -154,6 +155,7 @@ async def stream_generation(
             prompt=prompt,
             messages=messages,
             model=model,
+            is_autofix=is_autofix,
         )
 
 
@@ -222,6 +224,7 @@ async def stream_phased_generation(
     prompt: str,
     chat_history: list[dict],
     model: str = "gpt-5.4",
+    is_autofix: bool = False,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """
     v0-style phased generation:
@@ -247,10 +250,14 @@ async def stream_phased_generation(
     planner_messages = build_messages(prompt, current_project, chat_history)
 
     # 4. Create generation record
-    generation = await _create_generation(user, project, prompt, model, file_map or {})
+    generation = await _create_generation(user, project, prompt, model, file_map or {}, is_autofix, chat_history)
     yield {"type": "generation_id", "id": generation.id}
     generation.status = "streaming"
     await _save_generation(generation)
+
+    # 4b. Persist user message immediately so chat history survives disconnects
+    if not is_autofix:
+        await _create_message(project=project, role="user", content=prompt, message_type="chat")
 
     provider = get_provider(model)
     model_config = get_model_config(model)
@@ -381,6 +388,26 @@ async def stream_phased_generation(
 
     finally:
         cancelled = not completed_normally and not error_occurred
+
+        # Client disconnected mid-stream → hand off to Celery instead of cancelling
+        if cancelled and not error_occurred:
+            try:
+                generation.status = "pending"
+                await _save_generation(generation)
+                from .tasks import run_background_generation  # deferred to avoid circular import
+                run_background_generation.delay(generation.id)
+                logger.info(
+                    "Client disconnected — background task launched for generation %s",
+                    generation.id,
+                )
+                return
+            except Exception as exc:
+                logger.error(
+                    "Failed to launch background generation for %s: %s",
+                    generation.id, exc,
+                )
+                # Fall through to normal cancellation handling below
+
         cost = calculate_cost(total_input_tokens, total_output_tokens, model)
         usage_data = (
             {
@@ -405,6 +432,7 @@ async def stream_phased_generation(
             prompt=prompt,
             messages=planner_messages,
             model=model,
+            is_autofix=is_autofix,
         )
 
 
@@ -412,13 +440,15 @@ async def stream_phased_generation(
 
 
 @sync_to_async
-def _create_generation(user, project, prompt, model, file_map_snapshot=None):
+def _create_generation(user, project, prompt, model, file_map_snapshot=None, is_autofix=False, chat_history=None):
     return Generation.objects.create(
         user=user,
         project=project,
         prompt=prompt,
         model=model,
         file_map_snapshot=file_map_snapshot,
+        is_autofix=is_autofix,
+        chat_history_cache=chat_history,
     )
 
 
@@ -449,6 +479,7 @@ async def _finalize_generation(
     generation, usage_data, has_code, has_chat,
     full_code, chat_text, error_occurred, cancelled,
     user, project, prompt, messages, model="",
+    is_autofix=False,
 ):
     """Handle billing and record updates after streaming ends (normally, cancelled, or error)."""
 
@@ -481,7 +512,7 @@ async def _finalize_generation(
         generation.completed_at = now()
 
         actual_cost = generation.cost
-        if actual_cost > 0:
+        if actual_cost > 0 and not is_autofix:
             await sync_to_async(consume_credits)(
                 user,
                 actual_cost,
@@ -503,7 +534,7 @@ async def _finalize_generation(
         generation.completed_at = now()
 
         actual_cost = generation.cost
-        if actual_cost > 0:
+        if actual_cost > 0 and not is_autofix:
             success = await sync_to_async(consume_credits)(
                 user,
                 actual_cost,
@@ -519,7 +550,6 @@ async def _finalize_generation(
         if model:
             await _update_project_model(project, model)
 
-        await _create_message(project=project, role="user", content=prompt, message_type="chat")
         await _create_message(
             project=project,
             role="assistant",
@@ -535,7 +565,7 @@ async def _finalize_generation(
         generation.completed_at = now()
 
         actual_cost = generation.cost
-        if actual_cost > 0:
+        if actual_cost > 0 and not is_autofix:
             await sync_to_async(consume_credits)(
                 user,
                 actual_cost,

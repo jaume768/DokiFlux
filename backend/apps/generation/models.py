@@ -33,6 +33,12 @@ class Generation(models.Model):
         max_length=20, choices=STATUS_CHOICES, default="pending"
     )
     files_changed = models.IntegerField(default=0)
+    is_autofix = models.BooleanField(default=False)
+    celery_task_id = models.CharField(max_length=50, null=True, blank=True)
+    chat_history_cache = models.JSONField(
+        null=True, blank=True,
+        help_text="Cached chat_history for background task execution.",
+    )
     file_map_snapshot = models.JSONField(
         null=True, blank=True,
         help_text="Snapshot of project file_map BEFORE this generation (for restore).",

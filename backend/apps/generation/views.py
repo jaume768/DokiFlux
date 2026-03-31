@@ -76,6 +76,7 @@ async def generate_view(request):
     chat_history = data.get("chat_history", [])
     model = data.get("model", DEFAULT_MODEL)
     mode = data.get("mode", "phased")
+    is_autofix = data.get("is_autofix", False)
 
     # --- Verify project ownership ---
     try:
@@ -128,6 +129,7 @@ async def generate_view(request):
             prompt=prompt,
             chat_history=chat_history,
             model=model,
+            is_autofix=is_autofix,
         ):
             data_str = json.dumps(chunk)
             yield f"data: {data_str}\n\n"
@@ -234,6 +236,80 @@ async def models_view(request):
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     return JsonResponse({"models": list_models(), "default": DEFAULT_MODEL})
+
+
+@csrf_exempt
+async def generation_status_view(request, generation_id: int):
+    """
+    GET /api/generate/status/<generation_id>/
+    Returns status of a generation (for polling during background generation).
+    """
+    if request.method != "GET":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    user = request.user
+    if not user.is_authenticated:
+        return JsonResponse({"error": "Authentication required"}, status=401)
+
+    from .models import Generation
+
+    try:
+        generation = await sync_to_async(
+            Generation.objects.select_related("project").get
+        )(id=generation_id, user=user)
+    except Generation.DoesNotExist:
+        return JsonResponse({"error": "Generation not found"}, status=404)
+
+    response_data = {
+        "id": generation.id,
+        "status": generation.status,
+        "input_tokens": generation.input_tokens,
+        "output_tokens": generation.output_tokens,
+        "cost": float(generation.cost),
+        "files_changed": generation.files_changed,
+        "created_at": generation.created_at.isoformat(),
+        "completed_at": generation.completed_at.isoformat() if generation.completed_at else None,
+    }
+
+    # If completed, include the result file_map
+    if generation.status == "completed" and generation.result_file_map:
+        response_data["result_file_map"] = generation.result_file_map
+
+    return JsonResponse(response_data)
+
+
+@csrf_exempt
+async def active_generation_view(request, project_id: int):
+    """
+    GET /api/projects/<project_id>/active-generation/
+    Returns the active (pending/streaming) generation for a project, if any.
+    """
+    if request.method != "GET":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    user = request.user
+    if not user.is_authenticated:
+        return JsonResponse({"error": "Authentication required"}, status=401)
+
+    from .models import Generation
+
+    generation = await sync_to_async(
+        lambda: Generation.objects.filter(
+            project_id=project_id,
+            user=user,
+            status__in=["pending", "streaming"]
+        ).order_by("-created_at").first()
+    )()
+
+    if not generation:
+        return JsonResponse({"active": False})
+
+    return JsonResponse({
+        "active": True,
+        "generation_id": generation.id,
+        "status": generation.status,
+        "created_at": generation.created_at.isoformat(),
+    })
 
 
 def _sse_error(message: str):
