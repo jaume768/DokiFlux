@@ -54,7 +54,7 @@ export function PromptInput({ onSubmit, onCancel, isLoading }: PromptInputProps)
   }, [value, autoResize]);
 
   return (
-    <div className="border-t bg-background p-4">
+    <div className="border-t bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
       <div className="relative rounded-xl border bg-muted/40 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 transition-colors">
         <textarea
           ref={textareaRef}

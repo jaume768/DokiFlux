@@ -12,13 +12,14 @@ import { SessionStatsBar } from "@/components/TokenUsage";
 import { Message, SessionStats, StreamChunk, GenerationProgress } from "@/types";
 import { parseMultiFileOutput, mergeFiles, serializeFileMap, type FileMap, getFileCount } from "@/lib/parser";
 import { MAX_CHAT_HISTORY } from "@/lib/prompts";
-import { Sparkles, MessageSquare, Monitor, ArrowLeft, Coins, Loader2, Pencil, Check, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Sparkles, MessageSquare, Monitor, ArrowLeft, Coins, Loader2, Pencil, Check, X, PanelLeftClose, PanelLeftOpen, Menu } from "lucide-react";
 import { useIsMobile, useIsIOS } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/button";
 import { ModelSelector } from "@/components/ModelSelector";
 import { DEFAULT_MODEL, type ModelId } from "@/lib/pricing";
 import { useModels } from "@/context/ModelsContext";
 import { LimitReachedModal, type LimitType } from "@/components/LimitReachedModal";
+import { useMobileSidebar } from "@/context/MobileSidebarContext";
 
 type MobileView = "chat" | "preview";
 
@@ -72,6 +73,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   });
   const isMobile = useIsMobile();
   const isIOS = useIsIOS();
+  const { toggle: toggleSidebar } = useMobileSidebar();
 
   currentFilesRef.current = currentFiles;
   messagesRef.current = messages;
@@ -726,16 +728,25 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   return (
     <div className="h-[100dvh] flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 md:px-6 py-2 md:py-3 border-b bg-background shrink-0">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+      <header className="flex items-center justify-between px-3 md:px-6 py-2 md:py-3 border-b bg-background shrink-0 gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 flex-1 min-w-0">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={toggleSidebar}
+            className="md:hidden shrink-0"
+          >
+            <Menu className="w-4 h-4" />
+          </Button>
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={() => router.push("/app")}
+            className="hidden md:flex shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <Sparkles className="w-5 h-5 text-primary shrink-0" />
+          <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary shrink-0" />
           {isEditingTitle ? (
             <div className="flex items-center gap-1 flex-1 min-w-0">
               <input
@@ -746,21 +757,13 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
                   if (e.key === "Enter") handleTitleSave();
                   if (e.key === "Escape") setIsEditingTitle(false);
                 }}
-                className="flex-1 min-w-0 text-base md:text-lg font-bold bg-transparent border-b border-primary outline-none px-1"
+                className="flex-1 min-w-0 text-sm md:text-lg font-bold bg-transparent border-b border-primary outline-none px-1"
                 autoFocus
               />
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={handleTitleSave}
-              >
+              <Button variant="ghost" size="icon-xs" onClick={handleTitleSave}>
                 <Check className="w-3.5 h-3.5 text-emerald-500" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => setIsEditingTitle(false)}
-              >
+              <Button variant="ghost" size="icon-xs" onClick={() => setIsEditingTitle(false)}>
                 <X className="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -772,7 +775,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
               }}
               className="flex items-center gap-1.5 group flex-1 min-w-0"
             >
-              <h1 className="text-base md:text-lg font-bold truncate">
+              <h1 className="text-sm md:text-lg font-bold truncate">
                 {projectName}
               </h1>
               <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
@@ -780,40 +783,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           )}
         </div>
 
-        {isMobile && (
-          <div className="flex items-center bg-muted rounded-lg p-0.5">
-            <button
-              onClick={() => setMobileView("chat")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                mobileView === "chat"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground"
-              }`}
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              Chat
-            </button>
-            <button
-              onClick={() => {
-                setMobileView("preview");
-                setHasNewPreview(false);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors relative ${
-                mobileView === "preview"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground"
-              }`}
-            >
-              <Monitor className="w-3.5 h-3.5" />
-              Preview
-              {hasNewPreview && mobileView !== "preview" && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              )}
-            </button>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
           {!isMobile && (
             <Button
               variant="ghost"
@@ -834,13 +804,47 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             disabled={isLoading || modelLocked}
           />
           {balance !== null && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+            <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
               <Coins className="w-3 h-3" />
               <span>${parseFloat(balance).toFixed(2)}</span>
             </div>
           )}
         </div>
       </header>
+
+      {/* Mobile Chat/Preview tab bar — full-width row below header */}
+      {isMobile && (
+        <div className="flex border-b bg-background shrink-0">
+          <button
+            onClick={() => setMobileView("chat")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors border-b-2 ${
+              mobileView === "chat"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground"
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Chat
+          </button>
+          <button
+            onClick={() => {
+              setMobileView("preview");
+              setHasNewPreview(false);
+            }}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors border-b-2 relative ${
+              mobileView === "preview"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground"
+            }`}
+          >
+            <Monitor className="w-4 h-4" />
+            Preview
+            {hasNewPreview && mobileView !== "preview" && (
+              <span className="absolute top-1.5 right-[calc(50%-28px)] w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            )}
+          </button>
+        </div>
+      )}
 
       <SessionStatsBar stats={sessionStats} />
 

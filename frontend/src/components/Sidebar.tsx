@@ -20,7 +20,12 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout, balance, planType } = useAuth();
@@ -54,8 +59,20 @@ export function Sidebar() {
     { icon: MessageSquare, label: "Chats", path: "/app/chats" },
   ];
 
+  function handleNav(path: string) {
+    router.push(path);
+    onClose?.();
+  }
+
   return (
-    <div className="w-[280px] h-screen border-r bg-background flex flex-col">
+    <div
+      className={`
+        w-[280px] h-screen border-r bg-background flex flex-col shrink-0
+        fixed left-0 top-0 bottom-0 z-50 transition-transform duration-300
+        md:relative md:z-auto md:translate-x-0 md:shadow-none
+        ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}
+      `}
+    >
       {/* Header */}
       <div className="p-4 border-b">
         <div className="flex items-center gap-2 mb-4">
@@ -63,7 +80,7 @@ export function Sidebar() {
           <h1 className="text-lg font-bold">DokiFlux</h1>
         </div>
         <Button
-          onClick={() => router.push("/app")}
+          onClick={() => handleNav("/app")}
           className="w-full justify-start gap-2"
           size="sm"
         >
@@ -80,7 +97,7 @@ export function Sidebar() {
           return (
             <button
               key={item.path}
-              onClick={() => router.push(item.path)}
+              onClick={() => handleNav(item.path)}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive
                   ? "bg-primary/10 text-primary font-medium"
@@ -125,7 +142,7 @@ export function Sidebar() {
                   return (
                     <button
                       key={project.id}
-                      onClick={() => router.push(`/app/generate/${project.id}`)}
+                      onClick={() => handleNav(`/app/generate/${project.id}`)}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                         isActive
                           ? "bg-muted text-foreground"
@@ -161,7 +178,7 @@ export function Sidebar() {
         )}
         <div className="flex items-center gap-1 rounded-lg hover:bg-muted transition-colors">
           <button
-            onClick={() => router.push("/app/profile")}
+            onClick={() => handleNav("/app/profile")}
             className="flex items-center gap-2 px-3 py-2 flex-1 min-w-0 text-left"
           >
             <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary shrink-0">
