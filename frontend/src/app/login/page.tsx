@@ -7,6 +7,7 @@ import { ApiError } from "@/lib/api";
 import { Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -15,6 +16,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  function handleGoogleError(msg: string) {
+    setError(msg);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,7 +60,17 @@ export default function LoginPage() {
             <CardDescription>Accede a tu cuenta para continuar</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-4">
+              <GoogleSignInButton onError={handleGoogleError} />
+
+              <div className="relative flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground">o</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               {error && (
                 <div className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
                   {error}

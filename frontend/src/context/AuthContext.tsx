@@ -26,6 +26,7 @@ interface AuthContextType {
   planType: "free" | "premium";
   login: (data: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<AuthResponse>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   refreshBalance: () => Promise<void>;
@@ -143,13 +144,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         auth: false,
       });
 
-      if (res.user) {
+      if (res.user?.is_email_verified) {
+        // AUTO_VERIFY_EMAIL=True (dev) — cookies already set, go straight to onboarding
         setUser(res.user);
         refreshBalance();
         router.push("/onboarding");
       }
+      // If is_email_verified=false, do nothing here — the register page handles the UI
 
       return res;
+    },
+    [router, refreshBalance]
+  );
+
+  const loginWithGoogle = useCallback(
+    async (idToken: string) => {
+      const res = await apiPost<AuthResponse>("/auth/google/", { id_token: idToken }, { auth: false });
+      setUser(res.user);
+      refreshBalance();
+
+      if (!res.user.has_completed_onboarding) {
+        router.push("/onboarding");
+      } else {
+        router.push("/app");
+      }
     },
     [router, refreshBalance]
   );
@@ -174,6 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       planType,
       login,
       register,
+      loginWithGoogle,
       logout,
       refreshUser,
       refreshBalance,
@@ -186,6 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       planType,
       login,
       register,
+      loginWithGoogle,
       logout,
       refreshUser,
       refreshBalance,

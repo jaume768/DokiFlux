@@ -176,10 +176,19 @@ class RegisterView(APIView):
         else:
             # PROD: send verification email
             token_obj = create_email_verification_token(user)
-            email_service.send_verification_email(user, token_obj.token)
+            email_sent = True
+            try:
+                email_service.send_verification_email(user, token_obj.token)
+            except Exception:
+                logger.exception("Could not send verification email to %s", user.email)
+                email_sent = False
+
             return Response(
                 {
-                    "message": "Cuenta creada. Revisa tu email para verificar tu cuenta.",
+                    "message": "Cuenta creada. Revisa tu email para verificar tu cuenta."
+                    if email_sent
+                    else "Cuenta creada, pero no se pudo enviar el email de verificación. Usa 'Reenviar verificación'.",
+                    "email_sent": email_sent,
                     "user": UserSerializer(user).data,
                 },
                 status=status.HTTP_201_CREATED,

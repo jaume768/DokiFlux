@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { ApiError } from "@/lib/api";
-import { Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
+import { ApiError, apiPost } from "@/lib/api";
+import { Sparkles, Loader2, Eye, EyeOff, Mail, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -17,6 +18,14 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(true);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+
+  function handleGoogleError(msg: string) {
+    setError(msg);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,20 +44,32 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await register({
+      const res = await register({
         email,
         password,
         password_confirm: passwordConfirm,
         full_name: fullName,
       });
+
+      // If user is not auto-verified, show the "check your email" screen
+      if (res.user && !res.user.is_email_verified) {
+        setPendingEmail(res.user.email);
+        setEmailSent((res as Record<string, unknown>).email_sent !== false);
+      }
     } catch (err) {
       if (err instanceof ApiError) {
-        const data = err.data as Record<string, string[]>;
-        const firstField = Object.keys(data)[0];
-        if (firstField && Array.isArray(data[firstField])) {
-          setError(data[firstField][0]);
+        const data = err.data as Record<string, unknown>;
+        if (data.email && Array.isArray(data.email)) {
+          setError((data.email as string[])[0]);
+        } else if (data.password && Array.isArray(data.password)) {
+          setError((data.password as string[])[0]);
         } else {
-          setError("Error al crear la cuenta.");
+          const firstField = Object.keys(data)[0];
+          if (firstField && Array.isArray(data[firstField])) {
+            setError((data[firstField] as string[])[0]);
+          } else {
+            setError("Error al crear la cuenta.");
+          }
         }
       } else {
         setError("Error de conexión. Inténtalo de nuevo.");
@@ -58,6 +79,76 @@ export default function RegisterPage() {
     }
   }
 
+  async function handleResend() {
+    if (!pendingEmail) return;
+    setResendLoading(true);
+    setResendMessage("");
+    try {
+      await apiPost("/auth/resend-verification/", { email: pendingEmail }, { auth: false });
+      setResendMessage("Email reenviado. Revisa tu bandeja de entrada.");
+      setEmailSent(true);
+    } catch {
+      setResendMessage("No se pudo reenviar el email. Inténtalo más tarde.");
+    } finally {
+      setResendLoading(false);
+    }
+  }
+
+  // --- Pending verification screen ---
+  if (pendingEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-sm">
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <Sparkles className="w-6 h-6 text-primary" />
+            <h1 className="text-2xl font-bold">Dokiflux</h1>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <div className="flex justify-center mb-2">
+                <div className="rounded-full bg-primary/10 p-3">
+                  <Mail className="w-6 h-6 text-primary" />
+                </div>
+              </div>
+              <CardTitle className="text-center">Verifica tu email</CardTitle>
+              <CardDescription className="text-center">
+                {emailSent
+                  ? <>Hemos enviado un enlace de verificación a <strong>{pendingEmail}</strong>. Revisa tu bandeja de entrada (y spam).</>
+                  : <>No se pudo enviar el email de verificación a <strong>{pendingEmail}</strong>. Pulsa el botón para reenviar.</>
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {resendMessage && (
+                <p className="text-sm text-center text-muted-foreground">{resendMessage}</p>
+              )}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleResend}
+                disabled={resendLoading}
+              >
+                {resendLoading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" />Reenviando...</>
+                ) : (
+                  <><RotateCcw className="w-4 h-4" />Reenviar email de verificación</>
+                )}
+              </Button>
+              <p className="text-center text-sm text-muted-foreground">
+                ¿Ya verificaste?{" "}
+                <Link href="/login" className="text-primary hover:underline font-medium">
+                  Iniciar sesión
+                </Link>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Registration form ---
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
@@ -72,7 +163,17 @@ export default function RegisterPage() {
             <CardDescription>Empieza a generar UI con IA</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-4">
+              <GoogleSignInButton onError={handleGoogleError} />
+
+              <div className="relative flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground">o</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               {error && (
                 <div className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
                   {error}

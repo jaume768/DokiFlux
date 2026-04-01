@@ -35,7 +35,8 @@ class AsyncJWTAuthMiddleware:
         return self.get_response(request)
 
     async def __acall__(self, request):
-        if not hasattr(request, "user") or request.user.is_anonymous:
+        current_user = await request.auser()
+        if current_user.is_anonymous:
             user = await self._authenticate(request)
             if user:
                 request.user = user
