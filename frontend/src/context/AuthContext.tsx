@@ -26,7 +26,7 @@ interface AuthContextType {
   planType: "free" | "premium";
   login: (data: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<AuthResponse>;
-  loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithGoogle: (code: string, redirectUri: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   refreshBalance: () => Promise<void>;
@@ -41,6 +41,7 @@ const PUBLIC_PATHS = [
   "/password-reset",
   "/password-reset-confirm",
   "/pricing",
+  "/auth/google/callback",
 ];
 
 function isPublicPath(pathname: string): boolean {
@@ -158,8 +159,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const loginWithGoogle = useCallback(
-    async (idToken: string) => {
-      const res = await apiPost<AuthResponse>("/auth/google/", { id_token: idToken }, { auth: false });
+    async (code: string, redirectUri: string) => {
+      const res = await apiPost<AuthResponse>("/auth/google/", { code, redirect_uri: redirectUri }, { auth: false });
       setUser(res.user);
       refreshBalance();
 

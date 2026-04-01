@@ -454,7 +454,7 @@ class CheckUsernameView(APIView):
 
 
 class GoogleAuthView(APIView):
-    """POST /api/auth/google/ — Authenticate with Google id_token."""
+    """POST /api/auth/google/ — Authenticate with Google OAuth authorization code."""
 
     permission_classes = [AllowAny]
     throttle_classes = [AnonAuthThrottle]
@@ -463,19 +463,58 @@ class GoogleAuthView(APIView):
         serializer = GoogleAuthSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        id_token_str = serializer.validated_data["id_token"]
+        code = serializer.validated_data["code"]
+        redirect_uri = serializer.validated_data["redirect_uri"]
 
-        # Verify the Google id_token
+        # Exchange the authorization code for tokens
+        import httpx
+
         try:
-            idinfo = google_id_token.verify_oauth2_token(
-                id_token_str,
-                google_requests.Request(),
-                settings.GOOGLE_CLIENT_ID,
+            token_response = httpx.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": code,
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+                timeout=10,
             )
-        except (ValueError, AttributeError):
+            token_data = token_response.json()
+        except Exception:
             return Response(
-                {"error": "Token de Google inválido."},
+                {"error": "Error al comunicarse con Google."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        access_token = token_data.get("access_token")
+        if not access_token:
+            logger.warning("Google token exchange failed: %s", token_data)
+            return Response(
+                {"error": "No se pudo obtener el token de Google."},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Use the access_token to get user info from Google's userinfo endpoint
+        # This is secure because it's a direct server-to-server HTTPS call.
+        try:
+            userinfo_response = httpx.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=10,
+            )
+            if userinfo_response.status_code != 200:
+                logger.warning("Google userinfo request failed: %s", userinfo_response.text)
+                return Response(
+                    {"error": "Token de Google inválido."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            idinfo = userinfo_response.json()
+        except Exception:
+            return Response(
+                {"error": "Error al obtener información del usuario de Google."},
+                status=status.HTTP_502_BAD_GATEWAY,
             )
 
         email = idinfo.get("email", "").lower().strip()

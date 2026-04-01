@@ -92,7 +92,8 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class GoogleAuthSerializer(serializers.Serializer):
     """Serializer for POST /api/auth/google/."""
 
-    id_token = serializers.CharField()
+    code = serializers.CharField()
+    redirect_uri = serializers.CharField()
 
 
 class UpdateProfileSerializer(serializers.ModelSerializer):

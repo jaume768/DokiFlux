@@ -5,28 +5,6 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api";
 
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: {
-            client_id: string;
-            callback: (response: { credential: string }) => void;
-            auto_select?: boolean;
-            cancel_on_tap_outside?: boolean;
-          }) => void;
-          prompt: () => void;
-          renderButton: (
-            parent: HTMLElement,
-            options: Record<string, unknown>
-          ) => void;
-        };
-      };
-    };
-  }
-}
-
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
 interface Props {
@@ -36,38 +14,20 @@ interface Props {
 export default function GoogleSignInButton({ onError }: Props) {
   const { loginWithGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [scriptReady, setScriptReady] = useState(false);
-  const initialized = useRef(false);
+  const popupRef = useRef<Window | null>(null);
 
+  // Listen for the OAuth code via localStorage (bridge for popup)
   useEffect(() => {
-    if (!CLIENT_ID) return;
+    function handleStorage(event: StorageEvent) {
+      if (event.key !== "google-oauth-code" || !event.newValue) return;
 
-    const existing = document.getElementById("google-gsi-script");
-    if (existing) {
-      if (window.google) setScriptReady(true);
-      return;
-    }
+      const code = event.newValue;
+      localStorage.removeItem("google-oauth-code");
 
-    const script = document.createElement("script");
-    script.id = "google-gsi-script";
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setScriptReady(true);
-    document.head.appendChild(script);
-  }, []);
-
-  useEffect(() => {
-    if (!scriptReady || !window.google || initialized.current) return;
-    initialized.current = true;
-
-    window.google.accounts.id.initialize({
-      client_id: CLIENT_ID,
-      callback: async ({ credential }) => {
-        setIsLoading(true);
-        try {
-          await loginWithGoogle(credential);
-        } catch (err) {
+      setIsLoading(true);
+      const redirectUri = `${window.location.origin}/auth/google/callback`;
+      loginWithGoogle(code, redirectUri)
+        .catch((err: unknown) => {
           const msg =
             err instanceof ApiError
               ? typeof err.data === "object" &&
@@ -77,18 +37,36 @@ export default function GoogleSignInButton({ onError }: Props) {
                 : "Error al iniciar sesión con Google."
               : "Error de conexión. Inténtalo de nuevo.";
           onError?.(msg);
-        } finally {
-          setIsLoading(false);
-        }
-      },
-      auto_select: false,
-      cancel_on_tap_outside: true,
-    });
-  }, [scriptReady, loginWithGoogle, onError]);
+        })
+        .finally(() => setIsLoading(false));
+    }
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [loginWithGoogle, onError]);
 
   function handleClick() {
-    if (!window.google) return;
-    window.google.accounts.id.prompt();
+    if (!CLIENT_ID || isLoading) return;
+
+    const redirectUri = `${window.location.origin}/auth/google/callback`;
+    const params = new URLSearchParams({
+      client_id: CLIENT_ID,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope: "openid email profile",
+      prompt: "select_account",
+    });
+
+    const width = 500;
+    const height = 600;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+
+    popupRef.current = window.open(
+      `https://accounts.google.com/o/oauth2/v2/auth?${params}`,
+      "google-oauth",
+      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+    );
   }
 
   if (!CLIENT_ID) return null;
@@ -97,7 +75,7 @@ export default function GoogleSignInButton({ onError }: Props) {
     <button
       type="button"
       onClick={handleClick}
-      disabled={isLoading || !scriptReady}
+      disabled={isLoading}
       className="w-full inline-flex items-center justify-center gap-3 rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
     >
       {isLoading ? (

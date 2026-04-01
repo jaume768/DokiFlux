@@ -6,7 +6,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        // WebContainer pages need strict COOP/COEP
+        source: "/app/:path*",
         headers: [
           {
             key: "Cross-Origin-Embedder-Policy",
@@ -15,6 +16,16 @@ const nextConfig: NextConfig = {
           {
             key: "Cross-Origin-Opener-Policy",
             value: "same-origin",
+          },
+        ],
+      },
+      {
+        // All other pages: allow Google Sign-In popups
+        source: "/((?!app/).*)",
+        headers: [
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
           },
         ],
       },
