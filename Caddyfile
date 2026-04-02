@@ -1,0 +1,22 @@
+dokiflux.com {
+	# API, admin and static → Backend Django
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+	handle /admin/* {
+		reverse_proxy backend:8000
+	}
+	handle /static/* {
+		reverse_proxy backend:8000
+	}
+
+	# Everything else → Frontend Next.js
+	handle {
+		reverse_proxy frontend:3000
+	}
+}
+
+# Redirect www to apex
+www.dokiflux.com {
+	redir https://dokiflux.com{uri} permanent
+}
