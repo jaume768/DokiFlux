@@ -23,6 +23,9 @@
 29- Añadir django-hijacker para que los admins puedan ver como un usuario
 36- Mirar apis locals
 40- Multiidioma a Español y el Ingles
+41- logs de auditoria (tabla donde guardar todos los logs para auditoria)
+42- integrar facturación, pagos, etc.
+43- Una UX/UI a prueba de usuarios no técnicos.
 
 Usar DokiFlux como motor interno + demo para vender una productized service premium:
 “Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.
@@ -31,6 +34,10 @@ Prepara un “demo flow” impecable: plantilla/prompts → generación → prev
 
 Ofrecer a los usuarios diferentes servicios después de generar los proyectos, hosting, dominio, base de datos, etc. :
     - "De prototipo a producción" (paquete fijo)
+    - “¿Quieres que lo dejemos listo para producción (deploy, auth, roles, DB, logs)? Paquete fijo en 10 días.”
+    - Revisión de arquitectura y seguridad de tu proyecto generado
+    - "Del prototipo generado a producción en X días, con garantías (seguridad, despliegue, mantenimiento)"
+    - De vista a MVP en 10 días
     - CTA contextual, no pop‑up genérico: en momentos de “handoff” (Export ZIP, Push a repo, Deploy) ofreces:
     “¿Quieres que lo dejemos listo para producción (seguridad, deploy, dominio, analítica, RGPD) en X días? Ver pack.”
     - Transparencia: “esto es un prototipador; para producción hay trabajo”
