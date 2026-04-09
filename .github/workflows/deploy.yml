@@ -19,9 +19,9 @@ jobs:
           script: |
             cd /opt/dokiflux
             git pull origin main
-            docker compose -f docker-compose.prod.yml build --parallel
-            docker compose -f docker-compose.prod.yml up -d
-            docker compose -f docker-compose.prod.yml exec -T backend python manage.py migrate --noinput
-            docker compose -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --noinput
+            docker compose -f docker-compose.prod.yml --env-file .env.production build --parallel
+            docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+            docker compose -f docker-compose.prod.yml --env-file .env.production exec -T backend python manage.py migrate --noinput
+            docker compose -f docker-compose.prod.yml --env-file .env.production exec -T backend python manage.py collectstatic --noinput
             docker image prune -f
             echo "Deploy completed at $(date)"
