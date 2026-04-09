@@ -54,7 +54,7 @@ export default function RegisterPage() {
       // If user is not auto-verified, show the "check your email" screen
       if (res.user && !res.user.is_email_verified) {
         setPendingEmail(res.user.email);
-        setEmailSent((res as Record<string, unknown>).email_sent !== false);
+        setEmailSent((res as unknown as Record<string, unknown>).email_sent !== false);
       }
     } catch (err) {
       if (err instanceof ApiError) {
