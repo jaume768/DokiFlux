@@ -57,7 +57,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   }, [pathname, loadProjects]);
 
   const navItems = [
-    { icon: Home, label: "Home", path: "/app" },
+    { icon: Home, label: "Inicio", path: "/app" },
     { icon: FolderOpen, label: "Proyectos", path: "/app/dashboard" },
     { icon: MessageSquare, label: "Chats", path: "/app/chats" },
   ];
@@ -88,7 +88,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           size="sm"
         >
           <Plus className="w-4 h-4" />
-          New Chat
+          Nuevo chat
         </Button>
       </div>
 
@@ -125,7 +125,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           ) : (
             <ChevronRight className="w-3 h-3" />
           )}
-          Recent Chats
+          Chats recientes
         </button>
 
         {showRecent && (

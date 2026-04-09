@@ -89,7 +89,7 @@ function AssistantMessage({ msg, onRestore, isRestoring }: { msg: Message; onRes
               disabled={isRestoring}
             >
               <RotateCcw className="w-3 h-3" />
-              Restore
+              Restaurar
             </Button>
           )}
         </div>
@@ -113,31 +113,31 @@ function AssistantMessage({ msg, onRestore, isRestoring }: { msg: Message; onRes
 
 const PHASE_CONFIG = {
   analyzing: {
-    label: "Analyzing your request...",
+    label: "Analizando tu solicitud...",
     icon: Brain,
     color: "text-blue-500",
     barColor: "bg-blue-500",
   },
   planning: {
-    label: "Planning files...",
+    label: "Planificando archivos...",
     icon: Sparkles,
     color: "text-violet-500",
     barColor: "bg-violet-500",
   },
   writing: {
-    label: "Writing code...",
+    label: "Escribiendo código...",
     icon: FileCode2,
     color: "text-amber-500",
     barColor: "bg-amber-500",
   },
   "writing-files": {
-    label: "Writing code...",
+    label: "Escribiendo código...",
     icon: FileCode2,
     color: "text-amber-500",
     barColor: "bg-amber-500",
   },
   mounting: {
-    label: "Setting up preview...",
+    label: "Configurando vista previa...",
     icon: Package,
     color: "text-emerald-500",
     barColor: "bg-emerald-500",
@@ -183,7 +183,7 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
 
   const filesLabel =
     phase === "writing-files" && progress.filesDetected > 0
-      ? ` (${progress.filesDetected} file${progress.filesDetected !== 1 ? "s" : ""})`
+      ? ` (${progress.filesDetected} archivo${progress.filesDetected !== 1 ? "s" : ""})`
       : "";
 
   return (
@@ -206,7 +206,7 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
         </div>
         {progress.charsReceived > 0 && (
           <p className="text-[11px] text-muted-foreground">
-            {(progress.charsReceived / 1000).toFixed(1)}k chars received
+            {(progress.charsReceived / 1000).toFixed(1)}k caracteres recibidos
           </p>
         )}
       </div>
@@ -236,7 +236,7 @@ export function ChatPanel({ messages, isLoading, genProgress, onRestore, isResto
             <Bot className="w-12 h-12 mb-4 opacity-50" />
             <h3 className="text-lg font-medium">Dokiflux</h3>
             <p className="text-sm mt-1 max-w-[280px]">
-              Describe what you want to build. I can chat with you to refine the idea, then generate the code when ready.
+              Describe lo que quieres crear. Puedo ayudarte a definir la idea y generar el código cuando estés listo.
             </p>
           </div>
         )}
@@ -282,21 +282,21 @@ export function ChatPanel({ messages, isLoading, genProgress, onRestore, isResto
                 <>
                   <Wrench className="w-3.5 h-3.5 animate-pulse text-amber-500" />
                   <span className="text-sm text-amber-500">
-                    Fixing error...
+                    Corrigiendo error...
                   </span>
                 </>
               ) : isBackgroundGen ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
                   <span className="text-sm text-blue-500">
-                    Generating in background...
+                    Generando en segundo plano...
                   </span>
                 </>
               ) : (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">
-                    Generating...
+                    Generando...
                   </span>
                 </>
               )}

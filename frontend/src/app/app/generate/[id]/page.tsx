@@ -210,7 +210,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             {
               id: crypto.randomUUID(),
               role: "assistant" as const,
-              content: `Background generation completed (${status.files_changed} files changed).`,
+              content: `Generación completada (${status.files_changed} archivo${status.files_changed !== 1 ? "s" : ""} modificados).`,
               timestamp: Date.now(),
               type: "code" as const,
               usage: {
@@ -234,7 +234,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             {
               id: crypto.randomUUID(),
               role: "assistant" as const,
-              content: `Background generation ${status.status}.`,
+              content: `Generación ${status.status === "failed" ? "fallida" : "cancelada"}.`,
               timestamp: Date.now(),
               type: "error" as const,
             },
@@ -523,7 +523,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           const codeMessage: Message = {
             id: crypto.randomUUID(),
             role: "assistant" as const,
-            content: `Generated ${fileCount} file${fileCount !== 1 ? "s" : ""} and rendered in preview.`,
+            content: `Generado${fileCount !== 1 ? "s" : ""} ${fileCount} archivo${fileCount !== 1 ? "s" : ""} y renderizado en vista previa.`,
             timestamp: Date.now(),
             usage: receivedUsage ?? undefined,
             rawCode: serializeFileMap(finalFiles),
@@ -573,13 +573,13 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           const changedCount = Object.keys(incomingFiles).length;
           const deletedCount = deletions.length;
 
-          let summary = `Project generated with ${fileCount} file${fileCount !== 1 ? "s" : ""}`;
+          let summary = `Proyecto generado con ${fileCount} archivo${fileCount !== 1 ? "s" : ""}`;
           if (hasExisting) {
-            summary = `Updated ${changedCount} file${changedCount !== 1 ? "s" : ""}`;
-            if (deletedCount > 0) summary += `, deleted ${deletedCount}`;
-            summary += ` (${fileCount} total)`;
+            summary = `Actualizado${changedCount !== 1 ? "s" : ""} ${changedCount} archivo${changedCount !== 1 ? "s" : ""}`;
+            if (deletedCount > 0) summary += `, eliminado${deletedCount !== 1 ? "s" : ""} ${deletedCount}`;
+            summary += ` (${fileCount} en total)`;
           }
-          summary += " and rendered in preview.";
+          summary += " y renderizado en vista previa.";
 
           const codeMessage: Message = {
             id: crypto.randomUUID(),
@@ -622,7 +622,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             {
               id: crypto.randomUUID(),
               role: "assistant" as const,
-              content: "Generation cancelled.",
+              content: "Generación cancelada.",
               timestamp: Date.now(),
               type: "error" as const,
             },
@@ -633,7 +633,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             {
               id: crypto.randomUUID(),
               role: "assistant" as const,
-              content: `Error: ${err instanceof Error ? err.message : "Unknown error"}`,
+              content: `Error: ${err instanceof Error ? err.message : "Error desconocido"}`,
               timestamp: Date.now(),
               type: "error" as const,
             },
@@ -670,7 +670,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           {
             id: crypto.randomUUID(),
             role: "assistant" as const,
-            content: "Project restored to previous version.",
+            content: "Proyecto restaurado a la versión anterior.",
             timestamp: Date.now(),
             type: "chat" as const,
           },
@@ -681,7 +681,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           {
             id: crypto.randomUUID(),
             role: "assistant" as const,
-            content: "Error: Could not restore to this version.",
+            content: "Error: No se pudo restaurar a esta versión.",
             timestamp: Date.now(),
             type: "error" as const,
           },
@@ -717,7 +717,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           {
             id: crypto.randomUUID(),
             role: "assistant" as const,
-            content: `Auto-fix failed after ${MAX_AUTO_FIX_RETRIES} attempts. The ${errorType} error persists:\n\n\`\`\`\n${errorText}\n\`\`\`\n\nPlease describe the fix you'd like or try a different approach.`,
+            content: `Autocorrección fallida tras ${MAX_AUTO_FIX_RETRIES} intentos. El error de ${errorType === "build" ? "compilación" : "ejecución"} persiste:\n\n\`\`\`\n${errorText}\n\`\`\`\n\nDescribe cómo quieres solucionarlo o prueba otro enfoque.`,
             timestamp: Date.now(),
             type: "error" as const,
           },
@@ -768,7 +768,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         {
           id: crypto.randomUUID(),
           role: "assistant" as const,
-          content: "Generation cancelled.",
+          content: "Generación cancelada.",
           timestamp: Date.now(),
           type: "error" as const,
         },
@@ -860,7 +860,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
               variant="ghost"
               size="icon-sm"
               onClick={() => setChatCollapsed((v) => !v)}
-              title={chatCollapsed ? "Show chat" : "Hide chat"}
+              title={chatCollapsed ? "Mostrar chat" : "Ocultar chat"}
             >
               {chatCollapsed ? (
                 <PanelLeftOpen className="w-4 h-4" />
@@ -909,7 +909,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             }`}
           >
             <Monitor className="w-4 h-4" />
-            Preview
+            Vista previa
             {hasNewPreview && mobileView !== "preview" && (
               <span className="absolute top-1.5 right-[calc(50%-28px)] w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
             )}

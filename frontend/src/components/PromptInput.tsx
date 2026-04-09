@@ -61,7 +61,7 @@ export function PromptInput({ onSubmit, onCancel, isLoading }: PromptInputProps)
           value={value}
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Describe the UI you want to generate..."
+          placeholder="Describe la interfaz que quieres generar..."
           className="w-full resize-none bg-transparent px-4 pt-3 pb-12 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isLoading}
           rows={1}
@@ -90,7 +90,7 @@ export function PromptInput({ onSubmit, onCancel, isLoading }: PromptInputProps)
         </div>
       </div>
       <p className="text-[11px] text-muted-foreground mt-1.5 text-center">
-        {isLoading ? "Click stop to cancel" : "Enter to send · Shift+Enter for new line"}
+        {isLoading ? "Haz clic en parar para cancelar" : "Enter para enviar · Shift+Enter para nueva línea"}
       </p>
     </div>
   );
