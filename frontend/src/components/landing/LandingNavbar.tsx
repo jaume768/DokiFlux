@@ -1,134 +1,156 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Sparkles, Menu, X } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { Zap, Menu, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
+const NAV_LINKS = [
+  { label: "Cómo funciona", href: "#como-funciona" },
+  { label: "Templates", href: "#templates" },
+  { label: "Producción", href: "#produccion" },
+  { label: "Pricing", href: "/pricing" },
+];
+
 export function LandingNavbar() {
-  const pathname = usePathname();
+  const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAuthenticated } = useAuth();
-  const isLoggedIn = isAuthenticated;
 
-  const navLinks = [
-    { label: "Características", href: "/#features" },
-    { label: "Templates", href: "/#templates" },
-    { label: "Producción", href: "/#produccion" },
-    { label: "Pricing", href: "/pricing" },
-  ];
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <span className="text-lg font-bold">DokiFlux</span>
-        </Link>
-
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-6 md:flex">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`text-sm transition-colors hover:text-foreground ${
-                pathname === link.href
-                  ? "font-medium text-foreground"
-                  : "text-muted-foreground"
-              }`}
+    <header
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+      style={{
+        background: scrolled ? "rgba(10,10,15,0.85)" : "transparent",
+        borderBottom: scrolled
+          ? "1px solid rgba(255,255,255,0.06)"
+          : "1px solid transparent",
+      }}
+    >
+      <div className={`navbar-blur ${scrolled ? "" : "backdrop-blur-none"}`}>
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:px-8">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-lg transition-shadow duration-300"
+              style={{
+                background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+                boxShadow: "0 0 16px rgba(139,92,246,0.45)",
+              }}
             >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+              <Zap size={16} className="text-white fill-white" />
+            </div>
+            <span className="text-[17px] font-bold tracking-tight text-white">
+              DokiFlux
+            </span>
+          </Link>
 
-        {/* Desktop CTAs */}
-        <div className="hidden items-center gap-2 md:flex">
-          <ThemeToggle />
-          {isLoggedIn ? (
-            <Link href="/app" className={buttonVariants({ size: "sm" })}>
-              Ir a la app
-            </Link>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className={buttonVariants({ variant: "ghost", size: "sm" })}
-              >
-                Iniciar sesión
-              </Link>
-              <Link
-                href="/register"
-                className={buttonVariants({ size: "sm" })}
-              >
-                Empieza gratis
-              </Link>
-            </>
-          )}
-        </div>
-
-        {/* Mobile menu button */}
-        <div className="flex items-center gap-2 md:hidden">
-          <ThemeToggle />
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            {mobileOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="border-t bg-background px-4 pb-4 pt-2 md:hidden">
-          <nav className="flex flex-col gap-2">
-            {navLinks.map((link) => (
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-1 md:flex">
+            {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="px-3.5 py-2 text-[13px] font-medium text-white/50 rounded-lg transition-all duration-200 hover:text-white hover:bg-white/[0.05]"
               >
                 {link.label}
               </Link>
             ))}
           </nav>
-          <div className="mt-3 flex flex-col gap-2">
-            {isLoggedIn ? (
+
+          {/* Desktop CTAs */}
+          <div className="hidden items-center gap-3 md:flex">
+            {isAuthenticated ? (
               <Link
                 href="/app"
-                className={buttonVariants({ className: "w-full" })}
+                className="btn-primary relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white"
               >
-                Ir a la app
+                <span className="relative z-10">Ir a la app</span>
               </Link>
             ) : (
               <>
                 <Link
                   href="/login"
-                  className={buttonVariants({
-                    variant: "outline",
-                    className: "w-full",
-                  })}
+                  className="text-[13px] font-medium text-white/50 transition-colors duration-200 hover:text-white"
                 >
                   Iniciar sesión
                 </Link>
                 <Link
                   href="/register"
-                  className={buttonVariants({ className: "w-full" })}
+                  className="btn-primary relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white"
                 >
-                  Empieza gratis
+                  <span className="relative z-10">Empieza gratis</span>
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <button
+            className="flex items-center justify-center w-9 h-9 rounded-lg md:hidden transition-colors duration-200"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            {mobileOpen ? (
+              <X size={18} className="text-white/70" />
+            ) : (
+              <Menu size={18} className="text-white/70" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div
+          className="md:hidden px-5 pb-5 pt-2"
+          style={{
+            background: "rgba(10,10,15,0.95)",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <nav className="flex flex-col gap-1">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-sm text-white/50 transition-colors hover:bg-white/[0.05] hover:text-white"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="mt-4 flex flex-col gap-2">
+            {isAuthenticated ? (
+              <Link
+                href="/app"
+                className="btn-primary relative flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-white"
+              >
+                <span className="relative z-10">Ir a la app</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="btn-secondary flex items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-white/70"
+                >
+                  Iniciar sesión
+                </Link>
+                <Link
+                  href="/register"
+                  className="btn-primary relative flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-white"
+                >
+                  <span className="relative z-10">Empieza gratis</span>
                 </Link>
               </>
             )}

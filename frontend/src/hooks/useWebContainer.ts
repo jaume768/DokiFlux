@@ -275,21 +275,16 @@ async function bootWebContainer(): Promise<WebContainer> {
       const instance = await WebContainer.boot();
       wcInstance = instance;
       return instance;
-    } catch (firstErr) {
-      // Boot can fail if a stale Service Worker from a previous session is still
-      // registered. Clear all SWs and retry once.
-      console.warn("[WebContainer] First boot failed, clearing SWs and retrying…", firstErr);
+    } catch (err) {
+      // WebContainer.boot() failed. Calling boot() again in the same page session
+      // will always throw "Unable to create more instances" because WebContainer
+      // internally registers the instance even when it throws. Clear stale Service
+      // Workers so the next hard reload succeeds, then surface the original error.
+      console.warn("[WebContainer] Boot failed, clearing SWs…", err);
       await clearServiceWorkers();
-      await new Promise((r) => setTimeout(r, 300));
-      try {
-        const instance = await WebContainer.boot();
-        wcInstance = instance;
-        return instance;
-      } catch (retryErr) {
-        wcBootPromise = null;
-        wcInstance = null;
-        throw retryErr;
-      }
+      wcBootPromise = null;
+      wcInstance = null;
+      throw err;
     }
   })();
 
@@ -560,7 +555,13 @@ export function useWebContainer(): UseWebContainerReturn {
         // server-ready event will set status to "ready" and provide URL
       } catch (err) {
         if (!isMountedRef.current) return;
-        const msg = err instanceof Error ? err.message : "Unknown error";
+        const rawMsg = err instanceof Error ? err.message : "Unknown error";
+        const isInstanceLimit = rawMsg.toLowerCase().includes("more instances");
+        const isCloneError = rawMsg.toLowerCase().includes("dataclone") || rawMsg.toLowerCase().includes("webassembly");
+        const msg =
+          isInstanceLimit || isCloneError
+            ? "WebContainer failed to start. Please reload the page to try again."
+            : rawMsg;
         setError(msg);
         setStatus("error");
         addLog(`Error: ${msg}`);

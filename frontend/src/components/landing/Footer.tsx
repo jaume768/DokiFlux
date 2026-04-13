@@ -1,86 +1,198 @@
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import { Zap, Twitter, Github, Linkedin, ArrowUpRight } from "lucide-react";
+
+const FOOTER_LINKS = {
+  Producto: [
+    { label: "Cómo funciona", href: "#como-funciona" },
+    { label: "Templates", href: "#templates" },
+    { label: "Precios", href: "/pricing" },
+    { label: "Changelog", href: "#" },
+  ],
+  Empresa: [
+    { label: "Sobre nosotros", href: "#" },
+    { label: "Blog", href: "#" },
+    { label: "Contacto", href: "mailto:hola@dokiflux.app" },
+  ],
+  Legal: [
+    { label: "Privacidad", href: "#" },
+    { label: "Términos de uso", href: "#" },
+    { label: "Cookies", href: "#" },
+    { label: "RGPD", href: "#" },
+  ],
+};
+
+const SOCIAL_LINKS = [
+  { label: "Twitter / X", href: "#", icon: Twitter, color: "#1d9bf0" },
+  { label: "GitHub", href: "#", icon: Github, color: "#e2e8f0" },
+  { label: "LinkedIn", href: "#", icon: Linkedin, color: "#0a66c2" },
+];
 
 export function Footer() {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="border-t bg-muted/30">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
-          {/* Brand */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <span className="text-lg font-bold">DokiFlux</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Genera interfaces completas con IA. De prompt a proyecto en
-              segundos.
+    <footer className="relative border-t border-white/[0.06] overflow-hidden">
+      {/* Top fade line */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px pointer-events-none"
+        style={{ background: "linear-gradient(to right, transparent, rgba(139,92,246,0.25), transparent)" }}
+      />
+
+      {/* Grid pattern */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+
+      {/* Background glow */}
+      <div
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] rounded-full blur-[140px] pointer-events-none"
+        style={{ background: "radial-gradient(ellipse, rgba(99,102,241,0.07) 0%, transparent 70%)" }}
+      />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-5 md:px-8">
+        {/* Main footer grid */}
+        <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8">
+          {/* Brand column */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            <Link href="/" className="flex items-center gap-2 group w-fit">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-[0_0_16px_rgba(139,92,246,0.45)] group-hover:shadow-[0_0_24px_rgba(139,92,246,0.65)] transition-shadow duration-300">
+                <Zap size={16} className="text-white fill-white" />
+              </div>
+              <span className="text-[17px] font-bold tracking-tight text-white">DokiFlux</span>
+            </Link>
+
+            <p className="text-white/35 text-sm leading-relaxed max-w-[220px]">
+              De idea a producción.<br />
+              Prototipa con IA, lanza con nosotros.
             </p>
+
+            {/* Social icons */}
+            <div className="flex items-center gap-2">
+              {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 hover:-translate-y-0.5"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                  }}
+                >
+                  <Icon size={15} className="text-white/40 hover:text-white transition-colors duration-300" />
+                </a>
+              ))}
+            </div>
+
+            {/* Status badge */}
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full w-fit"
+              style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.18)" }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-emerald-400/80 text-[11px] font-semibold tracking-wide">
+                Todos los sistemas operativos
+              </span>
+            </div>
           </div>
 
-          {/* Product */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold">Producto</h4>
-            <nav className="flex flex-col gap-2">
-              <Link
-                href="/#features"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Características
-              </Link>
-              <Link
-                href="/#templates"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Templates
-              </Link>
-              <Link
-                href="/pricing"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Pricing
-              </Link>
-            </nav>
-          </div>
+          {/* Link columns */}
+          {Object.entries(FOOTER_LINKS).map(([category, links]) => (
+            <div key={category} className="flex flex-col gap-5 lg:col-span-1">
+              <h4 className="text-white/90 text-[13px] font-bold uppercase tracking-widest">{category}</h4>
+              <ul className="flex flex-col gap-3">
+                {links.map(({ label, href }) => (
+                  <li key={label}>
+                    <Link
+                      href={href}
+                      className="group/link flex items-center gap-2 text-white/38 hover:text-white text-[14px] transition-colors duration-200 w-fit"
+                    >
+                      <span className="group-hover/link:translate-x-0.5 transition-transform duration-200">
+                        {label}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
-          {/* Account */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold">Cuenta</h4>
-            <nav className="flex flex-col gap-2">
-              <Link
-                href="/login"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Iniciar sesión
-              </Link>
-              <Link
-                href="/register"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Crear cuenta
-              </Link>
-            </nav>
-          </div>
+          {/* Follow + Newsletter column */}
+          <div className="flex flex-col gap-5 lg:col-span-1">
+            <h4 className="text-white/90 text-[13px] font-bold uppercase tracking-widest">Síguenos</h4>
+            <ul className="flex flex-col gap-3">
+              {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
+                <li key={label}>
+                  <a
+                    href={href}
+                    className="flex items-center gap-2.5 text-white/38 hover:text-white text-[14px] transition-all duration-200 group/slink w-fit"
+                  >
+                    <span
+                      className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}
+                    >
+                      <Icon size={11} className="text-white/40" />
+                    </span>
+                    <span className="group-hover/slink:translate-x-0.5 transition-transform duration-200">
+                      {label}
+                    </span>
+                    <ArrowUpRight size={11} className="opacity-0 group-hover/slink:opacity-50 transition-opacity duration-200 -ml-1" />
+                  </a>
+                </li>
+              ))}
+            </ul>
 
-          {/* Tech */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold">Tecnología</h4>
-            <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <span>React + Tailwind CSS</span>
-              <span>WebContainers</span>
-              <span>Streaming en tiempo real</span>
+            {/* Newsletter micro CTA */}
+            <div className="mt-2 flex flex-col gap-2">
+              <p className="text-white/25 text-[11px] leading-relaxed">
+                Novedades y tutoriales en tu email.
+              </p>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="email"
+                  placeholder="tu@email.com"
+                  className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-[12px] text-white/70 placeholder-white/20 outline-none focus:border-violet-500/40 focus:bg-white/[0.06] transition-all duration-200"
+                />
+                <button
+                  className="shrink-0 px-3 py-2 rounded-lg text-[11px] font-bold text-white transition-all duration-200 hover:shadow-[0_0_14px_rgba(139,92,246,0.35)]"
+                  style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}
+                >
+                  →
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t pt-6 sm:flex-row">
-          <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} DokiFlux. Todos los derechos
-            reservados.
+        {/* Divider */}
+        <div
+          className="h-px w-full"
+          style={{ background: "linear-gradient(to right, transparent, rgba(255,255,255,0.07) 20%, rgba(255,255,255,0.07) 80%, transparent)" }}
+        />
+
+        {/* Bottom bar */}
+        <div className="py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-white/25 text-[13px] text-center sm:text-left leading-relaxed">
+            © {currentYear} DokiFlux · Hecho con <span className="text-red-400/70">❤️</span> en España
           </p>
-          <p className="text-xs text-muted-foreground">
-            Built with React, Tailwind CSS & WebContainers
-          </p>
+
+          <div className="flex items-center gap-5 flex-wrap justify-center">
+            {["Privacidad", "Términos", "Cookies"].map((label) => (
+              <a key={label} href="#" className="text-white/22 hover:text-white/55 text-[12px] transition-colors duration-200">
+                {label}
+              </a>
+            ))}
+            <span
+              className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.28)" }}
+            >
+              🇪🇸 Español
+            </span>
+          </div>
         </div>
       </div>
     </footer>
