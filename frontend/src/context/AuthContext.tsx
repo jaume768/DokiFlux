@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.user.has_completed_onboarding) {
         router.push("/onboarding");
       } else {
-        router.push("/app");
+        window.location.href = "/app";
       }
     },
     [router, refreshBalance]
@@ -167,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.user.has_completed_onboarding) {
         router.push("/onboarding");
       } else {
-        router.push("/app");
+        window.location.href = "/app";
       }
     },
     [router, refreshBalance]

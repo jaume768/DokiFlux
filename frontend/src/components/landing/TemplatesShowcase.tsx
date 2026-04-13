@@ -125,15 +125,25 @@ export function TemplatesShowcase() {
                 }}
                 onClick={() => router.push(`/register?template=${template.id}`)}
               >
-                {/* Mini preview */}
-                <div
-                  className="rounded-xl p-3 mb-4 transition-all duration-300"
-                  style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.05)",
-                  }}
-                >
-                  <TemplateMiniPreview templateId={template.id} color={meta.color} />
+                {/* Preview image */}
+                <div className="rounded-xl overflow-hidden mb-4 transition-all duration-300 h-36" style={{ border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <img
+                    src={template.image}
+                    alt={template.name}
+                    className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      target.style.display = "none";
+                      const fallback = target.nextElementSibling as HTMLElement | null;
+                      if (fallback) fallback.style.display = "flex";
+                    }}
+                  />
+                  <div
+                    className="hidden w-full h-full items-center justify-center rounded-xl p-3"
+                    style={{ background: "rgba(255,255,255,0.02)" }}
+                  >
+                    <TemplateMiniPreview templateId={template.id} color={meta.color} />
+                  </div>
                 </div>
 
                 {/* Info */}

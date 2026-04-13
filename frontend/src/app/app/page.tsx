@@ -72,9 +72,6 @@ export default function HomePage() {
         <div className="w-full max-w-3xl space-y-6 md:space-y-8">
           {/* Header */}
           <div className="text-center space-y-3">
-            <div className="hidden md:inline-flex items-center justify-center mb-2">
-              <Image src="/logo.png" alt="DokiFlux" width={320} height={80} className="h-20 w-auto" />
-            </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
               ¿Qué quieres crear hoy?
             </h1>

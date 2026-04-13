@@ -8,6 +8,7 @@ handles authentication via CookieJWTAuthentication.
 """
 from asgiref.sync import iscoroutinefunction, markcoroutinefunction, sync_to_async
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.exceptions import TokenError
 
@@ -38,8 +39,7 @@ class AsyncJWTAuthMiddleware:
         current_user = await request.auser()
         if current_user.is_anonymous:
             user = await self._authenticate(request)
-            if user:
-                request.user = user
+            request.user = user if user else AnonymousUser()
         return await self.get_response(request)
 
     async def _authenticate(self, request):

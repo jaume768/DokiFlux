@@ -95,9 +95,7 @@ export default function OnboardingPage() {
         name: template.name,
         description: template.description,
       });
-      router.push(
-        `/app/generate/${project.id}?prompt=${encodeURIComponent(template.prompt)}`
-      );
+      window.location.href = `/app/generate/${project.id}?prompt=${encodeURIComponent(template.prompt)}`;
     } catch {
       setError("Error al crear el proyecto. Inténtalo de nuevo.");
       setCreatingTemplate(null);
@@ -105,7 +103,7 @@ export default function OnboardingPage() {
   }
 
   function handleSkip() {
-    router.push("/app");
+    window.location.href = "/app";
   }
 
   // If user already has username, go to step 2 or dashboard
@@ -254,12 +252,27 @@ export default function OnboardingPage() {
                 className="group cursor-pointer transition-all hover:ring-2 hover:ring-primary/20 hover:shadow-md"
                 onClick={() => handleTemplateSelect(template.id)}
               >
-                <div className="flex h-24 items-center justify-center bg-muted/50 text-4xl rounded-t-xl">
+                <div className="relative h-36 overflow-hidden rounded-t-xl bg-muted/50">
                   {creatingTemplate === template.id ? (
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <div className="flex h-full items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
                   ) : (
-                    template.emoji
+                    <img
+                      src={template.image}
+                      alt={template.name}
+                      className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        target.style.display = "none";
+                        const fallback = target.nextElementSibling as HTMLElement | null;
+                        if (fallback) fallback.style.display = "flex";
+                      }}
+                    />
                   )}
+                  <div className="hidden h-full items-center justify-center text-4xl">
+                    {template.emoji}
+                  </div>
                 </div>
                 <CardHeader>
                   <div className="flex items-center justify-between">
