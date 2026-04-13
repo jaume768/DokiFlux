@@ -9,7 +9,6 @@ import {
   Testimonials,
   TemplatesShowcase,
   DualPersona,
-  FAQSection,
   FinalCTA,
   Footer,
 } from "@/components/landing";
@@ -29,7 +28,6 @@ export default function LandingPage() {
         <Testimonials />
         <TemplatesShowcase />
         <DualPersona />
-        <FAQSection />
         <FinalCTA />
       </main>
       <Footer />

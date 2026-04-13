@@ -59,25 +59,25 @@ export function Testimonials() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative py-28 px-5 md:px-8 overflow-hidden">
+    <section ref={sectionRef} className="relative py-16 px-5 md:px-8 overflow-hidden">
       <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.5 }} />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[400px] bg-violet-700/5 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="relative z-10 max-w-6xl mx-auto">
         {/* Header */}
         <div
-          className="text-center mb-16"
+          className="text-center mb-10"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(20px)",
             transition: "opacity 0.6s ease, transform 0.6s ease",
           }}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs font-medium text-white/40 uppercase tracking-widest mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs font-medium text-white/60 uppercase tracking-widest mb-2">
             <span className="w-1 h-1 rounded-full bg-emerald-400" />
             Testimonios
           </div>
-          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-4">
+          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
             Lo que dicen
             <br />
             <span className="gradient-text">nuestros usuarios</span>
@@ -85,7 +85,7 @@ export function Testimonials() {
         </div>
 
         {/* Testimonial cards */}
-        <div className="grid gap-5 md:grid-cols-3 mb-16">
+        <div className="grid gap-5 md:grid-cols-3 mb-10">
           {TESTIMONIALS.map((t, i) => (
             <div
               key={i}
@@ -108,7 +108,7 @@ export function Testimonials() {
               {/* Quote */}
               <div className="relative mb-6">
                 <Quote size={20} className="absolute -top-1 -left-1 text-white/5" />
-                <p className="text-white/50 text-[14px] leading-relaxed pl-4">
+                <p className="text-white/75 text-[14px] leading-relaxed pl-4">
                   &ldquo;{t.quote}&rdquo;
                 </p>
               </div>
@@ -123,7 +123,7 @@ export function Testimonials() {
                 </div>
                 <div>
                   <div className="text-white text-[13px] font-semibold">{t.name}</div>
-                  <div className="text-white/30 text-[11px]">{t.role}</div>
+                  <div className="text-white/60 text-[11px]">{t.role}</div>
                 </div>
               </div>
             </div>
@@ -143,7 +143,7 @@ export function Testimonials() {
           {STATS.map((stat, i) => (
             <div key={i} className="text-center">
               <div className="text-2xl md:text-3xl font-black gradient-text mb-1">{stat.value}</div>
-              <div className="text-white/30 text-[12px] font-medium">{stat.label}</div>
+              <div className="text-white/60 text-[12px] font-medium">{stat.label}</div>
             </div>
           ))}
         </div>

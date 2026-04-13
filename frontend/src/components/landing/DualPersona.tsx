@@ -65,7 +65,7 @@ export function DualPersona() {
     <section
       id="produccion"
       ref={sectionRef}
-      className="relative py-28 px-5 md:px-8 scroll-mt-20 overflow-hidden"
+      className="relative py-16 px-5 md:px-8 scroll-mt-20 overflow-hidden"
     >
       <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.5 }} />
       <div className="absolute top-1/2 left-1/4 w-80 h-80 bg-violet-600/5 rounded-full blur-[130px] pointer-events-none" />
@@ -74,18 +74,18 @@ export function DualPersona() {
       <div className="relative z-10 max-w-6xl mx-auto">
         {/* Header */}
         <div
-          className="text-center mb-16"
+          className="text-center mb-10"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(20px)",
             transition: "opacity 0.6s ease, transform 0.6s ease",
           }}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs font-medium text-white/40 uppercase tracking-widest mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs font-medium text-white/60 uppercase tracking-widest mb-3">
             <span className="w-1 h-1 rounded-full bg-amber-400" />
             Para ti
           </div>
-          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-4">
+          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">
             Hecho para quienes
             <br />
             <span className="gradient-text">construyen productos</span>
@@ -124,7 +124,7 @@ export function DualPersona() {
                   </div>
                 </div>
 
-                <p className="text-white/40 text-[14px] leading-relaxed mb-6 mt-4">
+                <p className="text-white/70 text-[14px] leading-relaxed mb-6 mt-4">
                   {persona.desc}
                 </p>
 
@@ -138,7 +138,7 @@ export function DualPersona() {
                       >
                         <Check size={10} style={{ color: persona.color }} />
                       </div>
-                      <span className="text-white/50 text-[13px]">{benefit}</span>
+                      <span className="text-white/70 text-[13px]">{benefit}</span>
                     </li>
                   ))}
                 </ul>

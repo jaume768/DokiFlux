@@ -9,7 +9,6 @@ const NAV_LINKS = [
   { label: "Cómo funciona", href: "#como-funciona" },
   { label: "Templates", href: "#templates" },
   { label: "Producción", href: "#produccion" },
-  { label: "Pricing", href: "/pricing" },
 ];
 
 export function LandingNavbar() {
@@ -57,7 +56,7 @@ export function LandingNavbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="px-3.5 py-2 text-[13px] font-medium text-white/50 rounded-lg transition-all duration-200 hover:text-white hover:bg-white/[0.05]"
+                className="px-3.5 py-2 text-[13px] font-medium text-white/70 rounded-lg transition-all duration-200 hover:text-white hover:bg-white/[0.05]"
               >
                 {link.label}
               </Link>
@@ -77,7 +76,7 @@ export function LandingNavbar() {
               <>
                 <Link
                   href="/login"
-                  className="text-[13px] font-medium text-white/50 transition-colors duration-200 hover:text-white"
+                  className="text-[13px] font-medium text-white/70 transition-colors duration-200 hover:text-white"
                 >
                   Iniciar sesión
                 </Link>
@@ -124,7 +123,7 @@ export function LandingNavbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2.5 text-sm text-white/50 transition-colors hover:bg-white/[0.05] hover:text-white"
+                className="rounded-lg px-3 py-2.5 text-sm text-white/70 transition-colors hover:bg-white/[0.05] hover:text-white"
               >
                 {link.label}
               </Link>

@@ -12,7 +12,6 @@ const TOOLS = [
 const FEATURES = [
   { label: "Genera código React funcional", chatgpt: "partial", v0bolt: "yes", dokiflux: "yes" },
   { label: "Multi-archivo con estructura real", chatgpt: "no", v0bolt: "partial", dokiflux: "yes" },
-  { label: "Vista previa en vivo (WebContainers)", chatgpt: "no", v0bolt: "yes", dokiflux: "yes" },
   { label: "Chat iterativo para refinar", chatgpt: "yes", v0bolt: "partial", dokiflux: "yes" },
   { label: "Auto-fix de errores en tiempo real", chatgpt: "no", v0bolt: "no", dokiflux: "yes" },
   { label: "Exportar proyecto completo (.zip)", chatgpt: "no", v0bolt: "partial", dokiflux: "yes" },
@@ -47,21 +46,21 @@ export function Comparison() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative py-28 px-5 md:px-8 overflow-hidden">
+    <section ref={sectionRef} className="relative py-16 px-5 md:px-8 overflow-hidden">
       <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.5 }} />
       <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-indigo-600/5 rounded-full blur-[130px] pointer-events-none" />
 
       <div className="relative z-10 max-w-5xl mx-auto">
         {/* Header */}
         <div
-          className="text-center mb-16"
+          className="text-center mb-10"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(20px)",
             transition: "opacity 0.6s ease, transform 0.6s ease",
           }}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs font-medium text-white/40 uppercase tracking-widest mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs font-medium text-white/60 uppercase tracking-widest mb-4">
             <span className="w-1 h-1 rounded-full bg-sky-400" />
             Comparativa
           </div>
@@ -70,7 +69,7 @@ export function Comparison() {
             <br />
             <span className="gradient-text">DokiFlux?</span>
           </h2>
-          <p className="text-white/40 text-base md:text-lg max-w-md mx-auto">
+          <p className="text-white/65 text-base md:text-lg max-w-md mx-auto">
             No solo generamos código. Te acompañamos hasta producción.
           </p>
         </div>
@@ -91,11 +90,11 @@ export function Comparison() {
             className="grid grid-cols-4 gap-0"
             style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
           >
-            <div className="p-4 text-[13px] font-semibold text-white/40">Característica</div>
+            <div className="p-3 text-[13px] font-semibold text-white/80">Característica</div>
             {TOOLS.map((tool) => (
               <div
                 key={tool.name}
-                className="p-4 text-center"
+                className="p-3 text-center"
                 style={{
                   background: tool.highlighted ? "rgba(139,92,246,0.08)" : "transparent",
                   borderLeft: "1px solid rgba(255,255,255,0.04)",
@@ -108,10 +107,10 @@ export function Comparison() {
                     </div>
                   </div>
                 )}
-                <div className={`text-[13px] font-bold ${tool.highlighted ? "text-white" : "text-white/60"}`}>
+                <div className={`text-[13px] font-bold ${tool.highlighted ? "text-white" : "text-white/75"}`}>
                   {tool.name}
                 </div>
-                <div className="text-[10px] text-white/25">{tool.subtitle}</div>
+                <div className="text-[10px] text-white/50">{tool.subtitle}</div>
               </div>
             ))}
           </div>
@@ -123,7 +122,7 @@ export function Comparison() {
               className="grid grid-cols-4 gap-0 transition-colors duration-200 hover:bg-white/[0.015]"
               style={{ borderBottom: i < FEATURES.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}
             >
-              <div className="p-3.5 text-[13px] text-white/50 flex items-center">
+              <div className="p-3.5 text-[13px] text-white/70 flex items-center">
                 {feature.label}
               </div>
               <div className="p-3.5 flex items-center justify-center" style={{ borderLeft: "1px solid rgba(255,255,255,0.04)" }}>

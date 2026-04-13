@@ -59,7 +59,7 @@ export function FinalCTA() {
   return (
     <section
       ref={sectionRef}
-      className="relative py-32 px-5 md:px-8 overflow-hidden"
+      className="relative py-20 px-5 md:px-8 overflow-hidden"
     >
       {/* Deep background gradient */}
       <div
@@ -126,7 +126,7 @@ export function FinalCTA() {
 
         {/* Subtitle */}
         <p
-          className="text-base sm:text-lg md:text-xl text-white/45 max-w-xl leading-relaxed mb-12"
+          className="text-base sm:text-lg md:text-xl text-white/70 max-w-xl leading-relaxed mb-12"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(20px)",
@@ -178,7 +178,7 @@ export function FinalCTA() {
 
         {/* Trust line */}
         <div
-          className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 mt-7 text-sm text-white/30"
+          className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 mt-7 text-sm text-white/55"
           style={{
             opacity: visible ? 1 : 0,
             transition: "opacity 0.65s ease 0.5s",

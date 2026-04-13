@@ -123,7 +123,7 @@ export function Hero() {
                 <Star size={12} className="fill-amber-400" />
                 <Star size={12} className="fill-amber-400" />
               </span>
-              <span className="text-white/50 text-xs">Más de 500 prototipos creados</span>
+              <span className="text-white/70 text-xs">Más de 500 prototipos creados</span>
             </div>
 
             {/* H1 */}
@@ -148,7 +148,7 @@ export function Hero() {
 
             {/* Subtitle */}
             <p
-              className="text-base sm:text-lg md:text-xl text-white/45 max-w-xl leading-relaxed mb-10 mx-auto lg:mx-0"
+              className="text-base sm:text-lg md:text-xl text-white/70 max-w-xl leading-relaxed mb-10 mx-auto lg:mx-0"
               style={{
                 opacity: visible ? 1 : 0,
                 transform: visible ? "translateY(0)" : "translateY(20px)",
@@ -188,7 +188,7 @@ export function Hero() {
 
             {/* Trust line */}
             <div
-              className="flex flex-wrap items-center gap-4 justify-center lg:justify-start text-sm text-white/30"
+              className="flex flex-wrap items-center gap-4 justify-center lg:justify-start text-sm text-white/55"
               style={{
                 opacity: visible ? 1 : 0,
                 transition: "opacity 0.65s ease 0.45s",
@@ -256,7 +256,7 @@ export function Hero() {
                       <div className="w-3 h-3 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center">
                         <Zap size={6} className="text-white fill-white" />
                       </div>
-                      <span className="text-[9px] text-white/40 font-medium">DokiFlux</span>
+                      <span className="text-[9px] text-white/60 font-medium">DokiFlux</span>
                     </div>
                     <p className="text-[10px] text-white/50 leading-relaxed">
                       Generando 4 archivos: App.tsx, StatCard.tsx, Chart.tsx...

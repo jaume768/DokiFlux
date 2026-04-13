@@ -78,7 +78,7 @@ export function TemplatesShowcase() {
     <section
       id="templates"
       ref={sectionRef}
-      className="relative py-28 px-5 md:px-8 scroll-mt-20 overflow-hidden"
+      className="relative py-16 px-5 md:px-8 scroll-mt-20 overflow-hidden"
     >
       <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.5 }} />
       <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-sky-500/5 rounded-full blur-[130px] pointer-events-none" />
@@ -86,14 +86,14 @@ export function TemplatesShowcase() {
       <div className="relative z-10 max-w-6xl mx-auto">
         {/* Header */}
         <div
-          className="text-center mb-16"
+          className="text-center mb-10"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(20px)",
             transition: "opacity 0.6s ease, transform 0.6s ease",
           }}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs font-medium text-white/40 uppercase tracking-widest mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs font-medium text-white/60 uppercase tracking-widest mb-4">
             <span className="w-1 h-1 rounded-full bg-sky-400" />
             Templates
           </div>
@@ -102,7 +102,7 @@ export function TemplatesShowcase() {
             <br />
             <span className="gradient-text">template profesional</span>
           </h2>
-          <p className="text-white/40 text-base md:text-lg max-w-md mx-auto">
+          <p className="text-white/65 text-base md:text-lg max-w-md mx-auto">
             Elige una plantilla y personalízala en segundos con prompts.
           </p>
         </div>
@@ -155,7 +155,7 @@ export function TemplatesShowcase() {
                   </span>
                 </div>
 
-                <p className="text-white/35 text-[12px] leading-relaxed mb-3 line-clamp-2">
+                <p className="text-white/65 text-[12px] leading-relaxed mb-3 line-clamp-2">
                   {template.description}
                 </p>
 
