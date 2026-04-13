@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Zap, Menu, X } from "lucide-react";
+import Image from "next/image";
+import { Menu, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const NAV_LINKS = [
@@ -36,18 +37,7 @@ export function LandingNavbar() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:px-8">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg transition-shadow duration-300"
-              style={{
-                background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
-                boxShadow: "0 0 16px rgba(139,92,246,0.45)",
-              }}
-            >
-              <Zap size={16} className="text-white fill-white" />
-            </div>
-            <span className="text-[17px] font-bold tracking-tight text-white">
-              DokiFlux
-            </span>
+            <Image src="/logo.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
           </Link>
 
           {/* Desktop nav */}

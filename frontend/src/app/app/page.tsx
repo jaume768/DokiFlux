@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { apiPost, ApiError } from "@/lib/api";
 import { generateProjectTitle } from "@/lib/projectUtils";
 import type { ProjectListItem } from "@/types/auth";
-import { Sparkles, SendHorizonal, Loader2, Menu } from "lucide-react";
+import Image from "next/image";
+import { SendHorizonal, Loader2, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModelSelector } from "@/components/ModelSelector";
 import { DEFAULT_MODEL, type ModelId } from "@/lib/pricing";
@@ -61,8 +62,7 @@ export default function HomePage() {
           <Menu className="w-5 h-5" />
         </Button>
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
-          <span className="font-bold text-sm">DokiFlux</span>
+          <Image src="/logo.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
         </div>
         <div className="w-8" />
       </header>
@@ -72,8 +72,8 @@ export default function HomePage() {
         <div className="w-full max-w-3xl space-y-6 md:space-y-8">
           {/* Header */}
           <div className="text-center space-y-3">
-            <div className="hidden md:inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-2">
-              <Sparkles className="w-8 h-8 text-primary" />
+            <div className="hidden md:inline-flex items-center justify-center mb-2">
+              <Image src="/logo.png" alt="DokiFlux" width={320} height={80} className="h-20 w-auto" />
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
               ¿Qué quieres crear hoy?

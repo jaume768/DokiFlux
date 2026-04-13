@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Zap, Twitter, Github, Linkedin, ArrowUpRight } from "lucide-react";
+import Image from "next/image";
+import { Twitter, Github, Linkedin, ArrowUpRight } from "lucide-react";
 
 const FOOTER_LINKS = {
   Producto: [
@@ -59,10 +60,7 @@ export function Footer() {
           {/* Brand column */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             <Link href="/" className="flex items-center gap-2 group w-fit">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-[0_0_16px_rgba(139,92,246,0.45)] group-hover:shadow-[0_0_24px_rgba(139,92,246,0.65)] transition-shadow duration-300">
-                <Zap size={16} className="text-white fill-white" />
-              </div>
-              <span className="text-[17px] font-bold tracking-tight text-white">DokiFlux</span>
+              <Image src="/logo.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
             </Link>
 
             <p className="text-white/35 text-sm leading-relaxed max-w-[220px]">

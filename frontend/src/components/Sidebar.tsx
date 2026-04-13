@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { apiGet } from "@/lib/api";
 import type { ProjectListItem, PaginatedResponse } from "@/types/auth";
@@ -11,7 +12,6 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronRight,
-  Sparkles,
   LogOut,
   Coins,
   Plus,
@@ -79,8 +79,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       {/* Header */}
       <div className="p-4 border-b">
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-5 h-5 text-primary" />
-          <h1 className="text-lg font-bold">DokiFlux</h1>
+          <Image src="/logo.png" alt="DokiFlux" width={200} height={50} className="h-10 w-auto" />
         </div>
         <Button
           onClick={() => handleNav("/app")}

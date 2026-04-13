@@ -15,8 +15,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dokiflux — AI UI Generator",
-  description: "Generate React UI components with AI, powered by GPT-5.4",
+  title: "DokiFlux — Genera UI con IA",
+  description: "De prompt a prototipo React funcional en segundos. Valida ideas y pasa a producción.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo.png", type: "image/png" },
+    ],
+    apple: "/logo.png",
+  },
 };
 
 export const viewport: Viewport = {
