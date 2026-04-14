@@ -26,6 +26,12 @@
 41- logs de auditoria (tabla donde guardar todos los logs para auditoria)
 42- integrar facturación, pagos, etc.
 43- Una UX/UI a prueba de usuarios no técnicos.
+44- formulario de "No sabes como empezar? pulsa aqui para que te ayudemos en 3 pasos" 
+    - (Abrir modal simple de preguntas para montar prompt por detras)
+    ejemplo: 
+        - ¿Qué tipo de negocio es y qué objetivo principal debe cumplir la web: captar clientes, vender, mostrar servicios o reservar citas?
+        - ¿Qué secciones quieres incluir: inicio, servicios, sobre nosotros, testimonios, contacto, tienda, blog?
+        - ¿Tienes preferencias de estilo: colores de marca, tono visual, ejemplos de webs que te gusten?
 
 Usar DokiFlux como motor interno + demo para vender una productized service premium:
 “Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.
