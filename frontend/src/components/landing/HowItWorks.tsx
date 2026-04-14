@@ -92,38 +92,50 @@ export function HowItWorks() {
           </p>
         </div>
 
-        {/* Steps */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Steps — vertical flow list */}
+        <div className="max-w-lg mx-auto">
           {STEPS.map((step, i) => {
             const Icon = step.icon;
+            const isLast = i === STEPS.length - 1;
             return (
               <div
                 key={step.step}
-                className="rounded-xl p-5 group transition-all duration-300 hover:scale-[1.02]"
+                className="flex gap-5"
                 style={{
-                  background: "rgba(255,255,255,0.025)",
-                  border: `1px solid rgba(255,255,255,0.07)`,
                   opacity: visible ? 1 : 0,
-                  transform: visible ? "translateY(0)" : "translateY(24px)",
-                  transition: `opacity 0.55s ease ${i * 0.1}s, transform 0.55s ease ${i * 0.1}s`,
+                  transform: visible ? "translateX(0)" : "translateX(-16px)",
+                  transition: `opacity 0.5s ease ${i * 0.1}s, transform 0.5s ease ${i * 0.1}s`,
                 }}
               >
-                <div className="flex items-center gap-3 mb-3">
+                {/* Left: circle + connector line */}
+                <div className="flex flex-col items-center shrink-0">
                   <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: step.colorBg, border: `1px solid ${step.colorBorder}` }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center border-2 shrink-0"
+                    style={{ borderColor: step.colorBorder, background: step.colorBg }}
                   >
-                    <Icon size={16} style={{ color: step.color }} />
+                    <Icon size={15} style={{ color: step.color }} />
                   </div>
-                  <span
-                    className="text-[11px] font-black px-2 py-0.5 rounded-md"
-                    style={{ background: step.colorBg, color: step.color, border: `1px solid ${step.colorBorder}` }}
-                  >
-                    {step.step}
-                  </span>
+                  {!isLast && (
+                    <div
+                      className="w-px flex-1 mt-1"
+                      style={{
+                        minHeight: 40,
+                        background: `linear-gradient(to bottom, ${step.colorBorder}, rgba(255,255,255,0.04))`,
+                      }}
+                    />
+                  )}
                 </div>
-                <h3 className="text-white font-bold text-[15px] mb-1.5">{step.title}</h3>
-                <p className="text-white/65 text-[13px] leading-relaxed">{step.desc}</p>
+
+                {/* Right: content */}
+                <div className={`pt-1.5 ${isLast ? "pb-0" : "pb-9"}`}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: step.color }}>
+                      {step.step}
+                    </span>
+                    <h3 className="text-white font-bold text-[16px]">{step.title}</h3>
+                  </div>
+                  <p className="text-white/55 text-[14px] leading-relaxed">{step.desc}</p>
+                </div>
               </div>
             );
           })}
