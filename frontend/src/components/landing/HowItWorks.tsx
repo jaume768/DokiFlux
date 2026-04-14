@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PenLine, Code2, RefreshCw, Rocket } from "lucide-react";
 
 const STEPS = [
   {
-    icon: PenLine,
+    image: "/tarjetas-4-pasos/tarjeta-01.png",
     step: "01",
     title: "Describe tu idea",
     desc: "Escribe lo que quieres construir en lenguaje natural. Sin código, sin configuración.",
@@ -14,7 +13,7 @@ const STEPS = [
     colorBorder: "rgba(139,92,246,0.22)",
   },
   {
-    icon: Code2,
+    image: "/tarjetas-4-pasos/tarjeta-02.png",
     step: "02",
     title: "Genera código",
     desc: "La IA genera código React funcional en tiempo real. Múltiples archivos, todo listo.",
@@ -23,7 +22,7 @@ const STEPS = [
     colorBorder: "rgba(56,189,248,0.22)",
   },
   {
-    icon: RefreshCw,
+    image: "/tarjetas-4-pasos/tarjeta-03.png",
     step: "03",
     title: "Itera y valida",
     desc: "Refina con chat iterativo, auto-fix de errores y comparte con tu equipo para validar.",
@@ -32,7 +31,7 @@ const STEPS = [
     colorBorder: "rgba(52,211,153,0.22)",
   },
   {
-    icon: Rocket,
+    image: "/tarjetas-4-pasos/tarjeta-04.png",
     step: "04",
     title: "Pasa a producción",
     desc: "Prototipo validado. Nuestro equipo lo lleva a un producto real en 2–6 semanas.",
@@ -96,7 +95,6 @@ export function HowItWorks() {
         <div className="relative max-w-4xl mx-auto">
           <div className="flex flex-col gap-12 md:gap-12">
             {STEPS.map((step, i) => {
-              const Icon = step.icon;
               const isRight = i % 2 === 1;
               const isLast = i === STEPS.length - 1;
               return (
@@ -113,8 +111,9 @@ export function HowItWorks() {
                     }}
                   >
                     <div
-                      className="relative rounded-2xl p-6 overflow-hidden"
+                      className="relative rounded-2xl p-6"
                       style={{
+                        overflow: "visible",
                         background: `radial-gradient(ellipse at ${isRight ? "top right" : "top left"}, ${step.color}10 0%, rgba(10,10,20,0.92) 65%)`,
                         border: `1px solid ${step.color}45`,
                         boxShadow: `0 0 28px ${step.color}14, inset 0 0 28px ${step.color}06`,
@@ -142,20 +141,23 @@ export function HowItWorks() {
                         />
                       ))}
 
-                      {/* Content row */}
-                      <div className="flex items-start gap-5 relative z-10">
-                        {/* Glowing icon */}
-                        <div
-                          className="shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center relative"
-                          style={{
-                            background: `radial-gradient(circle at center, ${step.color}22 0%, ${step.color}08 100%)`,
-                            border: `1.5px solid ${step.color}55`,
-                            boxShadow: `0 0 20px ${step.color}35, 0 0 6px ${step.color}20`,
-                          }}
-                        >
-                          <Icon size={26} style={{ color: step.color }} />
-                        </div>
+                      {/* Floating image — overflows card bounds */}
+                      <img
+                        src={step.image}
+                        alt={step.title}
+                        className="absolute pointer-events-none object-contain"
+                        style={{
+                          width: 220,
+                          height: 220,
+                          bottom: -40,
+                          left: isRight ? "auto" : -20,
+                          right: isRight ? -20 : "auto",
+                          zIndex: 0,
+                        }}
+                      />
 
+                      {/* Content row */}
+                      <div className={`flex items-start relative z-10 ${isRight ? "pr-44" : "pl-44"}`}>
                         {/* Text */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-1">
