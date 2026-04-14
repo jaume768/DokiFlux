@@ -120,7 +120,7 @@ export function DualPersona() {
                 />
 
                 {/* Image header */}
-                <div className="relative overflow-hidden shrink-0 h-[180px] md:h-[260px]">
+                <div className="relative overflow-hidden shrink-0 h-[120px] md:h-[260px]">
                   <img
                     src={persona.image}
                     alt={persona.title}
