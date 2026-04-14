@@ -126,7 +126,7 @@ export function FinalCTA() {
 
         {/* Subtitle */}
         <p
-          className="text-base sm:text-lg md:text-xl text-white/70 max-w-xl leading-relaxed mb-12"
+          className="text-lg sm:text-xl md:text-2xl text-white/85 max-w-xl leading-relaxed mb-12"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(20px)",
@@ -134,7 +134,7 @@ export function FinalCTA() {
           }}
         >
           Únete a más de{" "}
-          <span className="text-white/75 font-semibold">500 equipos</span> que ya
+          <span className="text-white/90 font-semibold">500 equipos</span> que ya
           prototipan con IA y lanzan productos reales con nuestro equipo.
         </p>
 
@@ -178,7 +178,7 @@ export function FinalCTA() {
 
         {/* Trust line */}
         <div
-          className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 mt-7 text-sm text-white/55"
+          className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 mt-7 text-sm text-white/70"
           style={{
             opacity: visible ? 1 : 0,
             transition: "opacity 0.65s ease 0.5s",

@@ -99,7 +99,7 @@ export function TemplatesShowcase() {
             <br />
             <span className="gradient-text">template profesional</span>
           </h2>
-          <p className="text-white/65 text-base md:text-lg max-w-md mx-auto">
+          <p className="text-white/80 text-lg md:text-xl max-w-md mx-auto">
             Elige una plantilla y personalízala en segundos con prompts.
           </p>
         </div>
@@ -168,7 +168,7 @@ export function TemplatesShowcase() {
                       {template.category}
                     </span>
                   </div>
-                  <p className="text-white/50 text-[12px] leading-relaxed mt-1.5 line-clamp-1">
+                  <p className="text-white/70 text-[13px] leading-relaxed mt-1.5 line-clamp-1">
                     {template.description}
                   </p>
                 </div>

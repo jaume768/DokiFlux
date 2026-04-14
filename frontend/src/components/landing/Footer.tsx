@@ -63,7 +63,7 @@ export function Footer() {
               <Image src="/logo.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
             </Link>
 
-            <p className="text-white/35 text-sm leading-relaxed max-w-[220px]">
+            <p className="text-white/60 text-sm leading-relaxed max-w-[220px]">
               De idea a producción.<br />
               Prototipa con IA, lanza con nosotros.
             </p>
@@ -81,7 +81,7 @@ export function Footer() {
                     border: "1px solid rgba(255,255,255,0.07)",
                   }}
                 >
-                  <Icon size={15} className="text-white/40 hover:text-white transition-colors duration-300" />
+                  <Icon size={15} className="text-white/60 hover:text-white transition-colors duration-300" />
                 </a>
               ))}
             </div>
@@ -107,7 +107,7 @@ export function Footer() {
                   <li key={label}>
                     <Link
                       href={href}
-                      className="group/link flex items-center gap-2 text-white/38 hover:text-white text-[14px] transition-colors duration-200 w-fit"
+                      className="group/link flex items-center gap-2 text-white/60 hover:text-white text-[14px] transition-colors duration-200 w-fit"
                     >
                       <span className="group-hover/link:translate-x-0.5 transition-transform duration-200">
                         {label}
@@ -127,13 +127,13 @@ export function Footer() {
                 <li key={label}>
                   <a
                     href={href}
-                    className="flex items-center gap-2.5 text-white/38 hover:text-white text-[14px] transition-all duration-200 group/slink w-fit"
+                    className="flex items-center gap-2.5 text-white/60 hover:text-white text-[14px] transition-all duration-200 group/slink w-fit"
                   >
                     <span
                       className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
                       style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}
                     >
-                      <Icon size={11} className="text-white/40" />
+                      <Icon size={11} className="text-white/60" />
                     </span>
                     <span className="group-hover/slink:translate-x-0.5 transition-transform duration-200">
                       {label}

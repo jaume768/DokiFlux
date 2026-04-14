@@ -69,7 +69,7 @@ export function Comparison() {
             <br />
             <span className="gradient-text">DokiFlux?</span>
           </h2>
-          <p className="text-white/65 text-base md:text-lg max-w-md mx-auto">
+          <p className="text-white/80 text-lg md:text-xl max-w-md mx-auto">
             No solo generamos código. Te acompañamos hasta producción.
           </p>
         </div>
@@ -110,7 +110,7 @@ export function Comparison() {
                 <div className={`text-[13px] font-bold ${tool.highlighted ? "text-white" : "text-white/75"}`}>
                   {tool.name}
                 </div>
-                <div className="text-[10px] text-white/50">{tool.subtitle}</div>
+                <div className="text-[11px] text-white/70">{tool.subtitle}</div>
               </div>
             ))}
           </div>
@@ -122,7 +122,7 @@ export function Comparison() {
               className="grid grid-cols-4 gap-0 transition-colors duration-200 hover:bg-white/[0.015]"
               style={{ borderBottom: i < FEATURES.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}
             >
-              <div className="p-3.5 text-[13px] text-white/70 flex items-center">
+              <div className="p-3.5 text-[14px] text-white/85 flex items-center">
                 {feature.label}
               </div>
               <div className="p-3.5 flex items-center justify-center" style={{ borderLeft: "1px solid rgba(255,255,255,0.04)" }}>

@@ -139,7 +139,7 @@ export function DualPersona() {
                   </p>
 
                   {/* Description */}
-                  <p className="text-white/55 text-[14px] leading-relaxed mb-6">
+                  <p className="text-white/80 text-[15px] leading-relaxed mb-6">
                     {persona.desc}
                   </p>
 
@@ -148,7 +148,7 @@ export function DualPersona() {
                     {persona.benefits.map((benefit, bi) => (
                       <li key={bi} className="flex items-center gap-2.5">
                         <Check size={13} className="shrink-0" style={{ color: persona.color }} />
-                        <span className="text-white/70 text-[13px]">{benefit}</span>
+                        <span className="text-white/85 text-[14px]">{benefit}</span>
                       </li>
                     ))}
                   </ul>

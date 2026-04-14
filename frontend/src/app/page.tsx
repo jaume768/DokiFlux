@@ -25,9 +25,9 @@ export default function LandingPage() {
         <LogoBar />
         <HowItWorks />
         <Comparison />
-        <Testimonials />
         <TemplatesShowcase />
         <DualPersona />
+        <Testimonials />
         <FinalCTA />
       </main>
       <Footer />

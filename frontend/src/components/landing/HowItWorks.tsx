@@ -87,7 +87,7 @@ export function HowItWorks() {
             <br />
             <span className="gradient-text">en 4 pasos</span>
           </h2>
-          <p className="text-white/65 text-base max-w-sm mx-auto">
+          <p className="text-white/80 text-lg max-w-sm mx-auto">
             De la idea al software real, lo más rápido posible.
           </p>
         </div>
@@ -134,7 +134,7 @@ export function HowItWorks() {
                     </span>
                     <h3 className="text-white font-bold text-[16px]">{step.title}</h3>
                   </div>
-                  <p className="text-white/55 text-[14px] leading-relaxed">{step.desc}</p>
+                  <p className="text-white/80 text-[15px] leading-relaxed">{step.desc}</p>
                 </div>
               </div>
             );

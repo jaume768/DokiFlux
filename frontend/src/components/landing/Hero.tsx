@@ -123,7 +123,7 @@ export function Hero() {
                 <Star size={12} className="fill-amber-400" />
                 <Star size={12} className="fill-amber-400" />
               </span>
-              <span className="text-white/70 text-xs">Más de 500 prototipos creados</span>
+              <span className="text-white/85 text-xs">Más de 500 prototipos creados</span>
             </div>
 
             {/* H1 */}
@@ -148,7 +148,7 @@ export function Hero() {
 
             {/* Subtitle */}
             <p
-              className="text-base sm:text-lg md:text-xl text-white/70 max-w-xl leading-relaxed mb-10 mx-auto lg:mx-0"
+              className="text-lg sm:text-xl md:text-2xl text-white/85 max-w-xl leading-relaxed mb-10 mx-auto lg:mx-0"
               style={{
                 opacity: visible ? 1 : 0,
                 transform: visible ? "translateY(0)" : "translateY(20px)",
@@ -157,7 +157,7 @@ export function Hero() {
             >
               Genera prototipos funcionales con IA. Valídalos con tu equipo.
               Cuando estés listo, nuestro equipo los convierte en{" "}
-              <span className="text-white/70 font-medium">software real listo para producción</span>.
+              <span className="text-white/90 font-medium">software real listo para producción</span>.
             </p>
 
             {/* CTAs */}
@@ -180,7 +180,7 @@ export function Hero() {
               </Link>
               <Link
                 href="#como-funciona"
-                className="btn-secondary inline-flex items-center gap-2 text-[14px] font-medium text-white/70 px-6 py-4 rounded-xl"
+                className="btn-secondary inline-flex items-center gap-2 text-[14px] font-medium text-white/85 px-6 py-4 rounded-xl"
               >
                 Cómo funciona
               </Link>
@@ -188,7 +188,7 @@ export function Hero() {
 
             {/* Trust line */}
             <div
-              className="flex flex-wrap items-center gap-4 justify-center lg:justify-start text-sm text-white/55"
+              className="flex flex-wrap items-center gap-4 justify-center lg:justify-start text-sm text-white/70"
               style={{
                 opacity: visible ? 1 : 0,
                 transition: "opacity 0.65s ease 0.45s",

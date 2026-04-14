@@ -108,7 +108,7 @@ export function Testimonials() {
               {/* Quote */}
               <div className="relative mb-6">
                 <Quote size={20} className="absolute -top-1 -left-1 text-white/5" />
-                <p className="text-white/75 text-[14px] leading-relaxed pl-4">
+                <p className="text-white/85 text-[15px] leading-relaxed pl-4">
                   &ldquo;{t.quote}&rdquo;
                 </p>
               </div>
@@ -122,8 +122,8 @@ export function Testimonials() {
                   {t.avatar}
                 </div>
                 <div>
-                  <div className="text-white text-[13px] font-semibold">{t.name}</div>
-                  <div className="text-white/60 text-[11px]">{t.role}</div>
+                  <div className="text-white text-[14px] font-semibold">{t.name}</div>
+                  <div className="text-white/75 text-[12px]">{t.role}</div>
                 </div>
               </div>
             </div>
@@ -143,7 +143,7 @@ export function Testimonials() {
           {STATS.map((stat, i) => (
             <div key={i} className="text-center">
               <div className="text-2xl md:text-3xl font-black gradient-text mb-1">{stat.value}</div>
-              <div className="text-white/60 text-[12px] font-medium">{stat.label}</div>
+              <div className="text-white/75 text-[13px] font-medium">{stat.label}</div>
             </div>
           ))}
         </div>
