@@ -123,11 +123,11 @@ export function TemplatesShowcase() {
                 onClick={() => router.push(`/register?template=${template.id}`)}
               >
                 {/* Preview image — edge to edge, dominant */}
-                <div className="relative overflow-hidden" style={{ height: 250, background: "rgba(10,10,20,0.8)" }}>
+                <div className="relative overflow-hidden" style={{ height: 200, background: "rgba(10,10,20,0.8)" }}>
                   <img
                     src={template.image}
                     alt={template.name}
-                    className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
+                    className="w-full h-full object-cover object-top"
                     onError={(e) => {
                       const target = e.currentTarget;
                       target.style.display = "none";
