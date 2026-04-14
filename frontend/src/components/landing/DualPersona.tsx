@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Code2, Building2, Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 
 const PERSONAS = [
   {
-    icon: Code2,
+    image: "/templates/tarjeta-programadores.png",
     title: "Desarrolladores & Freelance",
     subtitle: "Prototipa más rápido, cobra más",
     desc: "Genera MVPs funcionales en minutos para tus clientes. Valida ideas sin escribir código boilerplate. Multiplica tu productividad.",
@@ -24,7 +24,7 @@ const PERSONAS = [
     colorBorder: "rgba(139,92,246,0.22)",
   },
   {
-    icon: Building2,
+    image: "/templates/tarjeta-empresa.png",
     title: "Empresas & Startups",
     subtitle: "De idea a producción con garantías",
     desc: "Valida productos con tu equipo antes de invertir en desarrollo. Cuando estés listo, nuestro equipo lo lleva a producción.",
@@ -95,7 +95,6 @@ export function DualPersona() {
         {/* Cards */}
         <div className="grid gap-5 md:grid-cols-2">
           {PERSONAS.map((persona, i) => {
-            const Icon = persona.icon;
             const ctaContent = (
               <>
                 {persona.cta}
@@ -114,24 +113,26 @@ export function DualPersona() {
                   transition: `opacity 0.55s ease ${i * 0.12}s, transform 0.55s ease ${i * 0.12}s`,
                 }}
               >
-                {/* Top accent line */}
-                <div className="h-px w-full shrink-0" style={{ background: `linear-gradient(to right, transparent, ${persona.color}cc, transparent)` }} />
-
                 {/* Corner glow */}
                 <div
                   className="absolute top-0 right-0 w-48 h-48 rounded-full blur-[80px] pointer-events-none"
                   style={{ background: `${persona.color}18` }}
                 />
 
-                <div className="relative z-10 p-7 flex flex-col flex-1">
-                  {/* Icon */}
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 shrink-0"
-                    style={{ background: persona.colorBg, border: `1px solid ${persona.colorBorder}` }}
-                  >
-                    <Icon size={24} style={{ color: persona.color }} />
-                  </div>
+                {/* Image header */}
+                <div className="relative overflow-hidden shrink-0 h-[180px] md:h-[260px]">
+                  <img
+                    src={persona.image}
+                    alt={persona.title}
+                    className="w-full h-full object-cover object-center"
+                  />
+                  {/* Bottom fade into card */}
+                  <div className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(12,12,20,0.85), transparent)" }} />
+                  {/* Accent line over image bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: `linear-gradient(to right, transparent, ${persona.color}99, transparent)` }} />
+                </div>
 
+                <div className="relative z-10 p-7 flex flex-col flex-1">
                   {/* Title + subtitle */}
                   <h3 className="text-white font-bold text-xl mb-1">{persona.title}</h3>
                   <p className="text-[13px] font-semibold mb-4" style={{ color: persona.color }}>
