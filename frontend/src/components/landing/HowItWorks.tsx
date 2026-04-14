@@ -92,53 +92,162 @@ export function HowItWorks() {
           </p>
         </div>
 
-        {/* Steps — vertical flow list */}
-        <div className="max-w-lg mx-auto">
-          {STEPS.map((step, i) => {
-            const Icon = step.icon;
-            const isLast = i === STEPS.length - 1;
-            return (
-              <div
-                key={step.step}
-                className="flex gap-5"
-                style={{
-                  opacity: visible ? 1 : 0,
-                  transform: visible ? "translateX(0)" : "translateX(-16px)",
-                  transition: `opacity 0.5s ease ${i * 0.1}s, transform 0.5s ease ${i * 0.1}s`,
-                }}
-              >
-                {/* Left: circle + connector line */}
-                <div className="flex flex-col items-center shrink-0">
+        {/* Steps — zigzag cards */}
+        <div className="relative max-w-4xl mx-auto">
+          <div className="flex flex-col gap-12 md:gap-12">
+            {STEPS.map((step, i) => {
+              const Icon = step.icon;
+              const isRight = i % 2 === 1;
+              const isLast = i === STEPS.length - 1;
+              return (
+                <div key={step.step} className="relative">
+                  {/* Card — zigzag positioning on desktop */}
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center border-2 shrink-0"
-                    style={{ borderColor: step.colorBorder, background: step.colorBg }}
+                    className={`relative w-full md:w-[58%] ${isRight ? "md:ml-auto" : ""}`}
+                    style={{
+                      opacity: visible ? 1 : 0,
+                      transform: visible
+                        ? "translateY(0)"
+                        : `translateY(20px)`,
+                      transition: `opacity 0.55s ease ${i * 0.13}s, transform 0.55s ease ${i * 0.13}s`,
+                    }}
                   >
-                    <Icon size={15} style={{ color: step.color }} />
+                    <div
+                      className="relative rounded-2xl p-6 overflow-hidden"
+                      style={{
+                        background: `radial-gradient(ellipse at ${isRight ? "top right" : "top left"}, ${step.color}10 0%, rgba(10,10,20,0.92) 65%)`,
+                        border: `1px solid ${step.color}45`,
+                        boxShadow: `0 0 28px ${step.color}14, inset 0 0 28px ${step.color}06`,
+                      }}
+                    >
+                      {/* Sparkle dots */}
+                      {[
+                        { top: "12%", left: "6%", s: 2.5 },
+                        { top: "75%", left: "88%", s: 2 },
+                        { top: "55%", left: "4%", s: 1.5 },
+                        { top: "20%", left: "92%", s: 2 },
+                      ].map((dot, di) => (
+                        <div
+                          key={di}
+                          className="absolute rounded-full pointer-events-none"
+                          style={{
+                            top: dot.top,
+                            left: dot.left,
+                            width: dot.s,
+                            height: dot.s,
+                            background: step.color,
+                            opacity: 0.55,
+                            animation: `pulse 2s ease-in-out ${di * 0.5}s infinite`,
+                          }}
+                        />
+                      ))}
+
+                      {/* Content row */}
+                      <div className="flex items-start gap-5 relative z-10">
+                        {/* Glowing icon */}
+                        <div
+                          className="shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center relative"
+                          style={{
+                            background: `radial-gradient(circle at center, ${step.color}22 0%, ${step.color}08 100%)`,
+                            border: `1.5px solid ${step.color}55`,
+                            boxShadow: `0 0 20px ${step.color}35, 0 0 6px ${step.color}20`,
+                          }}
+                        >
+                          <Icon size={26} style={{ color: step.color }} />
+                        </div>
+
+                        {/* Text */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span
+                              className="text-[11px] font-black tracking-widest shrink-0"
+                              style={{ color: step.color }}
+                            >
+                              {step.step}
+                            </span>
+                            <h3 className="text-white font-bold text-[18px] leading-tight">
+                              {step.title}
+                            </h3>
+                          </div>
+                          <p className="text-white/80 text-[14px] leading-relaxed">
+                            {step.desc}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Curved arrow to next step */}
                   {!isLast && (
                     <div
-                      className="w-px flex-1 mt-1"
+                      className="hidden md:block absolute z-10 pointer-events-none"
                       style={{
-                        minHeight: 40,
-                        background: `linear-gradient(to bottom, ${step.colorBorder}, rgba(255,255,255,0.04))`,
+                        top: "100%",
+                        marginTop: -22,
+                        left: "calc(50% - 40px)",
+                        opacity: visible ? 1 : 0,
+                        transition: `opacity 0.5s ease ${i * 0.13 + 0.3}s`,
                       }}
-                    />
+                    >
+                      <svg
+                        width="80"
+                        height="60"
+                        viewBox="0 0 80 60"
+                        fill="none"
+                        style={{ overflow: "visible" }}
+                      >
+                        {isRight ? (
+                          <>
+                            {/* Right→Left, belly up */}
+                            <path
+                              d="M 72 6 C 72 -16 8 -16 8 54"
+                              stroke={step.color}
+                              strokeWidth="2"
+                              strokeDasharray="5 3"
+                              strokeLinecap="round"
+                              fill="none"
+                              opacity="0.75"
+                            />
+                            {/* Arrowhead pointing down */}
+                            <path
+                              d="M 3 47 L 8 55 L 13 47"
+                              stroke={step.color}
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              fill="none"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            {/* Left→Right, belly up */}
+                            <path
+                              d="M 8 6 C 8 -16 72 -16 72 54"
+                              stroke={step.color}
+                              strokeWidth="2"
+                              strokeDasharray="5 3"
+                              strokeLinecap="round"
+                              fill="none"
+                              opacity="0.75"
+                            />
+                            {/* Arrowhead pointing down */}
+                            <path
+                              d="M 67 47 L 72 55 L 77 47"
+                              stroke={step.color}
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              fill="none"
+                            />
+                          </>
+                        )}
+                      </svg>
+                    </div>
                   )}
                 </div>
-
-                {/* Right: content */}
-                <div className={`pt-1.5 ${isLast ? "pb-0" : "pb-9"}`}>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: step.color }}>
-                      {step.step}
-                    </span>
-                    <h3 className="text-white font-bold text-[16px]">{step.title}</h3>
-                  </div>
-                  <p className="text-white/80 text-[15px] leading-relaxed">{step.desc}</p>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
