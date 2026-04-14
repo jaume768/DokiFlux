@@ -93,84 +93,85 @@ export function DualPersona() {
         </div>
 
         {/* Cards */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2">
           {PERSONAS.map((persona, i) => {
             const Icon = persona.icon;
+            const ctaContent = (
+              <>
+                {persona.cta}
+                <ArrowRight size={14} className="transition-transform duration-300 group-hover/cta:translate-x-1" />
+              </>
+            );
             return (
               <div
                 key={i}
-                className="rounded-2xl p-7 card-hover group"
+                className="rounded-2xl overflow-hidden card-hover group relative flex flex-col"
                 style={{
-                  background: persona.colorBg,
-                  border: `1px solid ${persona.colorBorder}`,
+                  background: "rgba(12,12,20,0.7)",
+                  border: "1px solid rgba(255,255,255,0.07)",
                   opacity: visible ? 1 : 0,
                   transform: visible ? "translateY(0)" : "translateY(24px)",
                   transition: `opacity 0.55s ease ${i * 0.12}s, transform 0.55s ease ${i * 0.12}s`,
                 }}
               >
-                {/* Icon + title */}
-                <div className="flex items-center gap-3 mb-2">
+                {/* Top accent line */}
+                <div className="h-px w-full shrink-0" style={{ background: `linear-gradient(to right, transparent, ${persona.color}cc, transparent)` }} />
+
+                {/* Corner glow */}
+                <div
+                  className="absolute top-0 right-0 w-48 h-48 rounded-full blur-[80px] pointer-events-none"
+                  style={{ background: `${persona.color}18` }}
+                />
+
+                <div className="relative z-10 p-7 flex flex-col flex-1">
+                  {/* Icon */}
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 shrink-0"
                     style={{ background: persona.colorBg, border: `1px solid ${persona.colorBorder}` }}
                   >
-                    <Icon size={18} style={{ color: persona.color }} />
+                    <Icon size={24} style={{ color: persona.color }} />
                   </div>
-                  <div>
-                    <h3 className="text-white font-bold text-lg">{persona.title}</h3>
-                    <p className="text-[12px] font-medium" style={{ color: persona.color, opacity: 0.7 }}>
-                      {persona.subtitle}
-                    </p>
-                  </div>
+
+                  {/* Title + subtitle */}
+                  <h3 className="text-white font-bold text-xl mb-1">{persona.title}</h3>
+                  <p className="text-[13px] font-semibold mb-4" style={{ color: persona.color }}>
+                    {persona.subtitle}
+                  </p>
+
+                  {/* Description */}
+                  <p className="text-white/55 text-[14px] leading-relaxed mb-6">
+                    {persona.desc}
+                  </p>
+
+                  {/* Benefits */}
+                  <ul className="space-y-2.5 mb-8 flex-1">
+                    {persona.benefits.map((benefit, bi) => (
+                      <li key={bi} className="flex items-center gap-2.5">
+                        <Check size={13} className="shrink-0" style={{ color: persona.color }} />
+                        <span className="text-white/70 text-[13px]">{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA — full-width solid button */}
+                  {persona.ctaHref.startsWith("mailto:") ? (
+                    <a
+                      href={persona.ctaHref}
+                      className="group/cta flex items-center justify-center gap-2 w-full py-3 rounded-xl text-[14px] font-semibold text-white transition-all duration-300 hover:brightness-110 hover:scale-[1.01]"
+                      style={{ background: persona.color }}
+                    >
+                      {ctaContent}
+                    </a>
+                  ) : (
+                    <Link
+                      href={persona.ctaHref}
+                      className="group/cta flex items-center justify-center gap-2 w-full py-3 rounded-xl text-[14px] font-semibold text-white transition-all duration-300 hover:brightness-110 hover:scale-[1.01]"
+                      style={{ background: persona.color }}
+                    >
+                      {ctaContent}
+                    </Link>
+                  )}
                 </div>
-
-                <p className="text-white/70 text-[14px] leading-relaxed mb-6 mt-4">
-                  {persona.desc}
-                </p>
-
-                {/* Benefits */}
-                <ul className="space-y-2.5 mb-7">
-                  {persona.benefits.map((benefit, bi) => (
-                    <li key={bi} className="flex items-start gap-2.5">
-                      <div
-                        className="w-4.5 h-4.5 rounded-full flex items-center justify-center mt-0.5 shrink-0"
-                        style={{ background: persona.colorBg, border: `1px solid ${persona.colorBorder}` }}
-                      >
-                        <Check size={10} style={{ color: persona.color }} />
-                      </div>
-                      <span className="text-white/70 text-[13px]">{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* CTA */}
-                {persona.ctaHref.startsWith("mailto:") ? (
-                  <a
-                    href={persona.ctaHref}
-                    className="inline-flex items-center gap-2 text-[14px] font-semibold px-5 py-3 rounded-xl transition-all duration-300 group/cta"
-                    style={{
-                      background: persona.colorBg,
-                      border: `1px solid ${persona.colorBorder}`,
-                      color: persona.color,
-                    }}
-                  >
-                    {persona.cta}
-                    <ArrowRight size={14} className="transition-transform duration-300 group-hover/cta:translate-x-1" />
-                  </a>
-                ) : (
-                  <Link
-                    href={persona.ctaHref}
-                    className="inline-flex items-center gap-2 text-[14px] font-semibold px-5 py-3 rounded-xl transition-all duration-300 group/cta"
-                    style={{
-                      background: persona.colorBg,
-                      border: `1px solid ${persona.colorBorder}`,
-                      color: persona.color,
-                    }}
-                  >
-                    {persona.cta}
-                    <ArrowRight size={14} className="transition-transform duration-300 group-hover/cta:translate-x-1" />
-                  </Link>
-                )}
               </div>
             );
           })}
