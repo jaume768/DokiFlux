@@ -2,16 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, BarChart3, Rocket, ShoppingBag, User, MessageSquare, Settings } from "lucide-react";
+import { ArrowRight, Rocket, ShoppingBag, User } from "lucide-react";
 import { TEMPLATES } from "@/lib/templates";
 
-const TEMPLATE_ICONS: Record<string, { icon: typeof BarChart3; color: string; colorBg: string }> = {
-  "analytics-dashboard": { icon: BarChart3, color: "#8b5cf6", colorBg: "rgba(139,92,246,0.15)" },
+const TEMPLATE_ICONS: Record<string, { icon: typeof Rocket; color: string; colorBg: string }> = {
   "saas-landing": { icon: Rocket, color: "#38bdf8", colorBg: "rgba(56,189,248,0.15)" },
   "ecommerce-product": { icon: ShoppingBag, color: "#34d399", colorBg: "rgba(52,211,153,0.15)" },
   "portfolio": { icon: User, color: "#f59e0b", colorBg: "rgba(245,158,11,0.15)" },
-  "chat-app": { icon: MessageSquare, color: "#ec4899", colorBg: "rgba(236,72,153,0.15)" },
-  "admin-panel": { icon: Settings, color: "#6366f1", colorBg: "rgba(99,102,241,0.15)" },
 };
 
 function TemplateMiniPreview({ templateId, color }: { templateId: string; color: string }) {
@@ -108,29 +105,29 @@ export function TemplatesShowcase() {
         </div>
 
         {/* Templates grid */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TEMPLATES.map((template, i) => {
             const meta = TEMPLATE_ICONS[template.id] || { icon: Rocket, color: "#8b5cf6", colorBg: "rgba(139,92,246,0.15)" };
             const Icon = meta.icon;
             return (
               <div
                 key={template.id}
-                className="rounded-2xl p-5 cursor-pointer card-hover group"
+                className="cursor-pointer card-hover group overflow-hidden"
                 style={{
                   background: "rgba(255,255,255,0.025)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.07)",
                   opacity: visible ? 1 : 0,
                   transform: visible ? "translateY(0)" : "translateY(24px)",
                   transition: `opacity 0.55s ease ${i * 0.07}s, transform 0.55s ease ${i * 0.07}s`,
                 }}
                 onClick={() => router.push(`/register?template=${template.id}`)}
               >
-                {/* Preview image */}
-                <div className="rounded-xl overflow-hidden mb-4 transition-all duration-300 h-36" style={{ border: "1px solid rgba(255,255,255,0.05)" }}>
+                {/* Preview image — edge to edge, dominant */}
+                <div className="relative overflow-hidden" style={{ height: 250, background: "rgba(10,10,20,0.8)" }}>
                   <img
                     src={template.image}
                     alt={template.name}
-                    className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
                     onError={(e) => {
                       const target = e.currentTarget;
                       target.style.display = "none";
@@ -139,39 +136,41 @@ export function TemplatesShowcase() {
                     }}
                   />
                   <div
-                    className="hidden w-full h-full items-center justify-center rounded-xl p-3"
-                    style={{ background: "rgba(255,255,255,0.02)" }}
+                    className="hidden absolute inset-0 w-full h-full items-center justify-center p-6"
+                    style={{ background: "rgba(10,10,20,0.95)" }}
                   >
                     <TemplateMiniPreview templateId={template.id} color={meta.color} />
                   </div>
+                  {/* Bottom fade */}
+                  <div className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(10,10,20,0.6), transparent)" }} />
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "rgba(0,0,0,0.35)" }}>
+                    <div className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold text-white" style={{ background: meta.color }}>
+                      Usar template <ArrowRight size={13} />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Info */}
-                <div className="flex items-center gap-2.5 mb-2">
-                  <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: meta.colorBg, border: `1px solid ${meta.color}30` }}
-                  >
-                    <Icon size={13} style={{ color: meta.color }} />
+                {/* Compact info bar */}
+                <div className="px-4 py-3.5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: meta.colorBg, border: `1px solid ${meta.color}30` }}
+                    >
+                      <Icon size={13} style={{ color: meta.color }} />
+                    </div>
+                    <h3 className="text-white font-semibold text-[14px] flex-1 truncate">{template.name}</h3>
+                    <span
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
+                      style={{ background: meta.colorBg, color: meta.color, border: `1px solid ${meta.color}25` }}
+                    >
+                      {template.category}
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-semibold text-[14px] truncate">{template.name}</h3>
-                  </div>
-                  <span
-                    className="text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0"
-                    style={{ background: meta.colorBg, color: meta.color, border: `1px solid ${meta.color}25` }}
-                  >
-                    {template.category}
-                  </span>
-                </div>
-
-                <p className="text-white/65 text-[12px] leading-relaxed mb-3 line-clamp-2">
-                  {template.description}
-                </p>
-
-                <div className="flex items-center gap-1.5 text-[12px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ color: meta.color }}>
-                  Usar template
-                  <ArrowRight size={12} className="transition-transform duration-200 group-hover:translate-x-1" />
+                  <p className="text-white/50 text-[12px] leading-relaxed mt-1.5 line-clamp-1">
+                    {template.description}
+                  </p>
                 </div>
               </div>
             );
