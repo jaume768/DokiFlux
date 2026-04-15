@@ -7,7 +7,7 @@ const TESTIMONIALS = [
   {
     name: "Carlos Martínez",
     role: "CTO @ StartupFlow",
-    image: "/reviews/carlos.png",
+    image: "/reviews/carlos.jpg",
     quote: "DokiFlux nos permitió validar 3 ideas de producto en una semana. Lo que antes tardábamos meses en prototipar, ahora lo hacemos en horas.",
     stars: 5,
     color: "#8b5cf6",
@@ -16,7 +16,7 @@ const TESTIMONIALS = [
   {
     name: "Ana García",
     role: "Product Designer @ PixelLab",
-    image: "/reviews/ana.png",
+    image: "/reviews/ana.jpg",
     quote: "Como diseñadora, poder generar prototipos funcionales sin depender de un dev es un game changer. El servicio de producción es el broche de oro.",
     stars: 5,
     color: "#38bdf8",
@@ -25,7 +25,7 @@ const TESTIMONIALS = [
   {
     name: "Miguel Torres",
     role: "Freelance Developer",
-    image: "/reviews/miguel.png",
+    image: "/reviews/miguel.jpg",
     quote: "Uso DokiFlux para crear MVPs para mis clientes. En 2 días tengo un prototipo validado y listo para presentar.",
     stars: 5,
     color: "#34d399",
@@ -123,6 +123,7 @@ export function Testimonials() {
                     src={t.image}
                     alt={t.name}
                     className="w-full h-full object-cover object-top"
+                    style={{ transform: "scale(1.3)", transformOrigin: "top center" }}
                   />
                 </div>
                 <div>

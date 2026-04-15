@@ -166,11 +166,7 @@ export function FinalCTA() {
               }}
             />
 
-            <span className="relative z-10 w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-colors duration-300">
-              <Zap size={16} className="text-white fill-white" />
-            </span>
-
-            <span className="relative z-10">Crear mi primer prototipo gratis</span>
+            <span className="relative z-10">Empieza gratis</span>
 
             <ArrowRight size={20} className="relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
           </Link>
