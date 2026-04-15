@@ -281,6 +281,18 @@ async function bootWebContainer(): Promise<WebContainer> {
 
   wcBootPromise = (async () => {
     try {
+      // SharedArrayBuffer (required by WebContainer) is only available when
+      // crossOriginIsolated is true, which depends on COOP/COEP headers from
+      // the initial page load.  If a client-side navigation brought us here
+      // from a page without those headers the flag will be false.  Force a
+      // hard reload so the browser fetches the page with the right headers.
+      if (typeof window !== "undefined" && !window.crossOriginIsolated) {
+        console.warn("[WebContainer] crossOriginIsolated is false – reloading to apply COOP/COEP headers.");
+        window.location.reload();
+        // Return a never-resolving promise so callers don't continue.
+        return new Promise<WebContainer>(() => {});
+      }
+
       // Proactively clear stale Service Workers from previous sessions
       // to prevent them from serving blank/stale content in the iframe.
       await clearServiceWorkers();

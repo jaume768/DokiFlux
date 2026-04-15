@@ -115,7 +115,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (isAuthenticated && isPublic) {
       if (user?.has_completed_onboarding) {
-        router.replace("/app");
+        // Full navigation so the browser fetches /app with the correct
+        // COOP/COEP headers – a client-side router.replace would keep the
+        // public-page headers and crossOriginIsolated would stay false,
+        // breaking WebContainer's SharedArrayBuffer requirement.
+        window.location.replace("/app");
       } else {
         router.replace("/onboarding");
       }
