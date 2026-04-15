@@ -141,11 +141,11 @@ export function HowItWorks() {
                         />
                       ))}
 
-                      {/* Floating image — overflows card bounds */}
+                      {/* Floating image — desktop only */}
                       <img
                         src={step.image}
                         alt={step.title}
-                        className="absolute pointer-events-none object-contain"
+                        className="hidden md:block absolute pointer-events-none object-contain"
                         style={{
                           width: 220,
                           height: 220,
@@ -153,11 +153,19 @@ export function HowItWorks() {
                           left: isRight ? "auto" : -20,
                           right: isRight ? -20 : "auto",
                           zIndex: 0,
+                          transform: "scale(1.30)"
                         }}
                       />
 
                       {/* Content row */}
-                      <div className={`flex items-start relative z-10 ${isRight ? "pr-44" : "pl-44"}`}>
+                      <div className={`flex items-center gap-4 relative z-10 ${isRight ? "md:pr-44" : "md:pl-44"}`}>
+                        {/* Image — mobile only (flex item) */}
+                        <img
+                          src={step.image}
+                          alt={step.title}
+                          className="block md:hidden shrink-0 object-contain"
+                          style={{ width: 96, height: 96, transform: "scale(1.70)", transformOrigin: "center" }}
+                        />
                         {/* Text */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-1">
