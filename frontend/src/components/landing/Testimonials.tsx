@@ -7,7 +7,7 @@ const TESTIMONIALS = [
   {
     name: "Carlos Martínez",
     role: "CTO @ StartupFlow",
-    avatar: "CM",
+    image: "/reviews/carlos.png",
     quote: "DokiFlux nos permitió validar 3 ideas de producto en una semana. Lo que antes tardábamos meses en prototipar, ahora lo hacemos en horas.",
     stars: 5,
     color: "#8b5cf6",
@@ -16,7 +16,7 @@ const TESTIMONIALS = [
   {
     name: "Ana García",
     role: "Product Designer @ PixelLab",
-    avatar: "AG",
+    image: "/reviews/ana.png",
     quote: "Como diseñadora, poder generar prototipos funcionales sin depender de un dev es un game changer. El servicio de producción es el broche de oro.",
     stars: 5,
     color: "#38bdf8",
@@ -25,8 +25,8 @@ const TESTIMONIALS = [
   {
     name: "Miguel Torres",
     role: "Freelance Developer",
-    avatar: "MT",
-    quote: "Uso DokiFlux para crear MVPs para mis clientes. En 2 días tengo un prototipo validado y listo para presentar. Mis ingresos se han triplicado.",
+    image: "/reviews/miguel.png",
+    quote: "Uso DokiFlux para crear MVPs para mis clientes. En 2 días tengo un prototipo validado y listo para presentar.",
     stars: 5,
     color: "#34d399",
     colorBg: "rgba(52,211,153,0.12)",
@@ -116,10 +116,14 @@ export function Testimonials() {
               {/* Author */}
               <div className="flex items-center gap-3">
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-[12px] font-bold"
-                  style={{ background: t.colorBg, color: t.color, border: `1px solid ${t.color}30` }}
+                  className="w-16 h-16 rounded-xl overflow-hidden shrink-0"
+                  style={{ border: `1px solid ${t.color}40` }}
                 >
-                  {t.avatar}
+                  <img
+                    src={t.image}
+                    alt={t.name}
+                    className="w-full h-full object-cover object-top"
+                  />
                 </div>
                 <div>
                   <div className="text-white text-[14px] font-semibold">{t.name}</div>

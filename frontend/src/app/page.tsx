@@ -22,7 +22,6 @@ export default function LandingPage() {
       <LandingNavbar />
       <main>
         <Hero />
-        <LogoBar />
         <HowItWorks />
         <Comparison />
         <TemplatesShowcase />
