@@ -36,7 +36,10 @@ export default function HomePage() {
         name: title,
         description: prompt.trim(),
       });
-      router.push(`/app/generate/${project.id}?prompt=${encodeURIComponent(prompt)}&model=${selectedModel}&framework=${selectedFramework}`);
+      // Store prompt in sessionStorage instead of URL to avoid exceeding
+      // the 4096-byte Referrer header limit which breaks WebContainer COOP/COEP.
+      sessionStorage.setItem(`initial_prompt_${project.id}`, prompt.trim());
+      router.push(`/app/generate/${project.id}?model=${selectedModel}&framework=${selectedFramework}`);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

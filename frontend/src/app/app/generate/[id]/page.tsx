@@ -163,21 +163,28 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     };
   }, [projectId, router]);
 
-  // Auto-submit initial prompt from query params
+  // Auto-submit initial prompt from sessionStorage, project description, or legacy query param
   useEffect(() => {
-    const initialPrompt = searchParams?.get("prompt");
-    if (
-      initialPrompt &&
-      !isLoading &&
-      !isLoadingProject &&
-      messages.length === 0 &&
-      !initialPromptSentRef.current
-    ) {
+    if (isLoading || isLoadingProject || messages.length > 0 || initialPromptSentRef.current) return;
+
+    // 1. sessionStorage (preferred — avoids long URLs that break Referrer/COOP headers)
+    const storageKey = `initial_prompt_${projectId}`;
+    let initialPrompt = sessionStorage.getItem(storageKey);
+    if (initialPrompt) {
+      sessionStorage.removeItem(storageKey);
+    }
+
+    // 2. Legacy: ?prompt= query param (backwards compat / shared links)
+    if (!initialPrompt) {
+      initialPrompt = searchParams?.get("prompt") || null;
+    }
+
+    if (initialPrompt) {
       initialPromptSentRef.current = true;
       handleSubmit(initialPrompt);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, isLoading, isLoadingProject, messages.length]);
+  }, [isLoading, isLoadingProject, messages.length]);
 
   // Sync background gen state into shared context so the Sidebar can show an indicator
   useEffect(() => {

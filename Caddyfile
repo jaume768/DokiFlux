@@ -11,9 +11,10 @@ dokiflux.com {
 	}
 
 	# /app/* routes need COOP/COEP for WebContainer (SharedArrayBuffer / WebAssembly)
+	# COOP/COEP are set by Next.js (next.config.ts) so we don't duplicate them here.
+	# We only add Referrer-Policy to prevent full URLs from leaking to WebContainer iframes.
 	handle /app/* {
-		header Cross-Origin-Opener-Policy same-origin
-		header Cross-Origin-Embedder-Policy credentialless
+		header Referrer-Policy "strict-origin-when-cross-origin"
 		reverse_proxy frontend:3000
 	}
 

@@ -94,7 +94,8 @@ export default function OnboardingPage() {
         name: template.name,
         description: template.description,
       });
-      window.location.href = `/app/generate/${project.id}?prompt=${encodeURIComponent(template.prompt)}`;
+      sessionStorage.setItem(`initial_prompt_${project.id}`, template.prompt);
+      window.location.href = `/app/generate/${project.id}`;
     } catch {
       setError("Error al crear el proyecto. Inténtalo de nuevo.");
       setCreatingTemplate(null);
