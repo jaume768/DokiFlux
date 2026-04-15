@@ -443,7 +443,7 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
     setUrlInput("/");
   }, [previewUrl]);
 
-  // Listen for messages from the iframe (navigation tracking)
+  // Listen for messages from the iframe (navigation tracking + content ready)
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
       if (!e.data) return;
@@ -453,6 +453,15 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
         const path = e.data.path;
         setIframePath(path);
         setUrlInput(path);
+      }
+
+      // Content ready — React has painted inside the WebContainer iframe
+      if (e.data.type === "dokiflux-content-ready") {
+        if (iframeLoadTimeoutRef.current) {
+          clearTimeout(iframeLoadTimeoutRef.current);
+          iframeLoadTimeoutRef.current = null;
+        }
+        setIframeLoaded(true);
       }
     }
     window.addEventListener("message", handleMessage);
@@ -520,15 +529,15 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
   }
 
   const handleIframeLoad = useCallback(() => {
-    // Wait a fixed 30s after iframe onLoad for React + Tailwind to finish
-    // rendering inside the WebContainer before revealing the preview.
+    // Fallback: reveal preview after 15s if dokiflux-content-ready never arrives.
+    // Normally the content-ready postMessage from MAIN_TSX fires much sooner.
     if (iframeLoadTimeoutRef.current) {
       clearTimeout(iframeLoadTimeoutRef.current);
     }
     iframeLoadTimeoutRef.current = setTimeout(() => {
       setIframeLoaded(true);
       iframeLoadTimeoutRef.current = null;
-    }, 30000);
+    }, 15000);
   }, []);
 
   async function handleDownloadProject() {

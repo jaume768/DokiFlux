@@ -70,30 +70,29 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   return (
     <div
       className={`
-        w-[280px] h-screen border-r bg-background flex flex-col shrink-0
+        w-[240px] h-screen flex flex-col shrink-0
         fixed left-0 top-0 bottom-0 z-50 transition-transform duration-300
         md:relative md:z-auto md:translate-x-0 md:shadow-none
         ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}
       `}
+      style={{ background: "#0a0a0f", borderRight: "1px solid rgba(255,255,255,0.07)" }}
     >
       {/* Header */}
-      <div className="p-4 border-b">
-        <div className="flex items-center gap-2 mb-4">
-          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={200} height={50} className="h-10 w-auto hidden dark:block" />
-          <Image src="/logo-texto-negro.png" alt="DokiFlux" width={200} height={50} className="h-10 w-auto block dark:hidden" />
+      <div className="p-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+        <div className="flex items-center mb-4">
+          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
         </div>
-        <Button
+        <button
           onClick={() => handleNav("/app")}
-          className="w-full justify-start gap-2"
-          size="sm"
+          className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white"
         >
           <Plus className="w-4 h-4" />
           Nuevo chat
-        </Button>
+        </button>
       </div>
 
       {/* Navigation */}
-      <nav className="px-2 py-3 border-b">
+      <nav className="px-2 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.path;
@@ -101,11 +100,12 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             <button
               key={item.path}
               onClick={() => handleNav(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                isActive
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
+              style={isActive
+                ? { background: "rgba(139,92,246,0.15)", color: "#c084fc" }
+                : { color: "rgba(255,255,255,0.82)" }}
+              onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; } }}
+              onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.82)"; } }}
             >
               <Icon className="w-4 h-4 shrink-0" />
               {item.label}
@@ -118,25 +118,26 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       <div className="flex-1 min-h-0 flex flex-col">
         <button
           onClick={() => setShowRecent(!showRecent)}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-semibold tracking-widest uppercase transition-colors"
+          style={{ color: "rgba(255,255,255,0.42)" }}
         >
           {showRecent ? (
             <ChevronDown className="w-3 h-3" />
           ) : (
             <ChevronRight className="w-3 h-3" />
           )}
-          Chats recientes
+          Recientes
         </button>
 
         {showRecent && (
           <ScrollArea className="flex-1 px-2">
             <div className="space-y-0.5 pb-4">
               {isLoading ? (
-                <div className="px-3 py-2 text-xs text-muted-foreground">
+                <div className="px-3 py-2 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
                   Cargando...
                 </div>
               ) : projects.length === 0 ? (
-                <div className="px-3 py-2 text-xs text-muted-foreground">
+                <div className="px-3 py-2 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
                   No hay proyectos recientes
                 </div>
               ) : (
@@ -146,19 +147,20 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                     <button
                       key={project.id}
                       onClick={() => handleNav(`/app/generate/${project.id}`)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                        isActive
-                          ? "bg-muted text-foreground"
-                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                      }`}
+                      className="w-full text-left px-3 py-2 rounded-xl text-sm transition-all duration-200"
+                      style={isActive
+                        ? { background: "rgba(255,255,255,0.08)", color: "#fff" }
+                        : { color: "rgba(255,255,255,0.75)" }}
+                      onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; } }}
+                      onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.75)"; } }}
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="truncate flex-1">{project.name}</span>
+                        <span className="truncate flex-1 font-medium text-[13px]">{project.name}</span>
                         {isProjectGenerating(project.id) && (
-                          <Loader2 className="w-3 h-3 shrink-0 animate-spin text-blue-500" />
+                          <Loader2 className="w-3 h-3 shrink-0 animate-spin" style={{ color: "#8b5cf6" }} />
                         )}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-[10px] opacity-70">
+                      <div className="flex items-center gap-1.5 mt-0.5 text-[11px]" style={{ color: "rgba(255,255,255,0.25)" }}>
                         <MessageSquare className="w-2.5 h-2.5" />
                         {project.message_count}
                       </div>
@@ -172,28 +174,35 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       </div>
 
       {/* Footer */}
-      <div className="border-t p-3 space-y-2">
+      <div className="p-3 space-y-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
         {balance !== null && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 text-xs">
-            <Coins className="w-3.5 h-3.5 text-muted-foreground" />
-            <div className="flex-1">
-              <div className="font-medium">${parseFloat(balance).toFixed(2)}</div>
-              <div className="text-[10px] text-muted-foreground uppercase">
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs"
+            style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)" }}
+          >
+            <Coins className="w-3.5 h-3.5 shrink-0" style={{ color: "#a78bfa" }} />
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-white text-sm">${parseFloat(balance).toFixed(2)}</div>
+              <div className="text-[10px] uppercase font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
                 {planType}
               </div>
             </div>
           </div>
         )}
-        <div className="flex items-center gap-1 rounded-lg hover:bg-muted transition-colors">
+        <div className="flex items-center gap-1 rounded-xl" style={{ transition: "background 0.2s" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.04)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+        >
           <button
             onClick={() => handleNav("/app/profile")}
             className="flex items-center gap-2 px-3 py-2 flex-1 min-w-0 text-left"
           >
-            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+              style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}
+            >
               {user?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium truncate">
+              <div className="text-sm font-medium truncate" style={{ color: "rgba(255,255,255,0.8)" }}>
                 {user?.username || user?.email}
               </div>
             </div>
@@ -204,6 +213,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             size="icon-xs"
             onClick={logout}
             className="shrink-0 mr-1"
+            style={{ color: "rgba(255,255,255,0.35)" }}
           >
             <LogOut className="w-3.5 h-3.5" />
           </Button>

@@ -264,6 +264,15 @@ async function clearServiceWorkers(): Promise<void> {
   } catch {
     // ignore
   }
+  // Also clear stale caches that previous WebContainer sessions may have left
+  try {
+    if (typeof caches !== "undefined") {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch {
+    // ignore
+  }
 }
 
 async function bootWebContainer(): Promise<WebContainer> {
@@ -272,6 +281,9 @@ async function bootWebContainer(): Promise<WebContainer> {
 
   wcBootPromise = (async () => {
     try {
+      // Proactively clear stale Service Workers from previous sessions
+      // to prevent them from serving blank/stale content in the iframe.
+      await clearServiceWorkers();
       const instance = await WebContainer.boot();
       wcInstance = instance;
       return instance;

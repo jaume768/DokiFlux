@@ -18,7 +18,7 @@ export const TEMPLATES: Template[] = [
     emoji: "🚀",
     image: "/templates/landingsaas.png",
     prompt:
-      "Crea una landing page para un producto SaaS de gestión de proyectos con: hero section con título grande, subtítulo, CTA primario y secundario, e imagen placeholder del producto; sección de features con 6 cards con iconos emoji; sección de testimonios con 3 cards con avatar, nombre, cargo y quote; sección de pricing con 3 planes (Starter, Pro, Enterprise) en cards con lista de features y botón CTA; footer con 4 columnas de links y copyright. Diseño moderno, profesional, con gradientes sutiles.",
+      "Crea una landing page para un producto SaaS de gestión de proyectos con: hero section con título grande, subtítulo, CTA primario y secundario, e imagen placeholder del producto; sección de features con 6 cards con iconos emoji; sección de testimonios con 3 cards con avatar, nombre, cargo y quote; sección de pricing con 3 planes (Starter, Pro, Enterprise) en cards con lista de features y botón CTA; footer con 4 columnas de links y copyright. Diseño moderno, profesional, con gradientes sutiles. Incluye imágenes de verdad.",
   },
   {
     id: "ecommerce-product",
@@ -29,7 +29,7 @@ export const TEMPLATES: Template[] = [
     emoji: "🛍️",
     image: "/templates/ecommerce.png",
     prompt:
-      "Crea una página de producto e-commerce con: galería de imágenes con thumbnail selector (usa placeholders de colores), selector de talla (S/M/L/XL) y color (3 opciones) con estado activo, cantidad con +/-, botón de añadir al carrito prominente, precio con descuento tachado, badges (Nuevo, -20%), tabs de contenido (Descripción, Especificaciones, Reviews con 3 reviews mock con estrellas), sección de productos relacionados con 4 cards. Diseño limpio tipo tienda moderna.",
+      "Crea una página de producto e-commerce con: galería de imágenes con thumbnail selector (usa placeholders de colores), selector de talla (S/M/L/XL) y color (3 opciones) con estado activo, cantidad con +/-, botón de añadir al carrito prominente, precio con descuento tachado, badges (Nuevo, -20%), tabs de contenido (Descripción, Especificaciones, Reviews con 3 reviews mock con estrellas), sección de productos relacionados con 4 cards. Diseño limpio tipo tienda moderna. Incluye imágenes de verdad.",
   },
   {
     id: "portfolio",
@@ -40,7 +40,7 @@ export const TEMPLATES: Template[] = [
     emoji: "👨‍💻",
     image: "/templates/portafolio.png",
     prompt:
-      "Crea un portfolio personal de desarrollador fullstack con: navbar fija con links de scroll suave; hero con nombre grande, título profesional, breve bio y botones de contacto/GitHub; sección About Me con foto placeholder y texto; grid de 6 proyectos con cards que tienen imagen placeholder, título, descripción, tags de tecnologías y botón ver proyecto; sección de skills con barras de progreso animadas agrupadas por categoría (Frontend, Backend, Tools); formulario de contacto con nombre, email y mensaje; footer minimalista. Diseño elegante y minimalista con tipografía cuidada.",
+      "Crea un portfolio personal de desarrollador fullstack con: navbar fija con links de scroll suave; hero con nombre grande, título profesional, breve bio y botones de contacto/GitHub; sección About Me con foto placeholder y texto; grid de 6 proyectos con cards que tienen imagen placeholder, título, descripción, tags de tecnologías y botón ver proyecto; sección de skills con barras de progreso animadas agrupadas por categoría (Frontend, Backend, Tools); formulario de contacto con nombre, email y mensaje; footer minimalista. Diseño elegante y minimalista con tipografía cuidada. Incluye imágenes de verdad.",
   },
 ];
 
