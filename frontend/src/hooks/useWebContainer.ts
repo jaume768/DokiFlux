@@ -395,6 +395,8 @@ export function useWebContainer(): UseWebContainerReturn {
   const errorBufferRef = useRef<string[]>([]);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDevServerRef = useRef(false);
+  const bootRetryCountRef = useRef(0);
+  const MAX_BOOT_RETRIES = 2;
 
   const clearBuildError = useCallback(() => {
     setLastBuildError(null);
@@ -580,18 +582,54 @@ export function useWebContainer(): UseWebContainerReturn {
       } catch (err) {
         if (!isMountedRef.current) return;
         const rawMsg = err instanceof Error ? err.message : "Unknown error";
-        const isInstanceLimit = rawMsg.toLowerCase().includes("more instances");
-        const isCloneError = rawMsg.toLowerCase().includes("dataclone") || rawMsg.toLowerCase().includes("webassembly");
-        const msg =
-          isInstanceLimit || isCloneError
-            ? "WebContainer failed to start. Please reload the page to try again."
-            : rawMsg;
+        const lower = rawMsg.toLowerCase();
+        const isInfraError =
+          lower.includes("more instances") ||
+          lower.includes("dataclone") ||
+          lower.includes("webassembly") ||
+          lower.includes("sharedarraybuffer") ||
+          lower.includes("crossoriginisolated") ||
+          lower.includes("postmessage");
+
+        // Auto-retry infrastructure errors (not code errors)
+        if (isInfraError && bootRetryCountRef.current < MAX_BOOT_RETRIES) {
+          bootRetryCountRef.current += 1;
+          const attempt = bootRetryCountRef.current;
+          addLog(`Infrastructure error detected – auto-retrying (${attempt}/${MAX_BOOT_RETRIES})...`);
+
+          // Teardown current state
+          if (serverProcessRef.current) {
+            try { serverProcessRef.current.kill(); } catch { /* ignore */ }
+            serverProcessRef.current = null;
+          }
+          if (containerRef.current) {
+            try { containerRef.current.teardown(); } catch { /* ignore */ }
+            containerRef.current = null;
+            wcInstance = null;
+            wcBootPromise = null;
+          }
+          isInstalledRef.current = false;
+          isDevServerRef.current = false;
+          setPreviewUrl(null);
+
+          await clearServiceWorkers();
+          await new Promise((r) => setTimeout(r, 1000 * attempt));
+
+          if (isMountedRef.current) {
+            await mountFiles(files);
+          }
+          return;
+        }
+
+        const msg = isInfraError
+          ? "WebContainer failed to start. Please reload the page to try again."
+          : rawMsg;
         setError(msg);
         setStatus("error");
         addLog(`Error: ${msg}`);
       }
     },
-    [addLog]
+    [addLog, clearBuildError]
   );
 
   const restartContainer = useCallback(
