@@ -30,7 +30,9 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 
-RUN npm run build
+# Persist Next.js build cache between Docker builds so unchanged pages
+# are not recompiled — dramatically speeds up incremental deploys.
+RUN --mount=type=cache,target=/app/.next/cache npm run build
 
 # Production
 FROM base AS runner

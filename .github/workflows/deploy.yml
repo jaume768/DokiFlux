@@ -12,16 +12,49 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        timeout-minutes: 20
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 18m
           script: |
+            set -e
             cd /opt/dokiflux
+
+            PREV_SHA=$(git rev-parse HEAD)
             git pull origin main
-            docker compose -f docker-compose.prod.yml --env-file .env.production build --parallel
-            docker compose -f docker-compose.prod.yml --env-file .env.production up -d
-            docker compose -f docker-compose.prod.yml --env-file .env.production exec -T backend python manage.py migrate --noinput
-            docker compose -f docker-compose.prod.yml --env-file .env.production exec -T backend python manage.py collectstatic --noinput
+            CURR_SHA=$(git rev-parse HEAD)
+
+            DC="docker compose -f docker-compose.prod.yml --env-file .env.production"
+
+            # Detect which services actually changed
+            CHANGED=$(git diff --name-only "$PREV_SHA" "$CURR_SHA")
+            BUILD_FRONTEND=false
+            BUILD_BACKEND=false
+
+            echo "$CHANGED" | grep -q "^frontend/" && BUILD_FRONTEND=true || true
+            echo "$CHANGED" | grep -q "^backend/" && BUILD_BACKEND=true || true
+            # Rebuild all if compose/env/root config changed
+            echo "$CHANGED" | grep -qE "^(docker-compose|\.env|Caddyfile)" && BUILD_FRONTEND=true && BUILD_BACKEND=true || true
+
+            SERVICES=""
+            if $BUILD_BACKEND; then
+              SERVICES="$SERVICES backend celery_worker"
+            fi
+            if $BUILD_FRONTEND; then
+              SERVICES="$SERVICES frontend"
+            fi
+
+            if [ -n "$SERVICES" ]; then
+              echo "Building:$SERVICES"
+              $DC build --parallel $SERVICES
+            else
+              echo "No service changes detected, skipping build."
+            fi
+
+            $DC up -d
+            $DC exec -T backend python manage.py migrate --noinput
+            $DC exec -T backend python manage.py collectstatic --noinput
             docker image prune -f
             echo "Deploy completed at $(date)"
