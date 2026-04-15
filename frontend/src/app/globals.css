@@ -185,21 +185,23 @@
 
 .btn-primary {
   background: linear-gradient(135deg, #8b5cf6, #6366f1);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  transition: filter 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, #9d70fa, #7679f5);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+.btn-primary:hover {
+  filter: brightness(1.18);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4);
 }
-.btn-primary:hover::before { opacity: 1; }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4); }
-.btn-primary:active { transform: translateY(0); }
+.btn-primary:active {
+  filter: brightness(1);
+  transform: translateY(0);
+  box-shadow: none;
+}
+.btn-primary:disabled {
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
 
 .glass {
   background: rgba(255,255,255,0.03);

@@ -20,7 +20,6 @@ import {
 import { useActiveGenerations } from "@/context/ActiveGenerationsContext";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -207,7 +206,6 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               </div>
             </div>
           </button>
-          <ThemeToggle />
           <Button
             variant="ghost"
             size="icon-xs"
