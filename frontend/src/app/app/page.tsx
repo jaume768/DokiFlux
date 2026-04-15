@@ -62,7 +62,8 @@ export default function HomePage() {
           <Menu className="w-5 h-5" />
         </Button>
         <div className="flex items-center gap-2">
-          <Image src="/logo.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
+          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto hidden dark:block" />
+          <Image src="/logo-texto-negro.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto block dark:hidden" />
         </div>
         <div className="w-8" />
       </header>

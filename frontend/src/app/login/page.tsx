@@ -51,7 +51,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center mb-8">
-          <Image src="/logo.png" alt="DokiFlux" width={300} height={80} className="h-16 w-auto" />
+          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={300} height={80} className="h-16 w-auto hidden dark:block" />
+          <Image src="/logo-texto-negro.png" alt="DokiFlux" width={300} height={80} className="h-16 w-auto block dark:hidden" />
         </div>
 
         <Card>

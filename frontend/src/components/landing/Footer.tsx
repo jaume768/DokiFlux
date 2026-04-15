@@ -60,7 +60,8 @@ export function Footer() {
           {/* Brand column */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             <Link href="/" className="flex items-center gap-2 group w-fit">
-              <Image src="/logo.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
+              <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto hidden dark:block" />
+              <Image src="/logo-texto-negro.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto block dark:hidden" />
             </Link>
 
             <p className="text-white/60 text-sm leading-relaxed max-w-[220px]">

@@ -79,7 +79,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       {/* Header */}
       <div className="p-4 border-b">
         <div className="flex items-center gap-2 mb-4">
-          <Image src="/logo.png" alt="DokiFlux" width={200} height={50} className="h-10 w-auto" />
+          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={200} height={50} className="h-10 w-auto hidden dark:block" />
+          <Image src="/logo-texto-negro.png" alt="DokiFlux" width={200} height={50} className="h-10 w-auto block dark:hidden" />
         </div>
         <Button
           onClick={() => handleNav("/app")}

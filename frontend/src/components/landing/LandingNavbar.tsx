@@ -37,7 +37,8 @@ export function LandingNavbar() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:px-8">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <Image src="/logo.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
+            <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto hidden dark:block" />
+            <Image src="/logo-texto-negro.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto block dark:hidden" />
           </Link>
 
           {/* Desktop nav */}
