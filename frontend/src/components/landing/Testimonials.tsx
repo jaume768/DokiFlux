@@ -89,7 +89,7 @@ export function Testimonials() {
           {TESTIMONIALS.map((t, i) => (
             <div
               key={i}
-              className="rounded-2xl p-6 card-hover"
+              className="rounded-2xl p-6 card-hover flex flex-col"
               style={{
                 background: "rgba(255,255,255,0.025)",
                 border: "1px solid rgba(255,255,255,0.06)",
@@ -106,7 +106,7 @@ export function Testimonials() {
               </div>
 
               {/* Quote */}
-              <div className="relative mb-6">
+              <div className="relative mb-6 flex-1">
                 <Quote size={20} className="absolute -top-1 -left-1 text-white/5" />
                 <p className="text-white/85 text-[15px] leading-relaxed pl-4">
                   &ldquo;{t.quote}&rdquo;
@@ -114,7 +114,7 @@ export function Testimonials() {
               </div>
 
               {/* Author */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mt-auto">
                 <div
                   className="w-16 h-16 rounded-xl overflow-hidden shrink-0"
                   style={{ border: `1px solid ${t.color}40` }}
