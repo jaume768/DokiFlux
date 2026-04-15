@@ -82,6 +82,15 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   messagesRef.current = messages;
   isLoadingRef.current = isLoading;
 
+  // Refresh sidebar title after AI generation completes (~3s)
+  useEffect(() => {
+    if (!searchParams.get("prompt")) return;
+    const t = setTimeout(() => {
+      window.dispatchEvent(new Event("sidebar:refresh"));
+    }, 3500);
+    return () => clearTimeout(t);
+  }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Load project on mount
   useEffect(() => {
     let cancelled = false;

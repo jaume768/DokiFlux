@@ -42,8 +42,14 @@ class ProjectListCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        # Return full detail serializer for the created project
         project = serializer.instance
+
+        # Fire AI title generation in background using the prompt (sent as description)
+        prompt = (request.data.get("description") or "").strip()
+        if prompt:
+            from apps.generation.tasks import generate_project_title_task
+            generate_project_title_task.delay(project.id, prompt[:500])
+
         detail = ProjectDetailSerializer(project, context={"request": request})
         return Response(detail.data, status=status.HTTP_201_CREATED)
 

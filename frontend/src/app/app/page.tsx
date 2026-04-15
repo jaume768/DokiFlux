@@ -34,7 +34,7 @@ export default function HomePage() {
       const title = generateProjectTitle(prompt);
       const project = await apiPost<ProjectListItem>("/projects/", {
         name: title,
-        description: "",
+        description: prompt.trim(),
       });
       router.push(`/app/generate/${project.id}?prompt=${encodeURIComponent(prompt)}&model=${selectedModel}&framework=${selectedFramework}`);
     } catch (err) {

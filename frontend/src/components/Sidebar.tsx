@@ -55,6 +55,13 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     loadProjects();
   }, [pathname, loadProjects]);
 
+  // Listen for explicit refresh requests (e.g. after AI title is generated)
+  useEffect(() => {
+    const handler = () => loadProjects();
+    window.addEventListener("sidebar:refresh", handler);
+    return () => window.removeEventListener("sidebar:refresh", handler);
+  }, [loadProjects]);
+
   const navItems = [
     { icon: Home, label: "Inicio", path: "/app" },
     { icon: FolderOpen, label: "Proyectos", path: "/app/dashboard" },

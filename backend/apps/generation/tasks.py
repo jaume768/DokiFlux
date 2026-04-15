@@ -16,6 +16,33 @@ from .providers.registry import get_model_config, calculate_cost
 logger = logging.getLogger(__name__)
 
 
+@shared_task(bind=True, max_retries=1, ignore_result=True, time_limit=30)
+def generate_project_title_task(self, project_id: int, prompt: str):
+    """
+    Generate an AI title for a newly created project.
+    Runs in background so project creation is instant.
+    Falls back gracefully — never raises, never blocks.
+    """
+    import asyncio
+    from apps.projects.models import Project as ProjectModel
+    from .services import generate_ai_title
+
+    def run(coro):
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+
+    try:
+        title = run(generate_ai_title(prompt))
+        if title:
+            ProjectModel.objects.filter(id=project_id).update(name=title)
+            logger.info("AI title set for project %s: %s", project_id, title)
+    except Exception:
+        logger.warning("AI title generation failed for project %s — keeping default", project_id)
+
+
 @shared_task(bind=True, max_retries=0, time_limit=600)
 def run_background_generation(self, generation_id: int):
     """

@@ -18,6 +18,104 @@ logger = logging.getLogger(__name__)
 # Conservative minimum cost estimate to pre-check credits
 MIN_COST_ESTIMATE = Decimal("0.005")
 
+_TITLE_SYSTEM = (
+    "You are a title generator. Generate a concise title of 3 to 4 words for a UI/web project "
+    "based on the user's description. Return ONLY the title text — no quotes, no punctuation at "
+    "the end, no explanations."
+)
+
+
+async def _call_title_gemini(prompt: str) -> str:
+    """Cheapest option: Gemini Flash Lite via generateContent."""
+    from .providers.key_pool import _ensure_pools, _gemini_pool
+    _ensure_pools()
+    if not _gemini_pool.available:
+        raise RuntimeError("No Gemini keys")
+    api_key = _gemini_pool.next()
+    import httpx
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent"
+    payload = {
+        "system_instruction": {"parts": [{"text": _TITLE_SYSTEM}]},
+        "contents": [{"role": "user", "parts": [{"text": prompt[:500]}]}],
+        "generationConfig": {"maxOutputTokens": 30, "temperature": 0.4},
+    }
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(url, json=payload, params={"key": api_key})
+        resp.raise_for_status()
+        data = resp.json()
+        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+
+async def _call_title_openai(prompt: str) -> str:
+    """Fallback: OpenAI gpt-4o-mini via Chat Completions."""
+    from .providers.key_pool import _ensure_pools, _openai_pool
+    _ensure_pools()
+    if not _openai_pool.available:
+        raise RuntimeError("No OpenAI keys")
+    api_key = _openai_pool.next()
+    import httpx
+    payload = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": _TITLE_SYSTEM},
+            {"role": "user", "content": prompt[:500]},
+        ],
+        "max_tokens": 30,
+        "temperature": 0.4,
+    }
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(
+            "https://api.openai.com/v1/chat/completions",
+            json=payload,
+            headers={"Authorization": f"Bearer {api_key}"},
+        )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"].strip()
+
+
+async def _call_title_anthropic(prompt: str) -> str:
+    """Last fallback: Claude Haiku via Messages API."""
+    from .providers.key_pool import _ensure_pools, _anthropic_pool
+    _ensure_pools()
+    if not _anthropic_pool.available:
+        raise RuntimeError("No Anthropic keys")
+    api_key = _anthropic_pool.next()
+    import httpx
+    payload = {
+        "model": "claude-haiku-4-5",
+        "system": _TITLE_SYSTEM,
+        "messages": [{"role": "user", "content": prompt[:500]}],
+        "max_tokens": 30,
+    }
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(
+            "https://api.anthropic.com/v1/messages",
+            json=payload,
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            },
+        )
+        resp.raise_for_status()
+        return resp.json()["content"][0]["text"].strip()
+
+
+async def generate_ai_title(prompt: str) -> str:
+    """
+    Generate a 3-5 word AI title for a project.
+    Tries providers cheapest-first: Gemini Flash Lite → OpenAI → Anthropic.
+    Returns a cleaned title string, or falls back to the first 5 words of the prompt.
+    """
+    for caller in (_call_title_gemini, _call_title_openai, _call_title_anthropic):
+        try:
+            title = await caller(prompt)
+            title = title.strip('"\'').strip()
+            if title and len(title) <= 100:
+                return title
+        except Exception as exc:
+            logger.debug("Title provider %s failed: %s", caller.__name__, exc)
+    return " ".join(prompt.split()[:5])
+
 
 def get_provider(model: str = "gpt-5.4"):
     """Factory: return the appropriate provider for the model."""
