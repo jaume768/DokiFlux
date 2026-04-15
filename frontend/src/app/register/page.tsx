@@ -4,9 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, apiPost } from "@/lib/api";
-import { Sparkles, Loader2, Eye, EyeOff, Mail, RotateCcw } from "lucide-react";
+import Image from "next/image";
+import { Loader2, Eye, EyeOff, Mail, RotateCcw, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 export default function RegisterPage() {
@@ -97,52 +97,52 @@ export default function RegisterPage() {
   // --- Pending verification screen ---
   if (pendingEmail) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="w-full max-w-sm">
-          <div className="flex items-center justify-center gap-2 mb-8">
-            <Sparkles className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-bold">Dokiflux</h1>
+      <div className="landing bg-[#0a0a0f] text-white min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+        <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.35 }} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[350px] pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(56,189,248,0.15) 0%, transparent 70%)" }} />
+
+        <div className="relative z-10 w-full max-w-sm">
+          <div className="flex items-center justify-center mb-8">
+            <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={220} height={55} className="h-11 w-auto" />
           </div>
 
-          <Card>
-            <CardHeader>
-              <div className="flex justify-center mb-2">
-                <div className="rounded-full bg-primary/10 p-3">
-                  <Mail className="w-6 h-6 text-primary" />
-                </div>
+          <div className="rounded-2xl p-7 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
+            <div className="flex justify-center mb-4">
+              <div className="rounded-2xl p-4" style={{ background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)" }}>
+                <Mail className="w-7 h-7" style={{ color: "#38bdf8" }} />
               </div>
-              <CardTitle className="text-center">Verifica tu email</CardTitle>
-              <CardDescription className="text-center">
-                {emailSent
-                  ? <>Hemos enviado un enlace de verificación a <strong>{pendingEmail}</strong>. Revisa tu bandeja de entrada (y spam).</>
-                  : <>No se pudo enviar el email de verificación a <strong>{pendingEmail}</strong>. Pulsa el botón para reenviar.</>
-                }
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {resendMessage && (
-                <p className="text-sm text-center text-muted-foreground">{resendMessage}</p>
+            </div>
+            <h1 className="text-xl font-bold text-white mb-2">Verifica tu email</h1>
+            <p className="text-white/50 text-sm mb-6">
+              {emailSent
+                ? <>Hemos enviado un enlace de verificación a <span className="text-white/80 font-medium">{pendingEmail}</span>. Revisa tu bandeja de entrada (y spam).</>
+                : <>No se pudo enviar el email a <span className="text-white/80 font-medium">{pendingEmail}</span>. Pulsa el botón para reenviar.</>
+              }
+            </p>
+
+            {resendMessage && (
+              <p className="text-sm text-white/50 mb-4">{resendMessage}</p>
+            )}
+
+            <button
+              onClick={handleResend}
+              disabled={resendLoading}
+              className="btn-primary w-full rounded-xl py-2.5 font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed mb-4"
+            >
+              {resendLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />Reenviando...</>
+              ) : (
+                <><RotateCcw className="w-4 h-4" />Reenviar verificación</>
               )}
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleResend}
-                disabled={resendLoading}
-              >
-                {resendLoading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" />Reenviando...</>
-                ) : (
-                  <><RotateCcw className="w-4 h-4" />Reenviar email de verificación</>
-                )}
-              </Button>
-              <p className="text-center text-sm text-muted-foreground">
-                ¿Ya verificaste?{" "}
-                <Link href="/login" className="text-primary hover:underline font-medium">
-                  Iniciar sesión
-                </Link>
-              </p>
-            </CardContent>
-          </Card>
+            </button>
+
+            <p className="text-sm text-white/40">
+              ¿Ya verificaste?{" "}
+              <Link href="/login" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
+                Iniciar sesión
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -150,128 +150,112 @@ export default function RegisterPage() {
 
   // --- Registration form ---
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <Sparkles className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Dokiflux</h1>
+    <div className="landing bg-[#0a0a0f] text-white min-h-screen flex items-center justify-center px-4 py-10 relative overflow-hidden">
+      <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.35 }} />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[350px] pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(139,92,246,0.18) 0%, transparent 70%)" }} />
+
+      <div className="relative z-10 w-full max-w-sm">
+        <div className="flex items-center justify-center mb-8">
+          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={220} height={55} className="h-11 w-auto" />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Crear cuenta</CardTitle>
-            <CardDescription>Empieza a generar UI con IA</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <GoogleSignInButton onError={handleGoogleError} />
+        <div className="rounded-2xl p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
+          <h1 className="text-xl font-bold text-white mb-1">Crear cuenta</h1>
+          <p className="text-white/50 text-sm mb-6">Empieza a generar UI con IA</p>
 
-              <div className="relative flex items-center gap-3">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-xs text-muted-foreground">o</span>
-                <div className="h-px flex-1 bg-border" />
+          <GoogleSignInButton onError={handleGoogleError} />
+
+          <div className="relative flex items-center gap-3 my-5">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-xs text-white/30">o</span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-xl">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label htmlFor="fullName" className="text-sm font-medium text-white/70">Nombre completo</label>
+              <input
+                id="fullName"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Tu nombre"
+                required
+                autoFocus
+                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="text-sm font-medium text-white/70">Email</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@email.com"
+                required
+                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="text-sm font-medium text-white/70">Contraseña</label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  required
+                  className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 pr-10 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              {error && (
-                <div className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
-                  {error}
-                </div>
-              )}
+            <div className="space-y-1.5">
+              <label htmlFor="passwordConfirm" className="text-sm font-medium text-white/70">Confirmar contraseña</label>
+              <input
+                id="passwordConfirm"
+                type={showPassword ? "text" : "password"}
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                placeholder="Repite la contraseña"
+                required
+                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
+              />
+            </div>
 
-              <div className="space-y-2">
-                <label htmlFor="fullName" className="text-sm font-medium">
-                  Nombre completo
-                </label>
-                <input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Tu nombre"
-                  required
-                  autoFocus
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-                />
-              </div>
+            <Button
+              type="submit"
+              disabled={isLoading || !email || !password || !fullName || !passwordConfirm}
+              className="btn-primary w-full rounded-xl py-2.5 font-semibold"
+              size="lg"
+            >
+              {isLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />Creando cuenta...</>
+              ) : "Crear cuenta"}
+            </Button>
+          </form>
+        </div>
 
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu@email.com"
-                  required
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Contraseña
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Mínimo 8 caracteres"
-                    required
-                    className="w-full rounded-lg border border-input bg-background px-3 py-2 pr-10 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="passwordConfirm" className="text-sm font-medium">
-                  Confirmar contraseña
-                </label>
-                <input
-                  id="passwordConfirm"
-                  type={showPassword ? "text" : "password"}
-                  value={passwordConfirm}
-                  onChange={(e) => setPasswordConfirm(e.target.value)}
-                  placeholder="Repite la contraseña"
-                  required
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isLoading || !email || !password || !fullName || !passwordConfirm}
-                className="w-full"
-                size="lg"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Creando cuenta...
-                  </>
-                ) : (
-                  "Crear cuenta"
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <p className="text-center text-sm text-muted-foreground mt-4">
+        <p className="text-center text-sm text-white/40 mt-5">
           ¿Ya tienes cuenta?{" "}
-          <Link href="/login" className="text-primary hover:underline font-medium">
+          <Link href="/login" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
             Iniciar sesión
           </Link>
         </p>

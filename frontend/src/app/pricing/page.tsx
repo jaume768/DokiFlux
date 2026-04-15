@@ -37,24 +37,29 @@ const FAQ_ITEMS = [
 
 export default function PricingPage() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="landing bg-[#0a0a0f] text-white min-h-screen flex flex-col">
       <LandingNavbar />
 
       {/* Header */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_60%_50%_at_50%_-20%,hsl(var(--primary)/0.08),transparent)]" />
-        <div className="mx-auto max-w-6xl px-4 pb-4 pt-20 text-center sm:px-6 sm:pt-28">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            Pricing simple y transparente
+      <section className="relative overflow-hidden pt-28 pb-6">
+        <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.3 }} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(139,92,246,0.16) 0%, transparent 70%)" }} />
+        <div className="relative z-10 mx-auto max-w-6xl px-4 text-center sm:px-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-6 text-[12px] font-semibold tracking-widest uppercase" style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.25)", color: "#c084fc" }}>
+            Pricing
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl text-white">
+            Simple y{" "}
+            <span className="gradient-text">transparente</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-xl text-lg text-white/55">
             Empieza gratis, escala cuando lo necesites. Sin sorpresas.
           </p>
         </div>
       </section>
 
       {/* Plan cards */}
-      <section className="py-12">
+      <section className="py-14 relative z-10">
         <div className="mx-auto grid max-w-4xl gap-6 px-4 sm:px-6 md:grid-cols-3">
           <PlanCard
             name="Free"
@@ -108,17 +113,19 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-16">
+      <section className="py-16 relative z-10">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <h2 className="mb-8 text-center text-2xl font-bold">
+          <h2 className="mb-8 text-center text-2xl font-bold text-white">
             Preguntas frecuentes
           </h2>
-          <div className="rounded-xl border bg-card px-6">
-            {FAQ_ITEMS.map((item) => (
+          <div className="space-y-3">
+            {FAQ_ITEMS.map((item, i) => (
               <FAQItem
                 key={item.question}
                 question={item.question}
                 answer={item.answer}
+                index={i}
+                isVisible
               />
             ))}
           </div>

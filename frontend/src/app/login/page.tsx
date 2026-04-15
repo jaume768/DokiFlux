@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 export default function LoginPage() {
@@ -48,107 +47,96 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
+    <div className="landing bg-[#0a0a0f] text-white min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.35 }} />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[350px] pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(139,92,246,0.18) 0%, transparent 70%)" }} />
+
+      <div className="relative z-10 w-full max-w-sm">
         <div className="flex items-center justify-center mb-8">
-          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={300} height={80} className="h-16 w-auto hidden dark:block" />
-          <Image src="/logo-texto-negro.png" alt="DokiFlux" width={300} height={80} className="h-16 w-auto block dark:hidden" />
+          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={220} height={55} className="h-11 w-auto" />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Iniciar sesión</CardTitle>
-            <CardDescription>Accede a tu cuenta para continuar</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <GoogleSignInButton onError={handleGoogleError} />
+        <div className="rounded-2xl p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
+          <h1 className="text-xl font-bold text-white mb-1">Iniciar sesión</h1>
+          <p className="text-white/50 text-sm mb-6">Accede a tu cuenta para continuar</p>
 
-              <div className="relative flex items-center gap-3">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-xs text-muted-foreground">o</span>
-                <div className="h-px flex-1 bg-border" />
+          <GoogleSignInButton onError={handleGoogleError} />
+
+          <div className="relative flex items-center gap-3 my-5">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-xs text-white/30">o</span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-xl">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label htmlFor="identifier" className="text-sm font-medium text-white/70">
+                Email o nombre de usuario
+              </label>
+              <input
+                id="identifier"
+                type="text"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="tu@email.com o username"
+                required
+                autoFocus
+                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="text-sm font-medium text-white/70">
+                Contraseña
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Tu contraseña"
+                  required
+                  className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 pr-10 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              {error && (
-                <div className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
-                  {error}
-                </div>
-              )}
+            <div className="flex justify-end">
+              <Link href="/password-reset" className="text-xs text-white/40 hover:text-violet-400 transition-colors">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
 
-              <div className="space-y-2">
-                <label htmlFor="identifier" className="text-sm font-medium">
-                  Email o nombre de usuario
-                </label>
-                <input
-                  id="identifier"
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="tu@email.com o username"
-                  required
-                  autoFocus
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-                />
-              </div>
+            <Button
+              type="submit"
+              disabled={isLoading || !identifier || !password}
+              className="btn-primary w-full rounded-xl py-2.5 font-semibold"
+              size="lg"
+            >
+              {isLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />Entrando...</>
+              ) : "Entrar"}
+            </Button>
+          </form>
+        </div>
 
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Contraseña
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Tu contraseña"
-                    required
-                    className="w-full rounded-lg border border-input bg-background px-3 py-2 pr-10 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Link
-                  href="/password-reset"
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  ¿Olvidaste tu contraseña?
-                </Link>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isLoading || !identifier || !password}
-                className="w-full"
-                size="lg"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Entrando...
-                  </>
-                ) : (
-                  "Entrar"
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <p className="text-center text-sm text-muted-foreground mt-4">
+        <p className="text-center text-sm text-white/40 mt-5">
           ¿No tienes cuenta?{" "}
-          <Link href="/register" className="text-primary hover:underline font-medium">
+          <Link href="/register" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
             Crear cuenta
           </Link>
         </p>

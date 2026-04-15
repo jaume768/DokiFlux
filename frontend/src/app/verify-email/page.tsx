@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, Loader2, CheckCircle, XCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import Image from "next/image";
+import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiPost, ApiError } from "@/lib/api";
 
@@ -38,72 +38,56 @@ function VerifyEmailContent() {
       });
   }, [token]);
 
+  const iconColor = status === "success" ? "#34d399" : status === "error" ? "#f87171" : "rgba(255,255,255,0.4)";
+  const glowColor = status === "success" ? "rgba(52,211,153,0.15)" : status === "error" ? "rgba(248,113,113,0.12)" : "rgba(139,92,246,0.15)";
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <Sparkles className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Dokiflux</h1>
+    <div className="landing bg-[#0a0a0f] text-white min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.35 }} />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[350px] pointer-events-none" style={{ background: `radial-gradient(ellipse, ${glowColor} 0%, transparent 70%)` }} />
+
+      <div className="relative z-10 w-full max-w-sm">
+        <div className="flex items-center justify-center mb-8">
+          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={220} height={55} className="h-11 w-auto" />
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex justify-center mb-2">
-              {status === "verifying" && (
-                <div className="rounded-full bg-muted p-3">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                </div>
-              )}
-              {status === "success" && (
-                <div className="rounded-full bg-green-500/10 p-3">
-                  <CheckCircle className="w-6 h-6 text-green-500" />
-                </div>
-              )}
-              {status === "error" && (
-                <div className="rounded-full bg-destructive/10 p-3">
-                  <XCircle className="w-6 h-6 text-destructive" />
-                </div>
-              )}
+        <div className="rounded-2xl p-7 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
+          <div className="flex justify-center mb-4">
+            <div className="rounded-2xl p-4" style={{ background: `${iconColor}18`, border: `1px solid ${iconColor}35` }}>
+              {status === "verifying" && <Loader2 className="w-7 h-7 animate-spin" style={{ color: iconColor }} />}
+              {status === "success" && <CheckCircle className="w-7 h-7" style={{ color: iconColor }} />}
+              {status === "error" && <XCircle className="w-7 h-7" style={{ color: iconColor }} />}
             </div>
+          </div>
 
-            <CardTitle className="text-center">
-              {status === "verifying" && "Verificando..."}
-              {status === "success" && "¡Email verificado!"}
-              {status === "error" && "Error de verificación"}
-            </CardTitle>
+          <h1 className="text-xl font-bold text-white mb-2">
+            {status === "verifying" && "Verificando..."}
+            {status === "success" && "¡Email verificado!"}
+            {status === "error" && "Error de verificación"}
+          </h1>
+          <p className="text-white/50 text-sm mb-6">
+            {status === "verifying" && "Estamos verificando tu cuenta, un momento."}
+            {status === "success" && "Tu cuenta ha sido verificada correctamente. Ya puedes iniciar sesión."}
+            {status === "error" && errorMsg}
+          </p>
 
-            <CardDescription className="text-center">
-              {status === "verifying" && "Estamos verificando tu cuenta, un momento."}
-              {status === "success" && "Tu cuenta ha sido verificada correctamente. Ya puedes iniciar sesión."}
-              {status === "error" && errorMsg}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-3">
-            {status === "success" && (
-              <Button className="w-full" onClick={() => router.push("/login")}>
-                Ir al inicio de sesión
+          {status === "success" && (
+            <Button className="btn-primary w-full rounded-xl py-2.5 font-semibold" size="lg" onClick={() => router.push("/login")}>
+              Ir al inicio de sesión
+            </Button>
+          )}
+          {status === "error" && (
+            <div className="space-y-3">
+              <Button className="btn-primary w-full rounded-xl py-2.5 font-semibold" size="lg" onClick={() => router.push("/register")}>
+                Volver al registro
               </Button>
-            )}
-            {status === "error" && (
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => router.push("/register")}
-                >
-                  Volver al registro
-                </Button>
-                <p className="text-center text-sm text-muted-foreground">
-                  ¿Ya tienes cuenta?{" "}
-                  <Link href="/login" className="text-primary hover:underline font-medium">
-                    Iniciar sesión
-                  </Link>
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              <p className="text-sm text-white/40">
+                ¿Ya tienes cuenta?{" "}
+                <Link href="/login" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">Iniciar sesión</Link>
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
