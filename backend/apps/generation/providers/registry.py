@@ -129,7 +129,7 @@ MODEL_REGISTRY = {
 VALID_MODEL_IDS = frozenset(MODEL_REGISTRY.keys())
 
 # Default model
-DEFAULT_MODEL = "gpt-5.4"
+DEFAULT_MODEL = "claude-sonnet-4.6"
 
 
 def get_model_config(model_id: str) -> dict:

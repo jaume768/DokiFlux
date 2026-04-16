@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronDown, Cpu, Brain, Sparkles } from "lucide-react";
 import { type ModelId, type ModelConfig } from "@/lib/pricing";
 import { useModels } from "@/context/ModelsContext";
@@ -29,6 +29,8 @@ const PROVIDER_LABELS: Record<string, string> = {
   gemini: "Google",
 };
 
+const PROVIDER_ORDER = ["anthropic", "openai", "gemini"];
+
 type GroupedModels = { provider: string; label: string; models: ModelConfig[] }[];
 
 function groupModels(models: ModelConfig[]): GroupedModels {
@@ -37,20 +39,64 @@ function groupModels(models: ModelConfig[]): GroupedModels {
     if (!groups[m.provider]) groups[m.provider] = [];
     groups[m.provider].push(m);
   }
-  return Object.entries(groups).map(([provider, items]) => ({
-    provider,
-    label: PROVIDER_LABELS[provider] ?? provider,
-    models: items,
-  }));
+  return Object.entries(groups)
+    .sort(([a], [b]) => {
+      const ai = PROVIDER_ORDER.indexOf(a);
+      const bi = PROVIDER_ORDER.indexOf(b);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    })
+    .map(([provider, items]) => ({
+      provider,
+      label: PROVIDER_LABELS[provider] ?? provider,
+      models: items,
+    }));
 }
 
 export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
   const { models, isLoaded } = useModels();
 
   const selected = models.find((m) => m.id === value) ?? models[0];
   const grouped = groupModels(models);
+
+  const calcDropdownStyle = useCallback(() => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const DROPDOWN_W = 260;
+    const DROPDOWN_MAX_H = 360;
+    const GAP = 4;
+    const MARGIN = 8;
+
+    const spaceBelow = window.innerHeight - rect.bottom - MARGIN;
+    const spaceAbove = rect.top - MARGIN;
+    const style: React.CSSProperties = { minWidth: DROPDOWN_W };
+
+    // Vertical: open downward if space, otherwise upward
+    if (spaceBelow >= 120 || spaceBelow >= spaceAbove) {
+      style.top = rect.bottom + GAP;
+      style.maxHeight = Math.min(DROPDOWN_MAX_H, spaceBelow);
+    } else {
+      style.bottom = window.innerHeight - rect.top + GAP;
+      style.maxHeight = Math.min(DROPDOWN_MAX_H, spaceAbove);
+    }
+
+    // Horizontal: align left, but clamp to right edge
+    const leftAligned = rect.left;
+    if (leftAligned + DROPDOWN_W > window.innerWidth - MARGIN) {
+      style.right = MARGIN;
+    } else {
+      style.left = leftAligned;
+    }
+
+    setDropdownStyle(style);
+  }, []);
+
+  function handleToggle() {
+    if (!open) calcDropdownStyle();
+    setOpen((v) => !v);
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -75,7 +121,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span className={PROVIDER_COLORS[selected.provider]}>
@@ -86,10 +132,13 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[240px] max-h-[360px] overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl">
+        <div
+          className="fixed z-[9999] overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl"
+          style={dropdownStyle}
+        >
           {grouped.map((group) => (
             <div key={group.provider}>
-              <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 bg-zinc-900/80 sticky top-0">
+              <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 bg-zinc-900 sticky top-0">
                 {group.label}
               </div>
               {group.models.map((m) => (
@@ -106,7 +155,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
                     {PROVIDER_ICONS[m.provider]}
                   </span>
                   <span className="flex-1 font-medium">{m.displayName}</span>
-                  <span className="text-[10px] text-zinc-500">
+                  <span className="text-[10px] text-zinc-500 shrink-0">
                     ${m.inputPerMillion}/{m.outputPerMillion}
                   </span>
                 </button>

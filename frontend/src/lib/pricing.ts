@@ -24,7 +24,7 @@ export interface ModelConfig {
 
 export type ModelId = string;
 
-export const DEFAULT_MODEL: ModelId = "gpt-5.4";
+export const DEFAULT_MODEL: ModelId = "claude-sonnet-4.6";
 
 /** Map a raw backend model response to the frontend ModelConfig shape */
 export function normaliseModel(m: BackendModel): ModelConfig {
