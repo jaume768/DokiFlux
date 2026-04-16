@@ -296,9 +296,6 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     async (prompt: string, isAutofix = false) => {
       setIsLoading(true);
       setGenProgress({ phase: "analyzing", filesDetected: 0, charsReceived: 0, streamingCode: "" });
-      if (window.innerWidth < 768) {
-        setMobileView("preview");
-      }
       const controller = new AbortController();
       abortRef.current = controller;
 
@@ -351,6 +348,15 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         let hasChat = false;
         let hasPhasedCode = false;
         const phasedFiles: Record<string, string> = {};
+        let switchedToPreview = false;
+
+        function switchToPreviewOnce() {
+          if (!switchedToPreview && !isAutofix && window.innerWidth < 768) {
+            switchedToPreview = true;
+            setMobileView("preview");
+            setHasNewPreview(false);
+          }
+        }
         let currentFileCodeRaw = "";
 
         function processLine(line: string) {
@@ -374,6 +380,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           }
 
           if (chunk.type === "plan" && chunk.tasks) {
+            switchToPreviewOnce();
             setGenProgress((prev) => ({
               ...prev,
               phase: "writing-files" as const,
@@ -384,6 +391,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           }
 
           if (chunk.type === "task_start") {
+            switchToPreviewOnce();
             currentFileCodeRaw = "";
             setGenProgress((prev) => ({
               ...prev,
@@ -427,6 +435,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           }
 
           if (chunk.type === "text" && chunk.content) {
+            switchToPreviewOnce();
             hasCode = true;
             fullCode += chunk.content;
             codeRef.current = fullCode;

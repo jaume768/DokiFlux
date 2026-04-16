@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
@@ -10,8 +10,6 @@ import {
   Home,
   FolderOpen,
   MessageSquare,
-  ChevronDown,
-  ChevronRight,
   LogOut,
   Coins,
   Plus,
@@ -19,7 +17,6 @@ import {
 } from "lucide-react";
 import { useActiveGenerations } from "@/context/ActiveGenerationsContext";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -31,14 +28,13 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout, balance, planType } = useAuth();
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
-  const [showRecent, setShowRecent] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const { isActive: isProjectGenerating } = useActiveGenerations();
 
   const loadProjects = useCallback(async () => {
     try {
       const data = await apiGet<PaginatedResponse<ProjectListItem>>("/projects/");
-      setProjects(data.results.slice(0, 10)); // Solo últimos 10
+      setProjects(data.results.slice(0, 20));
     } catch {
       console.error("Error loading projects");
     } finally {
@@ -50,12 +46,10 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     loadProjects();
   }, [loadProjects]);
 
-  // Reload projects when route changes (new project created)
   useEffect(() => {
     loadProjects();
   }, [pathname, loadProjects]);
 
-  // Listen for explicit refresh requests (e.g. after AI title is generated)
   useEffect(() => {
     const handler = () => loadProjects();
     window.addEventListener("sidebar:refresh", handler);
@@ -76,15 +70,15 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   return (
     <div
       className={`
-        w-[240px] h-screen flex flex-col shrink-0
+        w-[240px] flex flex-col shrink-0
         fixed left-0 top-0 bottom-0 z-50 transition-transform duration-300
         md:relative md:z-auto md:translate-x-0 md:shadow-none
         ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}
       `}
-      style={{ background: "#0a0a0f", borderRight: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "#0a0a0f", borderRight: "1px solid rgba(255,255,255,0.07)", height: "100dvh" }}
     >
-      {/* Header */}
-      <div className="p-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+      {/* ── Header (shrink-0) ── */}
+      <div className="shrink-0 p-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
         <div className="flex items-center mb-4">
           <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
         </div>
@@ -97,8 +91,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="px-2 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+      {/* ── Navigation (shrink-0) ── */}
+      <nav className="shrink-0 px-2 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.path;
@@ -120,67 +114,51 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         })}
       </nav>
 
-      {/* Recent Projects */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        <button
-          onClick={() => setShowRecent(!showRecent)}
-          className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-semibold tracking-widest uppercase transition-colors"
-          style={{ color: "rgba(255,255,255,0.42)" }}
-        >
-          {showRecent ? (
-            <ChevronDown className="w-3 h-3" />
-          ) : (
-            <ChevronRight className="w-3 h-3" />
-          )}
+      {/* ── Recientes label (shrink-0) ── */}
+      <div className="shrink-0 px-4 pt-3 pb-1">
+        <span className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.35)" }}>
           Recientes
-        </button>
+        </span>
+      </div>
 
-        {showRecent && (
-          <ScrollArea className="flex-1 px-2">
-            <div className="space-y-0.5 pb-4">
-              {isLoading ? (
-                <div className="px-3 py-2 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-                  Cargando...
-                </div>
-              ) : projects.length === 0 ? (
-                <div className="px-3 py-2 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-                  No hay proyectos recientes
-                </div>
-              ) : (
-                projects.map((project) => {
-                  const isActive = pathname === `/app/generate/${project.id}`;
-                  return (
-                    <button
-                      key={project.id}
-                      onClick={() => handleNav(`/app/generate/${project.id}`)}
-                      className="w-full text-left px-3 py-2 rounded-xl text-sm transition-all duration-200"
-                      style={isActive
-                        ? { background: "rgba(255,255,255,0.08)", color: "#fff" }
-                        : { color: "rgba(255,255,255,0.75)" }}
-                      onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; } }}
-                      onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.75)"; } }}
-                    >
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="truncate flex-1 font-medium text-[13px]">{project.name}</span>
-                        {isProjectGenerating(project.id) && (
-                          <Loader2 className="w-3 h-3 shrink-0 animate-spin" style={{ color: "#8b5cf6" }} />
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-0.5 text-[11px]" style={{ color: "rgba(255,255,255,0.25)" }}>
-                        <MessageSquare className="w-2.5 h-2.5" />
-                        {project.message_count}
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </ScrollArea>
+      {/* ── Scrollable project list (flex-1 min-h-0) ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-2" style={{ scrollbarWidth: "none" }}>
+        {isLoading ? (
+          <div className="px-3 py-2 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+            Cargando...
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="px-3 py-2 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+            No hay proyectos recientes
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            {projects.map((project) => {
+              const isActive = pathname === `/app/generate/${project.id}`;
+              return (
+                <button
+                  key={project.id}
+                  onClick={() => handleNav(`/app/generate/${project.id}`)}
+                  className="w-full text-left px-3 py-2 rounded-xl transition-all duration-150 flex items-center gap-1.5 min-w-0"
+                  style={isActive
+                    ? { background: "rgba(255,255,255,0.08)", color: "#fff" }
+                    : { color: "rgba(255,255,255,0.72)" }}
+                  onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; } }}
+                  onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.72)"; } }}
+                >
+                  <span className="truncate flex-1 text-[13px] font-medium">{project.name}</span>
+                  {isProjectGenerating(project.id) && (
+                    <Loader2 className="w-3 h-3 shrink-0 animate-spin" style={{ color: "#8b5cf6" }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="p-3 space-y-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+      {/* ── Footer — always pinned at bottom (shrink-0) ── */}
+      <div className="shrink-0 p-3 space-y-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
         {balance !== null && (
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs"
             style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)" }}
@@ -194,7 +172,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             </div>
           </div>
         )}
-        <div className="flex items-center gap-1 rounded-xl" style={{ transition: "background 0.2s" }}
+        <div
+          className="flex items-center gap-1 rounded-xl"
+          style={{ transition: "background 0.2s" }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.04)"; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
         >
@@ -202,7 +182,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             onClick={() => handleNav("/app/profile")}
             className="flex items-center gap-2 px-3 py-2 flex-1 min-w-0 text-left"
           >
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
               style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}
             >
               {user?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}

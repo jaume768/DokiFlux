@@ -220,6 +220,17 @@ export function ChatPanel({ messages, isLoading, genProgress, onRestore, isResto
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  // Scroll to bottom when the virtual keyboard opens/closes on mobile
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handleResize = () => {
+      bottomRef.current?.scrollIntoView({ behavior: "instant" });
+    };
+    vv.addEventListener("resize", handleResize);
+    return () => vv.removeEventListener("resize", handleResize);
+  }, []);
+
   // Check if the last message is a streaming chat message (no usage yet, type=chat, and loading)
   const lastMsg = messages[messages.length - 1];
   const isStreamingChat = isLoading && lastMsg?.role === "assistant" && lastMsg?.type === "chat" && !lastMsg?.usage;
