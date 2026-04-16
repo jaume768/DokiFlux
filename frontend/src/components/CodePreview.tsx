@@ -290,6 +290,7 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
   const [iframePath, setIframePath] = useState("/");
   const [urlInput, setUrlInput] = useState("/");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const { status, previewUrl, error, logs, lastBuildError, lastRuntimeError, clearBuildError, clearRuntimeError, mountFiles, restartContainer } = useWebContainer();
   const [mobileWidth, setMobileWidth] = useState(375);
   const isDraggingRef = useRef(false);
@@ -305,6 +306,7 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
   const userPickedFileRef = useRef(false);
   const streamingCodeEndRef = useRef<HTMLDivElement>(null);
   const iframeLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function handleRestartContainer() {
     restartContainer(files);
@@ -534,10 +536,34 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
     if (iframeLoadTimeoutRef.current) {
       clearTimeout(iframeLoadTimeoutRef.current);
     }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+    setLoadingProgress(0);
+
+    // Animate progress bar over 45 seconds (100 steps = 450ms each)
+    progressIntervalRef.current = setInterval(() => {
+      setLoadingProgress((prev) => {
+        if (prev >= 100) {
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
+          return 100;
+        }
+        return prev + 1;
+      });
+    }, 450);
+
     iframeLoadTimeoutRef.current = setTimeout(() => {
       setIframeLoaded(true);
       iframeLoadTimeoutRef.current = null;
-    }, 35000);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      setLoadingProgress(100);
+    }, 45000);
   }, []);
 
   async function handleDownloadProject() {
@@ -739,13 +765,23 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
                 previewMode === "mobile" ? "flex flex-col items-center bg-zinc-950/80 overflow-auto" : ""
               }`}>
                 {!iframeLoaded && (
-                  <div className={`flex flex-col items-center justify-center bg-background z-10 gap-3 ${
+                  <div className={`flex flex-col items-center justify-center bg-background z-10 gap-4 ${
                     previewMode === "mobile"
                       ? "absolute inset-0 rounded-[2rem]"
                       : "absolute inset-0"
                   }`}>
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground">Loading preview...</p>
+                    <div className="w-64 flex flex-col gap-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Loading preview...</span>
+                        <span className="text-primary font-medium">{loadingProgress}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary transition-all duration-300 ease-out rounded-full"
+                          style={{ width: `${loadingProgress}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
                 {previewMode === "mobile" ? (
