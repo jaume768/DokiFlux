@@ -529,7 +529,7 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
   }
 
   const handleIframeLoad = useCallback(() => {
-    // Fallback: reveal preview after 15s if dokiflux-content-ready never arrives.
+    // Fallback: reveal preview after 35s if dokiflux-content-ready never arrives.
     // Normally the content-ready postMessage from MAIN_TSX fires much sooner.
     if (iframeLoadTimeoutRef.current) {
       clearTimeout(iframeLoadTimeoutRef.current);
@@ -537,7 +537,7 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
     iframeLoadTimeoutRef.current = setTimeout(() => {
       setIframeLoaded(true);
       iframeLoadTimeoutRef.current = null;
-    }, 15000);
+    }, 35000);
   }, []);
 
   async function handleDownloadProject() {
