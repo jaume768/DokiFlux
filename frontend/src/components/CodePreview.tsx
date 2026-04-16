@@ -541,7 +541,7 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
     }
     setLoadingProgress(0);
 
-    // Animate progress bar over 45 seconds (100 steps = 450ms each)
+    // Animate progress bar over 45 seconds (100 steps = 500ms each) - 45 * 1000 / 100 = 500ms
     progressIntervalRef.current = setInterval(() => {
       setLoadingProgress((prev) => {
         if (prev >= 100) {
@@ -553,7 +553,7 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
         }
         return prev + 1;
       });
-    }, 450);
+    }, 500);
 
     iframeLoadTimeoutRef.current = setTimeout(() => {
       setIframeLoaded(true);
@@ -563,7 +563,7 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
         progressIntervalRef.current = null;
       }
       setLoadingProgress(100);
-    }, 45000);
+    }, 50000);
   }, []);
 
   async function handleDownloadProject() {
