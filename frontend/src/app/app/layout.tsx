@@ -9,7 +9,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const { isOpen, close } = useMobileSidebar();
 
   return (
-    <div className="flex overflow-hidden" style={{ background: "#0a0a0f", height: "100dvh" }}>
+    <div className="app-scope flex overflow-hidden" style={{ background: "#0a0a0f", height: "100dvh" }}>
       <Sidebar isOpen={isOpen} onClose={close} />
       {isOpen && (
         <div

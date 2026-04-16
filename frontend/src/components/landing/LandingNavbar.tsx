@@ -23,6 +23,17 @@ export function LandingNavbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Lock body scroll while the mobile drawer is open
+  useEffect(() => {
+    if (mobileOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [mobileOpen]);
+
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
@@ -99,54 +110,97 @@ export function LandingNavbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
+      {/* Mobile drawer — lateral sidebar */}
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 z-40 md:hidden transition-opacity duration-300 ${
+          mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
+        onClick={() => setMobileOpen(false)}
+        aria-hidden={!mobileOpen}
+      />
+
+      {/* Drawer panel */}
+      <aside
+        className={`fixed top-0 right-0 bottom-0 z-50 w-[85%] max-w-[320px] md:hidden flex flex-col transition-transform duration-300 ${
+          mobileOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        style={{
+          background: "#0a0a0f",
+          borderLeft: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "-20px 0 60px rgba(0,0,0,0.5)",
+        }}
+        aria-hidden={!mobileOpen}
+      >
         <div
-          className="md:hidden px-5 pb-5 pt-2"
-          style={{
-            background: "rgba(10,10,15,0.95)",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-          }}
+          className="flex items-center justify-between px-5 h-16 shrink-0"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <nav className="flex flex-col gap-1">
-            {NAV_LINKS.map((link) => (
+          <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center">
+            <Image
+              src="/logo-texto-blanco.png"
+              alt="DokiFlux"
+              width={140}
+              height={35}
+              className="h-7 w-auto"
+            />
+          </Link>
+          <button
+            className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors duration-200"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+            onClick={() => setMobileOpen(false)}
+            aria-label="Cerrar menú"
+          >
+            <X size={18} className="text-white/70" />
+          </button>
+        </div>
+
+        <nav className="flex flex-col gap-1 px-4 py-5 flex-1 overflow-y-auto">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg px-3 py-3 text-[15px] font-medium text-white/80 transition-colors hover:bg-white/[0.05] hover:text-white"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div
+          className="flex flex-col gap-2 px-4 py-4 shrink-0"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          {isAuthenticated ? (
+            <Link
+              href="/app"
+              onClick={() => setMobileOpen(false)}
+              className="btn-primary relative flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-white"
+            >
+              <span className="relative z-10">Ir a la app</span>
+            </Link>
+          ) : (
+            <>
               <Link
-                key={link.href}
-                href={link.href}
+                href="/login"
                 onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2.5 text-sm text-white/70 transition-colors hover:bg-white/[0.05] hover:text-white"
+                className="btn-secondary flex items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-white/80"
               >
-                {link.label}
+                Iniciar sesión
               </Link>
-            ))}
-          </nav>
-          <div className="mt-4 flex flex-col gap-2">
-            {isAuthenticated ? (
               <Link
-                href="/app"
+                href="/register"
+                onClick={() => setMobileOpen(false)}
                 className="btn-primary relative flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-white"
               >
-                <span className="relative z-10">Ir a la app</span>
+                <span className="relative z-10">Empieza gratis</span>
               </Link>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="btn-secondary flex items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-white/70"
-                >
-                  Iniciar sesión
-                </Link>
-                <Link
-                  href="/register"
-                  className="btn-primary relative flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-white"
-                >
-                  <span className="relative z-10">Empieza gratis</span>
-                </Link>
-              </>
-            )}
-          </div>
+            </>
+          )}
         </div>
-      )}
+      </aside>
     </header>
   );
 }

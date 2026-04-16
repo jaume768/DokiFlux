@@ -11,7 +11,6 @@ import {
   FolderOpen,
   LogOut,
   Coins,
-  Plus,
   Loader2,
 } from "lucide-react";
 import { useActiveGenerations } from "@/context/ActiveGenerationsContext";
@@ -77,15 +76,12 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     >
       {/* ── Header (shrink-0) ── */}
       <div className="shrink-0 p-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-        <div className="flex items-center mb-4">
-          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
-        </div>
         <button
           onClick={() => handleNav("/app")}
-          className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white"
+          className="flex items-center rounded-lg -mx-1 px-1 py-1 transition-colors hover:bg-white/[0.04]"
+          aria-label="Ir a inicio"
         >
-          <Plus className="w-4 h-4" />
-          Nuevo chat
+          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
         </button>
       </div>
 

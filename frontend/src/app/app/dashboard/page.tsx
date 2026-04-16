@@ -106,7 +106,9 @@ export default function DashboardPage() {
         <Button variant="ghost" size="icon-sm" onClick={toggleSidebar} className="text-white/60 hover:text-white">
           <Menu className="w-5 h-5" />
         </Button>
-        <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={140} height={35} className="h-7 w-auto" />
+        <button onClick={() => router.push("/app")} aria-label="Ir a inicio" className="flex items-center">
+          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={140} height={35} className="h-7 w-auto" />
+        </button>
         <div className="w-8" />
       </header>
 

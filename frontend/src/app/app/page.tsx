@@ -64,7 +64,9 @@ export default function HomePage() {
         <Button variant="ghost" size="icon-sm" onClick={toggleSidebar} className="text-white/60 hover:text-white">
           <Menu className="w-5 h-5" />
         </Button>
-        <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={140} height={35} className="h-7 w-auto" />
+        <button onClick={() => router.push("/app")} aria-label="Ir a inicio" className="flex items-center">
+          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={140} height={35} className="h-7 w-auto" />
+        </button>
         <div className="w-8" />
       </header>
 
@@ -81,7 +83,7 @@ export default function HomePage() {
               ¿Qué quieres{" "}
               <span className="gradient-text">crear hoy?</span>
             </h1>
-            <p className="text-base sm:text-lg md:text-xl max-w-xl mx-auto" style={{ color: "rgba(255,255,255,0.55)" }}>
+            <p className="text-lg sm:text-xl md:text-2xl max-w-xl mx-auto" style={{ color: "rgba(255,255,255,0.55)" }}>
               Describe tu proyecto y DokiFlux lo generará automáticamente
             </p>
           </div>

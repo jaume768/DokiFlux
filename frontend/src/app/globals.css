@@ -337,3 +337,23 @@
 
 .landing .scrollbar-hide::-webkit-scrollbar { display: none; }
 .landing .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ═══════════════════════════════════════════════════════
+   APP SCOPE — bump UI font sizes inside /app on desktop only.
+   Mobile (<768px) keeps the original compact sizing.
+   ═══════════════════════════════════════════════════════ */
+
+@media (min-width: 768px) {
+  .app-scope .text-\[10px\] { font-size: 11.5px; line-height: 1.4; }
+  .app-scope .text-\[11px\] { font-size: 12.5px; line-height: 1.4; }
+  .app-scope .text-\[12px\] { font-size: 13.5px; line-height: 1.45; }
+  .app-scope .text-\[13px\] { font-size: 15px; line-height: 1.45; }
+  .app-scope .text-xs  { font-size: 13.5px; line-height: 1.15rem; }
+  .app-scope .text-sm  { font-size: 15px;   line-height: 1.4rem; }
+  .app-scope .text-base { font-size: 17px;  line-height: 1.65rem; }
+  .app-scope .text-lg  { font-size: 19px;   line-height: 1.8rem; }
+  .app-scope .text-xl  { font-size: 22px;   line-height: 1.95rem; }
+  .app-scope .text-2xl { font-size: 26px;   line-height: 2.1rem; }
+  /* text-3xl / text-4xl / text-5xl intentionally NOT scaled — they are
+     used for hero headings which should keep their original design sizes. */
+}
