@@ -82,6 +82,7 @@ interface CodePreviewProps {
   isMobile?: boolean;
   onBuildError?: (error: string) => void;
   onRuntimeError?: (error: string) => void;
+  onRestart?: () => void;
   genProgress?: GenerationProgress;
 }
 
@@ -281,7 +282,7 @@ function IterationDiffView({ content, oldContent, isStreaming, codeEndRef }: Ite
   );
 }
 
-export function CodePreview({ files, generationKey, isIOS = false, isMobile = false, onBuildError, onRuntimeError, genProgress }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, isIOS = false, isMobile = false, onBuildError, onRuntimeError, onRestart, genProgress }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
@@ -311,6 +312,17 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
   const isNearBottomRef = useRef(true);
 
   function handleRestartContainer() {
+    setIframeLoaded(false);
+    setLoadingProgress(0);
+    if (iframeLoadTimeoutRef.current) {
+      clearTimeout(iframeLoadTimeoutRef.current);
+      iframeLoadTimeoutRef.current = null;
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    onRestart?.();
     restartContainer(files);
   }
 

@@ -988,6 +988,12 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             isMobile={isMobile}
             onBuildError={handleBuildError}
             onRuntimeError={handleRuntimeError}
+            onRestart={() => {
+              if (isMobile) {
+                setMobileView("preview");
+                setHasNewPreview(false);
+              }
+            }}
             genProgress={genProgress}
           />
         </div>
