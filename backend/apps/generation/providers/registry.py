@@ -1,8 +1,16 @@
 """
 Centralized model registry: config, pricing, and limits for all AI models.
+
+Prices stored here are the **real API base costs** (per million tokens, USD).
+COST_MARKUP is applied on top in calculate_cost to determine what users are charged.
+To change the margin, only COST_MARKUP needs to be updated.
 """
 
 from decimal import Decimal
+
+# Multiplier applied on top of raw API cost when charging users.
+# 3.5 means the user is charged 3.5× the actual API price.
+COST_MARKUP = Decimal("3.5")
 
 
 MODEL_REGISTRY = {
@@ -11,8 +19,8 @@ MODEL_REGISTRY = {
         "provider": "openai",
         "api_model": "gpt-5.4",
         "reasoning_effort": None,
-        "input_per_million": Decimal("6.25"),
-        "output_per_million": Decimal("37.50"),
+        "input_per_million": Decimal("2.50"),
+        "output_per_million": Decimal("15.00"),
         "max_output_tokens": 31000,
         "display_name": "GPT-5.4",
         "category": "openai",
@@ -21,8 +29,8 @@ MODEL_REGISTRY = {
         "provider": "openai",
         "api_model": "gpt-5.4",
         "reasoning_effort": "low",
-        "input_per_million": Decimal("6.25"),
-        "output_per_million": Decimal("37.50"),
+        "input_per_million": Decimal("2.50"),
+        "output_per_million": Decimal("15.00"),
         "max_output_tokens": 31000,
         "display_name": "GPT-5.4 (Low)",
         "category": "openai",
@@ -31,8 +39,8 @@ MODEL_REGISTRY = {
         "provider": "openai",
         "api_model": "gpt-5.4",
         "reasoning_effort": "medium",
-        "input_per_million": Decimal("6.25"),
-        "output_per_million": Decimal("37.50"),
+        "input_per_million": Decimal("2.50"),
+        "output_per_million": Decimal("15.00"),
         "max_output_tokens": 31000,
         "display_name": "GPT-5.4 (Medium)",
         "category": "openai",
@@ -41,8 +49,8 @@ MODEL_REGISTRY = {
         "provider": "openai",
         "api_model": "gpt-5.4",
         "reasoning_effort": "high",
-        "input_per_million": Decimal("6.25"),
-        "output_per_million": Decimal("37.50"),
+        "input_per_million": Decimal("2.50"),
+        "output_per_million": Decimal("15.00"),
         "max_output_tokens": 31000,
         "display_name": "GPT-5.4 (High)",
         "category": "openai",
@@ -51,8 +59,8 @@ MODEL_REGISTRY = {
         "provider": "openai",
         "api_model": "gpt-5.4",
         "reasoning_effort": "xhigh",
-        "input_per_million": Decimal("6.25"),
-        "output_per_million": Decimal("37.50"),
+        "input_per_million": Decimal("2.50"),
+        "output_per_million": Decimal("15.00"),
         "max_output_tokens": 31000,
         "display_name": "GPT-5.4 (xHigh)",
         "category": "openai",
@@ -62,8 +70,8 @@ MODEL_REGISTRY = {
     "claude-sonnet-4.6": {
         "provider": "anthropic",
         "api_model": "claude-sonnet-4-6",
-        "input_per_million": Decimal("7.50"),
-        "output_per_million": Decimal("37.50"),
+        "input_per_million": Decimal("3.00"),
+        "output_per_million": Decimal("15.00"),
         "max_output_tokens": 16384,
         "display_name": "Claude Sonnet 4.6",
         "category": "anthropic",
@@ -71,8 +79,8 @@ MODEL_REGISTRY = {
     "claude-opus-4.6": {
         "provider": "anthropic",
         "api_model": "claude-opus-4-6",
-        "input_per_million": Decimal("12.50"),
-        "output_per_million": Decimal("62.50"),
+        "input_per_million": Decimal("5.00"),
+        "output_per_million": Decimal("25.00"),
         "max_output_tokens": 16384,
         "display_name": "Claude Opus 4.6",
         "category": "anthropic",
@@ -80,8 +88,8 @@ MODEL_REGISTRY = {
     "claude-haiku-4.5": {
         "provider": "anthropic",
         "api_model": "claude-haiku-4-5",
-        "input_per_million": Decimal("2.50"),
-        "output_per_million": Decimal("12.50"),
+        "input_per_million": Decimal("1.00"),
+        "output_per_million": Decimal("5.00"),
         "max_output_tokens": 8192,
         "display_name": "Claude Haiku 4.5",
         "category": "anthropic",
@@ -91,8 +99,8 @@ MODEL_REGISTRY = {
     "gemini-3.1-pro": {
         "provider": "gemini",
         "api_model": "gemini-3.1-pro-preview",
-        "input_per_million": Decimal("5.00"),
-        "output_per_million": Decimal("30.00"),
+        "input_per_million": Decimal("2.00"),
+        "output_per_million": Decimal("12.00"),
         "max_output_tokens": 65536,
         "display_name": "Gemini 3.1 Pro",
         "category": "gemini",
@@ -100,8 +108,8 @@ MODEL_REGISTRY = {
     "gemini-3-flash": {
         "provider": "gemini",
         "api_model": "gemini-3-flash-preview",
-        "input_per_million": Decimal("1.25"),
-        "output_per_million": Decimal("7.50"),
+        "input_per_million": Decimal("0.50"),
+        "output_per_million": Decimal("3.00"),
         "max_output_tokens": 65536,
         "display_name": "Gemini 3 Flash",
         "category": "gemini",
@@ -109,8 +117,8 @@ MODEL_REGISTRY = {
     "gemini-3.1-flash-lite": {
         "provider": "gemini",
         "api_model": "gemini-3.1-flash-lite-preview",
-        "input_per_million": Decimal("0.625"),
-        "output_per_million": Decimal("3.75"),
+        "input_per_million": Decimal("0.25"),
+        "output_per_million": Decimal("1.50"),
         "max_output_tokens": 65536,
         "display_name": "Gemini 3.1 Flash-Lite",
         "category": "gemini",
@@ -137,7 +145,7 @@ def get_model_config(model_id: str) -> dict:
 def calculate_cost(
     input_tokens: int, output_tokens: int, model_id: str = DEFAULT_MODEL
 ) -> Decimal:
-    """Calculate the cost based on the model's pricing."""
+    """Calculate the cost charged to the user (base API cost × COST_MARKUP)."""
     config = MODEL_REGISTRY.get(model_id)
     if config is None:
         config = MODEL_REGISTRY[DEFAULT_MODEL]
@@ -147,7 +155,7 @@ def calculate_cost(
     output_cost = (
         (Decimal(output_tokens) / Decimal("1000000")) * config["output_per_million"]
     )
-    return input_cost + output_cost
+    return (input_cost + output_cost) * COST_MARKUP
 
 
 def list_models() -> list[dict]:

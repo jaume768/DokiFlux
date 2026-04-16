@@ -13,7 +13,7 @@ from apps.projects.models import Project
 from .serializers import EstimateRequestSerializer, GenerateRequestSerializer
 from .services import stream_generation, stream_phased_generation
 from .throttles import check_daily_generate_limit
-from .providers.registry import get_model_config, list_models, MODEL_REGISTRY, DEFAULT_MODEL
+from .providers.registry import get_model_config, list_models, MODEL_REGISTRY, DEFAULT_MODEL, COST_MARKUP
 
 logger = logging.getLogger(__name__)
 
@@ -208,9 +208,9 @@ async def estimate_view(request):
         model = DEFAULT_MODEL
     config = get_model_config(model)
     estimated_output_max = config["max_output_tokens"]
-    input_cost = (Decimal(estimated_input_tokens) / Decimal("1000000")) * config["input_per_million"]
-    min_output_cost = (Decimal(estimated_output_min) / Decimal("1000000")) * config["output_per_million"]
-    max_output_cost = (Decimal(estimated_output_max) / Decimal("1000000")) * config["output_per_million"]
+    input_cost = (Decimal(estimated_input_tokens) / Decimal("1000000")) * config["input_per_million"] * COST_MARKUP
+    min_output_cost = (Decimal(estimated_output_min) / Decimal("1000000")) * config["output_per_million"] * COST_MARKUP
+    max_output_cost = (Decimal(estimated_output_max) / Decimal("1000000")) * config["output_per_million"] * COST_MARKUP
 
     balance = await sync_to_async(get_balance)(user)
 
