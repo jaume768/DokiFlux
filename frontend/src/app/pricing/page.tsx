@@ -67,7 +67,7 @@ export default function PricingPage() {
             description="Para explorar y proyectos personales"
             features={[
               "$5 de créditos incluidos/mes",
-              "7 generaciones/día",
+              "5 generaciones/día",
               "Proyectos hasta 200KB",
               "Todos los modelos",
               "Badge «Built with DokiFlux»",

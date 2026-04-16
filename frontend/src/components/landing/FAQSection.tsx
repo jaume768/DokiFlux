@@ -6,7 +6,7 @@ import { FAQItem } from "./FAQItem";
 const FAQ_ITEMS = [
   {
     question: "¿Cuánto cuesta una generación?",
-    answer: "El coste de cada generación depende del modelo IA utilizado y del número de tokens generados. En el plan Free dispones de $5 en créditos al mes, suficiente para unas 7 generaciones diarias. En el plan Premium tienes $20 en créditos mensuales. Los precios por modelo van desde ~$0.002 por generación con modelos básicos hasta ~$0.05 con GPT-4o o Claude 3.5 para proyectos más complejos.",
+    answer: "El coste de cada generación depende del modelo IA utilizado y del número de tokens generados. En el plan Free dispones de $5 en créditos al mes, suficiente para unas 5 generaciones diarias. En el plan Premium tienes $20 en créditos mensuales. Los precios por modelo van desde ~$0.002 por generación con modelos básicos hasta ~$0.05 con GPT-4o o Claude 3.5 para proyectos más complejos.",
   },
   {
     question: "¿Puedo exportar el código?",

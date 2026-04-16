@@ -109,7 +109,7 @@ export default function BillingPage() {
               <h3 className="text-base font-bold text-white mb-1">Free</h3>
               <p className="text-3xl font-bold text-white mb-4">$0<span className="text-sm font-normal ml-1" style={{ color: "rgba(255,255,255,0.45)" }}>/mes</span></p>
               <div className="space-y-2">
-                {["$5 créditos/mes", "7 generaciones/día", "Proyectos hasta 200KB", "Badge «Built with DokiFlux»"].map((f) => (
+                {["$5 créditos/mes", "5 generaciones/día", "Proyectos hasta 200KB", "Badge «Built with DokiFlux»"].map((f) => (
                   <div key={f} className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
                     <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px]" style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}>✓</span>
                     {f}

@@ -60,7 +60,7 @@ export function LimitReachedModal({ type, onClose }: LimitReachedModalProps) {
           <div className="flex justify-between">
             <span className="text-muted-foreground">Plan actual (Free)</span>
             <span className="font-medium">
-              {isCredits ? "$5/mes en créditos" : "7 generaciones/día"}
+              {isCredits ? "$5/mes en créditos" : "5 generaciones/día"}
             </span>
           </div>
           <div className="flex justify-between text-primary">
