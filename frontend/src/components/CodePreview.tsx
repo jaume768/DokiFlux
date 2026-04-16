@@ -307,6 +307,8 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
   const streamingCodeEndRef = useRef<HTMLDivElement>(null);
   const iframeLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const codeScrollRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
 
   function handleRestartContainer() {
     restartContainer(files);
@@ -385,9 +387,17 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
     }
   }, [isIterationStreaming, streamingFiles]);
 
-  // Auto-scroll code to bottom when streaming the active file
+  // Track whether user has scrolled away from the bottom of code
+  const handleCodeScroll = useCallback(() => {
+    const el = codeScrollRef.current;
+    if (!el) return;
+    const threshold = 60;
+    isNearBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
+  }, []);
+
+  // Auto-scroll code to bottom when streaming the active file (only if user is near bottom)
   useEffect(() => {
-    if (isIterationStreaming && activeStreamingPath === selectedFile) {
+    if (isIterationStreaming && activeStreamingPath === selectedFile && isNearBottomRef.current) {
       streamingCodeEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [isIterationStreaming, activeStreamingPath, selectedFile, genProgress?.streamingCode]);
@@ -923,6 +933,7 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
               filesDetected={genProgress.filesDetected}
               charsReceived={genProgress.charsReceived}
               existingFiles={{}}
+              isMobile={isMobile}
             />
           ) : (
             <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -1028,7 +1039,7 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
                   )}
                 </div>
                 {/* Code content — streaming diff or static */}
-                <div className="flex-1 overflow-auto">
+                <div className="flex-1 overflow-auto" ref={codeScrollRef} onScroll={handleCodeScroll}>
                   {isIterationStreaming && streamingMap.has(selectedFile) ? (
                     <IterationDiffView
                       content={streamingMap.get(selectedFile)!.content}

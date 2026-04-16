@@ -1,14 +1,16 @@
 "use client";
 
-import { useMemo, useRef, useEffect, useState } from "react";
+import { useMemo, useRef, useEffect, useState, useCallback } from "react";
 import {
   FileCode2,
   FolderOpen,
+  FolderTree,
   Loader2,
   Check,
   ChevronDown,
   Plus,
   Pencil,
+  X,
 } from "lucide-react";
 import type { FileMap } from "@/lib/parser";
 
@@ -23,6 +25,7 @@ interface StreamingFileViewProps {
   filesDetected: number;
   charsReceived: number;
   existingFiles?: FileMap;
+  isMobile?: boolean;
 }
 
 type LineStatus = "unchanged" | "added" | "modified";
@@ -168,28 +171,41 @@ export function StreamingFileView({
   filesDetected,
   charsReceived,
   existingFiles,
+  isMobile = false,
 }: StreamingFileViewProps) {
   const hasExisting = existingFiles && Object.keys(existingFiles).length > 0;
   const files = useMemo(() => parseStreamingFiles(streamingCode), [streamingCode]);
   const folderTree = useMemo(() => buildFolderTree(files), [files]);
   const [selectedIdx, setSelectedIdx] = useState<number>(-1);
+  const [treeOpen, setTreeOpen] = useState(false);
   const userSelectedRef = useRef(false);
   const codeEndRef = useRef<HTMLDivElement>(null);
   const treeEndRef = useRef<HTMLDivElement>(null);
+  const codeScrollRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
 
   const activeFileIdx = files.length - 1;
   const viewIdx = selectedIdx >= 0 && selectedIdx < files.length ? selectedIdx : activeFileIdx;
   const viewFile = files[viewIdx] ?? null;
 
+  // Track whether user has scrolled away from the bottom
+  const handleCodeScroll = useCallback(() => {
+    const el = codeScrollRef.current;
+    if (!el) return;
+    const threshold = 60;
+    isNearBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
+  }, []);
+
   // Handle manual file selection
   function handleSelectFile(idx: number) {
     userSelectedRef.current = true;
     setSelectedIdx(idx);
+    if (isMobile) setTreeOpen(false);
   }
 
-  // Auto-scroll code to bottom when streaming the active file
+  // Auto-scroll code to bottom when streaming the active file (only if user is near bottom)
   useEffect(() => {
-    if (viewIdx === activeFileIdx) {
+    if (viewIdx === activeFileIdx && isNearBottomRef.current) {
       codeEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [viewFile?.content, viewIdx, activeFileIdx]);
@@ -245,80 +261,150 @@ export function StreamingFileView({
         </span>
       </div>
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* File tree sidebar */}
-        <div className="w-48 shrink-0 border-r border-white/10 bg-[#181825] overflow-auto">
-          <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-gray-500 font-semibold">
-            Explorer
-          </div>
-          <div className="px-1 pb-2 space-y-0.5">
-            {Array.from(folderTree.entries()).map(([dir, dirFiles]) => (
-              <div key={dir}>
-                {dir !== "(root)" && (
-                  <div className="flex items-center gap-1.5 px-2 py-1.5 text-gray-400">
-                    <ChevronDown className="w-3.5 h-3.5 opacity-70" />
-                    <FolderOpen className="w-4 h-4 text-sky-400" />
-                    <span className="text-[13px] font-semibold">{dir}</span>
+      <div className="flex flex-1 min-h-0 overflow-hidden relative">
+        {/* File tree sidebar — desktop: always visible */}
+        {!isMobile && (
+          <div className="w-48 shrink-0 border-r border-white/10 bg-[#181825] overflow-auto">
+            <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-gray-500 font-semibold">
+              Explorer
+            </div>
+            <div className="px-1 pb-2 space-y-0.5">
+              {Array.from(folderTree.entries()).map(([dir, dirFiles]) => (
+                <div key={dir}>
+                  {dir !== "(root)" && (
+                    <div className="flex items-center gap-1.5 px-2 py-1.5 text-gray-400">
+                      <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                      <FolderOpen className="w-4 h-4 text-sky-400" />
+                      <span className="text-[13px] font-semibold">{dir}</span>
+                    </div>
+                  )}
+                  <div className={dir !== "(root)" ? "ml-3" : ""}>
+                    {dirFiles.map((file) => {
+                      const globalIdx = files.indexOf(file);
+                      const isActive = globalIdx === viewIdx;
+                      const isWriting = globalIdx === activeFileIdx && !file.isComplete;
+
+                      const isNewFile = hasExisting && !existingFiles![file.path];
+                      const isModifiedFile = hasExisting && !!existingFiles![file.path];
+
+                      return (
+                        <button
+                          key={file.path}
+                          onClick={() => handleSelectFile(globalIdx)}
+                          className={`flex items-center gap-1.5 w-full px-2 py-[3px] rounded text-[12px] transition-colors duration-150 ${
+                            isActive
+                              ? "bg-white/10 text-gray-100"
+                              : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
+                          }`}
+                        >
+                          {isWriting ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-amber-400 shrink-0" />
+                          ) : file.isComplete ? (
+                            <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+                          ) : (
+                            <FileCode2 className={`w-3 h-3 shrink-0 ${getFileExtColor(file.path)}`} />
+                          )}
+                          <FileName path={file.path} />
+                          {hasExisting && !isWriting && (
+                            isNewFile ? (
+                              <span className="ml-auto flex items-center gap-0.5 text-[9px] font-semibold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full shrink-0">
+                                <Plus className="w-2.5 h-2.5" />
+                                New
+                              </span>
+                            ) : isModifiedFile ? (
+                              <span className="ml-auto flex items-center gap-0.5 text-[9px] font-semibold text-sky-400 bg-sky-400/10 px-1.5 py-0.5 rounded-full shrink-0">
+                                <Pencil className="w-2.5 h-2.5" />
+                                Mod
+                              </span>
+                            ) : null
+                          )}
+                          {isWriting && (
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
-                <div className={dir !== "(root)" ? "ml-3" : ""}>
-                  {dirFiles.map((file) => {
-                    const globalIdx = files.indexOf(file);
-                    const isActive = globalIdx === viewIdx;
-                    const isWriting = globalIdx === activeFileIdx && !file.isComplete;
-
-                    const isNewFile = hasExisting && !existingFiles![file.path];
-                    const isModifiedFile = hasExisting && !!existingFiles![file.path];
-
-                    return (
-                      <button
-                        key={file.path}
-                        onClick={() => handleSelectFile(globalIdx)}
-                        className={`flex items-center gap-1.5 w-full px-2 py-[3px] rounded text-[12px] transition-colors duration-150 ${
-                          isActive
-                            ? "bg-white/10 text-gray-100"
-                            : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
-                        }`}
-                      >
-                        {isWriting ? (
-                          <Loader2 className="w-3 h-3 animate-spin text-amber-400 shrink-0" />
-                        ) : file.isComplete ? (
-                          <Check className="w-3 h-3 text-emerald-400 shrink-0" />
-                        ) : (
-                          <FileCode2 className={`w-3 h-3 shrink-0 ${getFileExtColor(file.path)}`} />
-                        )}
-                        <FileName path={file.path} />
-                        {hasExisting && !isWriting && (
-                          isNewFile ? (
-                            <span className="ml-auto flex items-center gap-0.5 text-[9px] font-semibold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full shrink-0">
-                              <Plus className="w-2.5 h-2.5" />
-                              New
-                            </span>
-                          ) : isModifiedFile ? (
-                            <span className="ml-auto flex items-center gap-0.5 text-[9px] font-semibold text-sky-400 bg-sky-400/10 px-1.5 py-0.5 rounded-full shrink-0">
-                              <Pencil className="w-2.5 h-2.5" />
-                              Mod
-                            </span>
-                          ) : null
-                        )}
-                        {isWriting && (
-                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
-                        )}
-                      </button>
-                    );
-                  })}
                 </div>
-              </div>
-            ))}
-            <div ref={treeEndRef} />
+              ))}
+              <div ref={treeEndRef} />
+            </div>
           </div>
-        </div>
+        )}
+        {/* Mobile explorer overlay */}
+        {isMobile && treeOpen && (
+          <div className="absolute inset-0 z-20 bg-[#181825] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 shrink-0">
+              <span className="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Explorer</span>
+              <button
+                onClick={() => setTreeOpen(false)}
+                className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto px-1 pb-2 space-y-0.5">
+              {Array.from(folderTree.entries()).map(([dir, dirFiles]) => (
+                <div key={dir}>
+                  {dir !== "(root)" && (
+                    <div className="flex items-center gap-1.5 px-2 py-1.5 text-gray-400">
+                      <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                      <FolderOpen className="w-4 h-4 text-sky-400" />
+                      <span className="text-[13px] font-semibold">{dir}</span>
+                    </div>
+                  )}
+                  <div className={dir !== "(root)" ? "ml-3" : ""}>
+                    {dirFiles.map((file) => {
+                      const globalIdx = files.indexOf(file);
+                      const isActive = globalIdx === viewIdx;
+                      const isWriting = globalIdx === activeFileIdx && !file.isComplete;
+
+                      return (
+                        <button
+                          key={file.path}
+                          onClick={() => handleSelectFile(globalIdx)}
+                          className={`flex items-center gap-1.5 w-full px-2 py-[3px] rounded text-[12px] transition-colors duration-150 ${
+                            isActive
+                              ? "bg-white/10 text-gray-100"
+                              : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
+                          }`}
+                        >
+                          {isWriting ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-amber-400 shrink-0" />
+                          ) : file.isComplete ? (
+                            <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+                          ) : (
+                            <FileCode2 className={`w-3 h-3 shrink-0 ${getFileExtColor(file.path)}`} />
+                          )}
+                          <FileName path={file.path} />
+                          {isWriting && (
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              <div ref={treeEndRef} />
+            </div>
+          </div>
+        )}
 
         {/* Code viewer */}
         <div className="flex-1 flex flex-col min-w-0 bg-[#1e1e2e]">
           {/* File tab bar */}
           {viewFile && (
             <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/10 bg-[#252536] shrink-0">
+              {isMobile && files.length > 1 && (
+                <button
+                  onClick={() => setTreeOpen((v) => !v)}
+                  className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-gray-200 transition-colors shrink-0"
+                  title="Toggle file explorer"
+                >
+                  <FolderTree className="w-3.5 h-3.5" />
+                </button>
+              )}
               <FileCode2 className={`w-3.5 h-3.5 shrink-0 ${getFileExtColor(viewFile.path)}`} />
               <span className="text-xs font-mono text-gray-300 truncate">
                 {viewFile.path.startsWith("/") ? viewFile.path.slice(1) : viewFile.path}
@@ -349,7 +435,7 @@ export function StreamingFileView({
           )}
 
           {/* Code content */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto" ref={codeScrollRef} onScroll={handleCodeScroll}>
             {viewFile ? (
               <DiffCodeView
                 content={viewFile.content}
