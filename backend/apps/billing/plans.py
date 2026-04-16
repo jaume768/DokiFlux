@@ -9,7 +9,7 @@ PLAN_DEFINITIONS = {
     "free": {
         "price_monthly": Decimal("0"),
         "monthly_credits": Decimal("5.00"),
-        "messages_per_day": 7,
+        "messages_per_day": 5,
         "show_badge": True,
         "max_file_map_kb": 200,
     },

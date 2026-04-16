@@ -103,8 +103,8 @@ export default function HomePage() {
                 className="w-full resize-none bg-transparent px-5 md:px-6 py-5 text-base md:text-lg outline-none disabled:cursor-not-allowed disabled:opacity-50 text-white"
                 style={{ color: "rgba(255,255,255,0.9)", caretColor: "#8b5cf6" }}
               />
-              <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-4">
-                <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 px-4 pb-4">
+                <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
                   <ModelSelector
                     value={selectedModel}
                     onChange={setSelectedModel}
@@ -119,7 +119,7 @@ export default function HomePage() {
                 <button
                   type="submit"
                   disabled={!prompt.trim() || isCreating}
-                  className="btn-primary flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
+                  className="btn-primary flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {isCreating ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /><span className="hidden sm:inline">Creando...</span></>
@@ -138,7 +138,7 @@ export default function HomePage() {
           </form>
 
           {/* Footer hint */}
-          <p className="text-center text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>
+          <p className="hidden md:block text-center text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>
             Presiona{" "}
             <kbd className="px-2 py-0.5 text-xs font-semibold rounded-md" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}>Enter</kbd>
             {" "}para enviar

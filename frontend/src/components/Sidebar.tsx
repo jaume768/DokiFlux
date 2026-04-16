@@ -9,7 +9,6 @@ import type { ProjectListItem, PaginatedResponse } from "@/types/auth";
 import {
   Home,
   FolderOpen,
-  MessageSquare,
   LogOut,
   Coins,
   Plus,
@@ -59,7 +58,6 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const navItems = [
     { icon: Home, label: "Inicio", path: "/app" },
     { icon: FolderOpen, label: "Proyectos", path: "/app/dashboard" },
-    { icon: MessageSquare, label: "Chats", path: "/app/chats" },
   ];
 
   function handleNav(path: string) {
