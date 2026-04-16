@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 async def generate_view(request):
     """
     POST /api/generate/
-    Async streaming SSE view — proxies to OpenAI, deducts credits.
 
     Authentication and throttling are handled manually since this is
     a raw async Django view (not a DRF APIView).

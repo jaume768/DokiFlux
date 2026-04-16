@@ -97,7 +97,6 @@ function AssistantMessage({ msg, onRestore, isRestoring }: { msg: Message; onRes
     );
   }
 
-  // error / cancel
   return (
     <div className="space-y-1.5 pt-1">
       <div className="flex items-center gap-2">
