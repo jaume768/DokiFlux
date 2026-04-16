@@ -41,6 +41,7 @@ class AnthropicProvider(BaseProvider):
         """
         config = get_model_config(model)
         api_model = config["api_model"]
+        thinking_effort = config.get("thinking_effort")
 
         # Extract project context from "developer" role messages and append to system prompt
         project_context = "\n\n".join(
@@ -63,6 +64,17 @@ class AnthropicProvider(BaseProvider):
             "messages": anthropic_messages,
             "stream": True,
         }
+
+        # Adaptive thinking (Claude Opus 4.7+). The model dynamically decides
+        # whether and how much to think; `output_config.effort` is soft guidance
+        # (low | medium | high | xhigh | max). Required format for Opus 4.7 —
+        # the legacy {type: "enabled", budget_tokens: N} is rejected with 400.
+        # Thinking tokens are billed as output tokens and arrive in separate
+        # `thinking` content blocks that we silently skip (only text_delta is
+        # forwarded to the client).
+        if thinking_effort:
+            payload["thinking"] = {"type": "adaptive"}
+            payload["output_config"] = {"effort": thinking_effort}
 
         api_key = get_anthropic_key()
         headers = {
