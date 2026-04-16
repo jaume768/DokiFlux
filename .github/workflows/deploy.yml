@@ -22,8 +22,11 @@ jobs:
             set -e
             cd /opt/dokiflux
 
-            PREV_SHA=$(git rev-parse HEAD)
-            git pull origin main
+            # Handle divergent history (e.g., after force push) by resetting to origin
+            git fetch origin main
+            git reset --hard origin/main
+
+            PREV_SHA=$(git rev-parse HEAD~1 2>/dev/null || echo "")
             CURR_SHA=$(git rev-parse HEAD)
 
             DC="docker compose -f docker-compose.prod.yml --env-file .env.production"
