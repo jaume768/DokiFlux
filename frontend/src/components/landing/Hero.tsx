@@ -135,7 +135,7 @@ export function Hero() {
                 transition: "opacity 0.65s ease 0.1s, transform 0.65s ease 0.1s",
               }}
             >
-              <span className="text-white">De idea a prototipo</span>
+              <span className="text-white">De idea a primera versión</span>
               <br />
               <span className="gradient-text">
                 <TypingText
@@ -155,9 +155,9 @@ export function Hero() {
                 transition: "opacity 0.65s ease 0.2s, transform 0.65s ease 0.2s",
               }}
             >
-              Genera prototipos funcionales con IA. Valídalos con tu equipo.
-              Cuando estés listo, nuestro equipo los convierte en{" "}
-              <span className="text-white/90 font-medium">software real listo para producción</span>.
+              Crea una primera versión de tu idea con IA, revísala con tu equipo y, 
+              cuando esté lista, nosotros la convertimos en{" "}
+              <span className="text-white/90 font-medium">una aplicación real lista para usar</span>.
             </p>
 
             {/* CTAs */}

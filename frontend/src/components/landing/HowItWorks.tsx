@@ -16,7 +16,7 @@ const STEPS = [
     image: "/tarjetas-4-pasos/tarjeta-02.png",
     step: "02",
     title: "Genera código",
-    desc: "La IA genera código React funcional en tiempo real. Múltiples archivos, todo listo.",
+    desc: "La IA genera código funcional en tiempo real. Múltiples archivos, todo listo.",
     color: "#38bdf8",
     colorBg: "rgba(56,189,248,0.10)",
     colorBorder: "rgba(56,189,248,0.22)",
