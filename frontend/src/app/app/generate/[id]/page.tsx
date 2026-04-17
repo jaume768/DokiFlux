@@ -65,6 +65,8 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const [hasNewPreview, setHasNewPreview] = useState(false);
   const [limitModal, setLimitModal] = useState<{ open: boolean; type: LimitType } | null>(null);
   const [publishModal, setPublishModal] = useState<{ open: boolean; variant: "auto" | "manual" }>({ open: false, variant: "manual" });
+  const [previewReady, setPreviewReady] = useState(false);
+  const publishAutoDismissedRef = useRef(false);
   const [modelLocked, setModelLocked] = useState(false);
   const modelParam = searchParams.get("model");
   const [selectedModel, setSelectedModel] = useState<ModelId>(
@@ -840,12 +842,14 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     }
   }, [backgroundGenId]);
 
-  // Auto-popup: show publish modal ~12s after the first successful generation
+  // Auto-popup: show publish modal ~12s after the preview is ready,
   // if the user is idle (not loading, not iterating, not typing).
   useEffect(() => {
     if (isLoadingProject || isLoading) return;
-    if (getFileCount(currentFiles) === 0) return; // no generation yet
-    if (messages.length > 2) return; // already iterated (more than 1 user + 1 assistant)
+    if (!previewReady) return; // wait until webcontainer dev server is up
+    if (getFileCount(currentFiles) === 0) return;
+    if (messages.length > 2) return;
+    if (publishAutoDismissedRef.current) return;
 
     const storageKey = `publish_modal_shown_${projectId}`;
     if (typeof window !== "undefined" && sessionStorage.getItem(storageKey)) return;
@@ -882,7 +886,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
       window.removeEventListener("input", resetOnActivity, true);
       window.removeEventListener("pointerdown", resetOnActivity);
     };
-  }, [isLoading, isLoadingProject, messages.length, currentFiles, projectId]);
+  }, [isLoading, isLoadingProject, previewReady, messages.length, currentFiles, projectId]);
 
   if (isLoadingProject) {
     return (
@@ -1100,6 +1104,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
                 setHasNewPreview(false);
               }
             }}
+            onReady={() => setPreviewReady(true)}
             genProgress={genProgress}
           />
         </div>
@@ -1113,8 +1118,19 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
       <PublishModal
         open={publishModal.open}
         variant={publishModal.variant}
-        onClose={() => setPublishModal({ open: false, variant: publishModal.variant })}
+        onClose={() => {
+          // Lock the auto-popup for the rest of the session on this project
+          publishAutoDismissedRef.current = true;
+          try {
+            sessionStorage.setItem(`publish_modal_shown_${projectId}`, "1");
+          } catch {}
+          setPublishModal({ open: false, variant: publishModal.variant });
+        }}
         onContact={() => {
+          publishAutoDismissedRef.current = true;
+          try {
+            sessionStorage.setItem(`publish_modal_shown_${projectId}`, "1");
+          } catch {}
           // TODO: hook up contact flow (form/email/Calendly) in next iteration
           setPublishModal({ open: false, variant: publishModal.variant });
         }}

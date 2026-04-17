@@ -84,6 +84,7 @@ interface CodePreviewProps {
   onBuildError?: (error: string) => void;
   onRuntimeError?: (error: string) => void;
   onRestart?: () => void;
+  onReady?: () => void;
   genProgress?: GenerationProgress;
 }
 
@@ -283,7 +284,7 @@ function IterationDiffView({ content, oldContent, isStreaming, codeEndRef }: Ite
   );
 }
 
-export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, onBuildError, onRuntimeError, onRestart, genProgress }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, onBuildError, onRuntimeError, onRestart, onReady, genProgress }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
@@ -294,6 +295,12 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [loadingProgress, setLoadingProgress] = useState(0);
   const { status, previewUrl, error, logs, lastBuildError, lastRuntimeError, clearBuildError, clearRuntimeError, mountFiles, restartContainer } = useWebContainer();
+
+  useEffect(() => {
+    if (status === "ready" && iframeLoaded) {
+      onReady?.();
+    }
+  }, [status, iframeLoaded, onReady]);
   const [mobileWidth, setMobileWidth] = useState(375);
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);

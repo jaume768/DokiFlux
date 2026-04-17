@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { Rocket, Globe, Database, ShieldCheck, ArrowRight, X } from "lucide-react";
+import Image from "next/image";
+import { Globe, Database, ShieldCheck, ArrowRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PublishModalProps {
@@ -48,36 +49,45 @@ export function PublishModal({ open, onClose, onContact, variant = "manual" }: P
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-border bg-background shadow-2xl p-6 md:p-7 animate-in zoom-in-95 fade-in duration-200">
+      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-border bg-background shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200">
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          className="absolute right-4 top-4 z-10 rounded-full p-1.5 bg-black/40 text-white/80 hover:text-white hover:bg-black/60 backdrop-blur-sm transition-colors"
           aria-label="Cerrar"
         >
           <X className="h-4 w-4" />
         </button>
 
-        {/* Icon banner */}
+        {/* Hero illustration */}
         <div
-          className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl"
+          className="relative w-full flex items-center justify-center pt-10 pb-4"
           style={{
             background:
-              "linear-gradient(135deg, rgba(139,92,246,0.20) 0%, rgba(56,189,248,0.20) 100%)",
-            border: "1px solid rgba(139,92,246,0.35)",
+              "radial-gradient(ellipse 80% 60% at 50% 40%, rgba(139,92,246,0.18) 0%, rgba(99,102,241,0.06) 55%, transparent 80%)",
           }}
         >
-          <Rocket className="h-7 w-7 text-primary" />
+          <div className="relative w-56 h-40 md:w-104 md:h-74"> 
+            <Image
+              src="/tarjetas-4-pasos/tarjeta-04.png"
+              alt="Publicar tu proyecto"
+              fill
+              priority
+              sizes="376px"
+              className="object-contain drop-shadow-[0_10px_30px_rgba(139,92,246,0.35)]"
+            />
+          </div>
         </div>
 
-        {/* Copy */}
-        <h2 className="text-2xl font-bold tracking-tight mb-2">{title}</h2>
-        <p className="text-muted-foreground text-sm md:text-base mb-5 leading-relaxed">
-          {subtitle}
-        </p>
+        <div className="px-6 md:px-7 pt-4 pb-6 md:pb-7 relative">
+          {/* Copy */}
+          <h2 className="text-2xl font-bold tracking-tight mb-2">{title}</h2>
+          <p className="text-muted-foreground text-sm md:text-base mb-5 leading-relaxed">
+            {subtitle}
+          </p>
 
-        {/* Bullets */}
-        <div className="mb-6 space-y-3">
+          {/* Bullets */}
+          <div className="mb-6 space-y-3">
           <Feature
             icon={<Globe className="h-4 w-4" />}
             title="Tu propio dominio"
@@ -115,6 +125,7 @@ export function PublishModal({ open, onClose, onContact, variant = "manual" }: P
           <Button variant="ghost" className="w-full" onClick={onClose}>
             Ahora no
           </Button>
+        </div>
         </div>
       </div>
     </div>
