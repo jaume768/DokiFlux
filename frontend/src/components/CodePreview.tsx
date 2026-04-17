@@ -860,6 +860,11 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
                           style={{ width: `${loadingProgress}%` }}
                         />
                       </div>
+                      {loadingProgress === 0 && (
+                        <p className="text-[11px] text-muted-foreground/70 text-center leading-snug mt-1">
+                          Si el porcentaje se queda en 0%, recarga la página.
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

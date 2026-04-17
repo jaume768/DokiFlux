@@ -24,7 +24,7 @@ export interface ModelConfig {
 
 export type ModelId = string;
 
-export const DEFAULT_MODEL: ModelId = "gemini-3-flash";
+export const DEFAULT_MODEL: ModelId = "gemini-3.1-flash-lite";
 
 /** Map a raw backend model response to the frontend ModelConfig shape */
 export function normaliseModel(m: BackendModel): ModelConfig {
