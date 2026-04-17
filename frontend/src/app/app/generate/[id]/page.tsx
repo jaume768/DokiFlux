@@ -117,6 +117,12 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           setCurrentFiles(project.file_map);
           currentFilesRef.current = project.file_map;
           setGenerationKey((k) => k + 1);
+          // On mobile, switch to the preview tab so the user sees the
+          // WebContainer booting rather than the (empty) chat panel.
+          if (typeof window !== "undefined" && window.innerWidth < 768) {
+            setMobileView("preview");
+            setHasNewPreview(false);
+          }
         }
         if (project.last_used_model && isValidModelId(project.last_used_model)) {
           setSelectedModel(project.last_used_model);
