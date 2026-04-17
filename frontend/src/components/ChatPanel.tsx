@@ -135,6 +135,12 @@ const PHASE_CONFIG = {
     color: "text-amber-500",
     barColor: "bg-amber-500",
   },
+  reviewing: {
+    label: "Revisando código...",
+    icon: Sparkles,
+    color: "text-violet-500",
+    barColor: "bg-violet-500",
+  },
   mounting: {
     label: "Configurando vista previa...",
     icon: Package,

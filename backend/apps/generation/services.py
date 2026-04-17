@@ -322,6 +322,65 @@ def _get_file_from_code(code: str, file_path: str) -> str:
     return re.sub(r"^//\s*---\s*FILE:[^\n]*---\s*\n", "", code.strip())
 
 
+# Entry-point filenames (by basename, case-insensitive) that must be generated LAST
+# so they can import from supporting files that exist by then.
+_ENTRY_POINT_BASENAMES = {
+    "app.tsx", "app.jsx", "app.ts",
+    "index.tsx", "index.jsx",
+    "main.tsx", "main.jsx",
+}
+
+
+def _sort_files_for_generation(files: list[str]) -> list[str]:
+    """
+    Move entry-point files (App.tsx / index.tsx / main.tsx) to the end of the
+    generation order while preserving the planner's relative ordering for the
+    rest. Rationale: when App.tsx is generated first, its imports reference
+    components that have not been created yet and the model hallucinates
+    exports/props. Creating supporting files first means App.tsx can see them
+    in `already_generated` context and import them correctly.
+    """
+    def is_entry(path: str) -> bool:
+        base = path.rsplit("/", 1)[-1].lower()
+        return base in _ENTRY_POINT_BASENAMES
+
+    non_entries = [f for f in files if not is_entry(f)]
+    entries = [f for f in files if is_entry(f)]
+    return non_entries + entries
+
+
+def _parse_review_patches(raw: str, existing_files: dict[str, str]) -> dict[str, str]:
+    """
+    Parse multi-file format from the reviewer's output into {path: content}.
+    Only existing files are accepted (reviewer is not allowed to add new ones).
+    """
+    if not raw or not raw.strip():
+        return {}
+
+    # Strip any accidental markdown fences the model might add.
+    cleaned = re.sub(r"```(?:tsx?|jsx?|typescript|javascript)?\s*", "", raw)
+    cleaned = re.sub(r"```\s*", "", cleaned)
+
+    pattern = re.compile(r"//\s*---\s*FILE:\s*(\S+?)\s*---\s*\n", re.MULTILINE)
+    matches = list(pattern.finditer(cleaned))
+    if not matches:
+        return {}
+
+    patches: dict[str, str] = {}
+    for i, m in enumerate(matches):
+        path = m.group(1).strip()
+        if not path.startswith("/"):
+            path = "/" + path
+        start = m.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(cleaned)
+        content = cleaned[start:end].strip()
+        # Only patch files that actually exist — prevents reviewer from adding
+        # hallucinated files.
+        if path in existing_files and content:
+            patches[path] = content
+    return patches
+
+
 async def stream_phased_generation(
     user,
     project: Project,
@@ -408,6 +467,10 @@ async def stream_phased_generation(
             yield {"type": "done"}
             completed_normally = True
             return
+
+        # Enforce entry-point-last ordering so App.tsx sees its supporting files
+        # in `already_generated` context before importing from them.
+        files = _sort_files_for_generation(files)
 
         if not files:
             # Planner returned empty list — fall back to standard single-shot generation
@@ -500,7 +563,53 @@ async def stream_phased_generation(
             else:
                 yield {"type": "task_done", "file_path": file_path, "content": ""}
 
-        # 8. Emit total accumulated usage
+        # 8. Cross-file review phase — only worthwhile when ≥2 files were produced.
+        if len(accumulated_files) >= 2:
+            from .providers.prompts import build_reviewer_messages
+
+            yield {"type": "review_start", "total_files": len(accumulated_files)}
+
+            review_messages = build_reviewer_messages(
+                user_prompt=prompt,
+                all_files=accumulated_files,
+            )
+            review_raw = ""
+            try:
+                async for chunk in provider.stream_generate(
+                    review_messages, model=model, max_tokens=file_max_tokens
+                ):
+                    if chunk["type"] == "text":
+                        review_raw += chunk.get("content", "")
+                    elif chunk["type"] == "usage":
+                        u = chunk.get("usage", {})
+                        total_input_tokens += u.get("inputTokens", 0)
+                        total_output_tokens += u.get("outputTokens", 0)
+                    elif chunk["type"] == "error":
+                        logger.warning(
+                            "Review phase error (non-fatal): %s", chunk.get("error")
+                        )
+                        break
+            except Exception as exc:
+                logger.warning("Review phase failed (non-fatal): %s", exc)
+
+            # Reviewer output may come wrapped in the OpenAI JSON tool-call envelope
+            # (same as file_gen). Normalise it through _extract_file_content first.
+            review_text = _extract_file_content(review_raw) if review_raw else ""
+            patches = _parse_review_patches(review_text, accumulated_files)
+            for patched_path, new_content in patches.items():
+                accumulated_files[patched_path] = new_content
+                yield {
+                    "type": "task_done",
+                    "file_path": patched_path,
+                    "content": new_content,
+                }
+
+            yield {
+                "type": "review_done",
+                "patched_files": list(patches.keys()),
+            }
+
+        # 9. Emit total accumulated usage
         cost = calculate_cost(total_input_tokens, total_output_tokens, model)
         yield {
             "type": "usage",

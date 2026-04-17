@@ -437,6 +437,20 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             }));
           }
 
+          if (chunk.type === "review_start") {
+            setGenProgress((prev) => ({
+              ...prev,
+              phase: "reviewing" as const,
+              streamingCode: "",
+            }));
+          }
+
+          if (chunk.type === "review_done") {
+            // review_done is informational — phase will transition to
+            // "mounting" in the final setGenProgress call below. We don't
+            // switch back to writing-files here to avoid flicker.
+          }
+
           if (chunk.type === "text" && chunk.content) {
             switchToPreviewOnce();
             hasCode = true;

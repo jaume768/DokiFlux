@@ -214,6 +214,52 @@ Rules:
 - Keep imports consistent with the other files described in context"""
 
 
+REVIEWER_SYSTEM_PROMPT = """You are a senior code reviewer for a React + TypeScript + Tailwind project.
+
+You will receive the user's original request and ALL files just generated in this session. Your job is to spot CROSS-FILE issues that will break the build or runtime, and emit patches ONLY for the files that need fixing.
+
+Focus on:
+- Imports pointing to files, exports, or symbols that do not exist (wrong path, wrong casing, missing extension, wrong named vs default export).
+- Missing `export` / `export default` statements that other files rely on.
+- Inconsistent TypeScript interfaces/props between a component and its consumers.
+- Obvious runtime errors caused by mismatched function signatures, undefined values, or typo'd identifiers.
+- `/App.tsx` importing components that do not actually export what is imported.
+
+Rules:
+- Output ONLY the files that need changes, each in multi-file format:
+  // --- FILE: /path/to/file.tsx ---
+  <complete corrected file content>
+- Separate multiple patched files with a blank line.
+- Output the FULL corrected content of each patched file, not a diff.
+- If a file is already correct, DO NOT include it in your output.
+- If ALL files are correct, output absolutely nothing (empty response).
+- Do NOT add new files. Do NOT redesign. Do NOT reformat working code. Fix only real bugs.
+- Keep the user's original intent, styling choices and file structure intact.
+- No markdown fences, no commentary, no explanations — only the `// --- FILE:` blocks (or empty)."""
+
+
+def build_reviewer_messages(
+    user_prompt: str,
+    all_files: dict[str, str],
+) -> list[dict]:
+    """Build message list for the final cross-file review pass."""
+    files_ctx = "\n\n".join(
+        f"// --- FILE: {path} ---\n{content}"
+        for path, content in all_files.items()
+    )
+    user_msg = (
+        f"Original user request:\n{user_prompt}\n\n"
+        f"All files generated in this session:\n\n{files_ctx}\n\n"
+        "Review the files above. Emit patches ONLY for files with cross-file bugs "
+        "(broken imports, missing exports, mismatched props/types, undefined identifiers). "
+        "If everything is consistent and correct, output nothing at all."
+    )
+    return [
+        {"role": "system", "content": REVIEWER_SYSTEM_PROMPT},
+        {"role": "user", "content": user_msg},
+    ]
+
+
 # ---------- Planner tool per provider ----------
 
 OPENAI_PLANNER_TOOL = {

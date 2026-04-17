@@ -116,6 +116,11 @@ def run_background_generation(self, generation_id: int):
             generation.save(update_fields=["status", "completed_at"])
             return
 
+        # Ensure entry-point files (App.tsx / index.tsx / main.tsx) are generated
+        # last so their imports reference files that already exist in context.
+        from .services import _sort_files_for_generation
+        files = _sort_files_for_generation(files)
+
         # 2. Per-file generation
         for file_path in files:
             # Check for cancellation between files
@@ -164,6 +169,45 @@ def run_background_generation(self, generation_id: int):
             generation.completed_at = now()
             generation.save(update_fields=["status", "completed_at"])
             return
+
+        # 2b. Cross-file review phase — only when ≥2 files were produced.
+        if len(accumulated_files) >= 2:
+            from .providers.prompts import build_reviewer_messages
+            from .services import _parse_review_patches
+
+            review_messages = build_reviewer_messages(
+                user_prompt=prompt,
+                all_files=accumulated_files,
+            )
+            review_raw = ""
+
+            async def collect_review():
+                nonlocal review_raw, total_input_tokens, total_output_tokens
+                async for chunk in provider.stream_generate(
+                    review_messages, model=model, max_tokens=file_max_tokens
+                ):
+                    if chunk.get("type") == "text":
+                        review_raw += chunk.get("content", "")
+                    elif chunk.get("type") == "usage":
+                        u = chunk.get("usage", {})
+                        total_input_tokens += u.get("inputTokens", 0)
+                        total_output_tokens += u.get("outputTokens", 0)
+
+            try:
+                run(collect_review())
+            except Exception as exc:
+                logger.warning("Background review phase failed (non-fatal): %s", exc)
+                review_raw = ""
+
+            review_text = _extract_file_content(review_raw) if review_raw else ""
+            patches = _parse_review_patches(review_text, accumulated_files)
+            if patches:
+                logger.info(
+                    "Background review patched %s file(s) for gen %s: %s",
+                    len(patches), generation_id, list(patches.keys()),
+                )
+            for patched_path, new_content in patches.items():
+                accumulated_files[patched_path] = new_content
 
         # 3. Merge and save project
         merged_file_map = {**file_map, **accumulated_files}
