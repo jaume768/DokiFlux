@@ -38,6 +38,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentFiles, setCurrentFiles] = useState<FileMap>({});
   const [generationKey, setGenerationKey] = useState(0);
+  const [restartKey, setRestartKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -217,6 +218,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             setCurrentFiles(status.result_file_map);
             currentFilesRef.current = status.result_file_map;
             setGenerationKey((k) => k + 1);
+            setRestartKey((k) => k + 1);
             autoFixCountRef.current = 0;
           }
           
@@ -424,7 +426,8 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             if (fileContent) {
               phasedFiles[filePath] = fileContent;
               setCurrentFiles((prev) => ({ ...prev, [filePath]: fileContent }));
-              setGenerationKey((k) => k + 1);
+              // NOTE: no mid-stream mount — the WebContainer restart happens
+              // once at the end of the whole generation (see setRestartKey below).
             }
             setGenProgress((prev) => ({
               ...prev,
@@ -526,6 +529,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           currentFilesRef.current = finalFiles;
           setCurrentFiles(finalFiles);
           setGenerationKey((k) => k + 1);
+          setRestartKey((k) => k + 1);
           setGenProgress((prev) => ({ ...prev, phase: "mounting" }));
 
           if (window.innerWidth < 768) {
@@ -576,6 +580,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           setCurrentFiles(finalFiles);
           currentFilesRef.current = finalFiles;
           setGenerationKey((k) => k + 1);
+          setRestartKey((k) => k + 1);
 
           if (window.innerWidth < 768) {
             setMobileView("preview");
@@ -993,6 +998,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           <CodePreview
             files={currentFiles}
             generationKey={generationKey}
+            restartKey={restartKey}
             isIOS={isIOS}
             isMobile={isMobile}
             onBuildError={handleBuildError}

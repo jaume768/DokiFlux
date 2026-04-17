@@ -78,6 +78,7 @@ function computeLineDiff(newContent: string, oldContent: string | undefined): Li
 interface CodePreviewProps {
   files: FileMap;
   generationKey: number;
+  restartKey?: number;
   isIOS?: boolean;
   isMobile?: boolean;
   onBuildError?: (error: string) => void;
@@ -282,7 +283,7 @@ function IterationDiffView({ content, oldContent, isStreaming, codeEndRef }: Ite
   );
 }
 
-export function CodePreview({ files, generationKey, isIOS = false, isMobile = false, onBuildError, onRuntimeError, onRestart, genProgress }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, onBuildError, onRuntimeError, onRestart, genProgress }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
@@ -300,6 +301,7 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
   const MOBILE_MIN_WIDTH = 280;
   const MOBILE_MAX_WIDTH = 768;
   const prevGenKeyRef = useRef<number>(-1);
+  const prevRestartKeyRef = useRef<number>(restartKey);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const reportedErrorRef = useRef<string | null>(null);
@@ -492,13 +494,38 @@ export function CodePreview({ files, generationKey, isIOS = false, isMobile = fa
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
-  // Mount files when generationKey changes
+  // Mount files when generationKey changes (initial load / restore).
+  // When restartKey changes (end of a full generation), do a clean teardown+boot
+  // instead of an in-place mount — this avoids "Unable to create more instances"
+  // errors accumulated during long streams (e.g. thinking models).
   useEffect(() => {
-    if (generationKey !== prevGenKeyRef.current && Object.keys(files).length > 0) {
+    if (Object.keys(files).length === 0) return;
+
+    const restartChanged = restartKey !== prevRestartKeyRef.current;
+    const genChanged = generationKey !== prevGenKeyRef.current;
+
+    if (restartChanged) {
+      prevRestartKeyRef.current = restartKey;
+      prevGenKeyRef.current = generationKey;
+      setIframeLoaded(false);
+      setLoadingProgress(0);
+      if (iframeLoadTimeoutRef.current) {
+        clearTimeout(iframeLoadTimeoutRef.current);
+        iframeLoadTimeoutRef.current = null;
+      }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      restartContainer(files);
+      return;
+    }
+
+    if (genChanged) {
       prevGenKeyRef.current = generationKey;
       mountFiles(files);
     }
-  }, [generationKey, files, mountFiles]);
+  }, [generationKey, restartKey, files, mountFiles, restartContainer]);
 
   // Auto-scroll logs
   useEffect(() => {

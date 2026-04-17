@@ -34,6 +34,11 @@
         - ¿Tienes preferencias de estilo: colores de marca, tono visual, ejemplos de webs que te gusten?
 45- limitar que no puedan hacer más de 2 proyectos a la vez  
 
+arreglar esto cuando se estan generando archivos con modelos thinking:
+
+Booting WebContainer...
+Error: Unable to create more instances
+
 Usar DokiFlux como motor interno + demo para vender una productized service premium:
 “Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.
 
