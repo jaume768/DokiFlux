@@ -32,6 +32,7 @@
         - ¿Qué tipo de negocio es y qué objetivo principal debe cumplir la web: captar clientes, vender, mostrar servicios o reservar citas?
         - ¿Qué secciones quieres incluir: inicio, servicios, sobre nosotros, testimonios, contacto, tienda, blog?
         - ¿Tienes preferencias de estilo: colores de marca, tono visual, ejemplos de webs que te gusten?
+45- limitar que no puedan hacer más de 2 proyectos a la vez  
 
 Usar DokiFlux como motor interno + demo para vender una productized service premium:
 “Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.

@@ -281,18 +281,6 @@ async function bootWebContainer(): Promise<WebContainer> {
 
   wcBootPromise = (async () => {
     try {
-      // SharedArrayBuffer (required by WebContainer) is only available when
-      // crossOriginIsolated is true, which depends on COOP/COEP headers from
-      // the initial page load.  If a client-side navigation brought us here
-      // from a page without those headers the flag will be false.  Force a
-      // hard reload so the browser fetches the page with the right headers.
-      if (typeof window !== "undefined" && !window.crossOriginIsolated) {
-        console.warn("[WebContainer] crossOriginIsolated is false – reloading to apply COOP/COEP headers.");
-        window.location.reload();
-        // Return a never-resolving promise so callers don't continue.
-        return new Promise<WebContainer>(() => {});
-      }
-
       // Proactively clear stale Service Workers from previous sessions
       // to prevent them from serving blank/stale content in the iframe.
       await clearServiceWorkers();
@@ -303,7 +291,7 @@ async function bootWebContainer(): Promise<WebContainer> {
       // WebContainer.boot() failed. Calling boot() again in the same page session
       // will always throw "Unable to create more instances" because WebContainer
       // internally registers the instance even when it throws. Clear stale Service
-      // Workers so the next hard reload succeeds, then surface the original error.
+      // Workers so a manual reload succeeds, then surface the original error.
       console.warn("[WebContainer] Boot failed, clearing SWs…", err);
       await clearServiceWorkers();
       wcBootPromise = null;
@@ -395,8 +383,6 @@ export function useWebContainer(): UseWebContainerReturn {
   const errorBufferRef = useRef<string[]>([]);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDevServerRef = useRef(false);
-  const bootRetryCountRef = useRef(0);
-  const MAX_BOOT_RETRIES = 2;
 
   const clearBuildError = useCallback(() => {
     setLastBuildError(null);
@@ -581,49 +567,7 @@ export function useWebContainer(): UseWebContainerReturn {
         // server-ready event will set status to "ready" and provide URL
       } catch (err) {
         if (!isMountedRef.current) return;
-        const rawMsg = err instanceof Error ? err.message : "Unknown error";
-        const lower = rawMsg.toLowerCase();
-        const isInfraError =
-          lower.includes("more instances") ||
-          lower.includes("dataclone") ||
-          lower.includes("webassembly") ||
-          lower.includes("sharedarraybuffer") ||
-          lower.includes("crossoriginisolated") ||
-          lower.includes("postmessage");
-
-        // Auto-retry infrastructure errors (not code errors)
-        if (isInfraError && bootRetryCountRef.current < MAX_BOOT_RETRIES) {
-          bootRetryCountRef.current += 1;
-          const attempt = bootRetryCountRef.current;
-          addLog(`Infrastructure error detected – auto-retrying (${attempt}/${MAX_BOOT_RETRIES})...`);
-
-          // Teardown current state
-          if (serverProcessRef.current) {
-            try { serverProcessRef.current.kill(); } catch { /* ignore */ }
-            serverProcessRef.current = null;
-          }
-          if (containerRef.current) {
-            try { containerRef.current.teardown(); } catch { /* ignore */ }
-            containerRef.current = null;
-            wcInstance = null;
-            wcBootPromise = null;
-          }
-          isInstalledRef.current = false;
-          isDevServerRef.current = false;
-          setPreviewUrl(null);
-
-          await clearServiceWorkers();
-          await new Promise((r) => setTimeout(r, 1000 * attempt));
-
-          if (isMountedRef.current) {
-            await mountFiles(files);
-          }
-          return;
-        }
-
-        const msg = isInfraError
-          ? "WebContainer failed to start. Please reload the page to try again."
-          : rawMsg;
+        const msg = err instanceof Error ? err.message : "Unknown error";
         setError(msg);
         setStatus("error");
         addLog(`Error: ${msg}`);
