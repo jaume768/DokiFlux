@@ -300,7 +300,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
   const dragStartWidthRef = useRef(375);
   const MOBILE_MIN_WIDTH = 280;
   const MOBILE_MAX_WIDTH = 768;
-  const prevGenKeyRef = useRef<number>(-1);
+  const prevGenKeyRef = useRef<number>(generationKey);
   const prevRestartKeyRef = useRef<number>(restartKey);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
