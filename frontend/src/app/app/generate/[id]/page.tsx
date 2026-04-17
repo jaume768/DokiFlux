@@ -12,7 +12,8 @@ import { SessionStatsBar } from "@/components/TokenUsage";
 import { Message, SessionStats, StreamChunk, GenerationProgress } from "@/types";
 import { parseMultiFileOutput, mergeFiles, serializeFileMap, type FileMap, getFileCount } from "@/lib/parser";
 import { MAX_CHAT_HISTORY } from "@/lib/prompts";
-import { Sparkles, MessageSquare, Monitor, ArrowLeft, Coins, Loader2, Pencil, Check, X, PanelLeftClose, PanelLeftOpen, Menu } from "lucide-react";
+import { Sparkles, MessageSquare, Monitor, ArrowLeft, Coins, Loader2, Pencil, Check, X, PanelLeftClose, PanelLeftOpen, Menu, Rocket } from "lucide-react";
+import { PublishModal } from "@/components/PublishModal";
 import { useIsMobile, useIsIOS } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/button";
 import { ModelSelector } from "@/components/ModelSelector";
@@ -63,6 +64,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const [chatCollapsed, setChatCollapsed] = useState(false);
   const [hasNewPreview, setHasNewPreview] = useState(false);
   const [limitModal, setLimitModal] = useState<{ open: boolean; type: LimitType } | null>(null);
+  const [publishModal, setPublishModal] = useState<{ open: boolean; variant: "auto" | "manual" }>({ open: false, variant: "manual" });
   const [modelLocked, setModelLocked] = useState(false);
   const modelParam = searchParams.get("model");
   const [selectedModel, setSelectedModel] = useState<ModelId>(
@@ -838,6 +840,50 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     }
   }, [backgroundGenId]);
 
+  // Auto-popup: show publish modal ~12s after the first successful generation
+  // if the user is idle (not loading, not iterating, not typing).
+  useEffect(() => {
+    if (isLoadingProject || isLoading) return;
+    if (getFileCount(currentFiles) === 0) return; // no generation yet
+    if (messages.length > 2) return; // already iterated (more than 1 user + 1 assistant)
+
+    const storageKey = `publish_modal_shown_${projectId}`;
+    if (typeof window !== "undefined" && sessionStorage.getItem(storageKey)) return;
+
+    const IDLE_MS = 12000;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const trigger = () => {
+      if (isLoadingRef.current) return;
+      try {
+        sessionStorage.setItem(storageKey, "1");
+      } catch {}
+      setPublishModal({ open: true, variant: "auto" });
+    };
+
+    const schedule = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(trigger, IDLE_MS);
+    };
+
+    const resetOnActivity = () => {
+      if (timer) clearTimeout(timer);
+      schedule();
+    };
+
+    schedule();
+    window.addEventListener("keydown", resetOnActivity);
+    window.addEventListener("input", resetOnActivity, true);
+    window.addEventListener("pointerdown", resetOnActivity);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("keydown", resetOnActivity);
+      window.removeEventListener("input", resetOnActivity, true);
+      window.removeEventListener("pointerdown", resetOnActivity);
+    };
+  }, [isLoading, isLoadingProject, messages.length, currentFiles, projectId]);
+
   if (isLoadingProject) {
     return (
       <div className="h-[100dvh] flex items-center justify-center">
@@ -867,9 +913,19 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary shrink-0" />
+          {/* Mobile: model selector lives on the left */}
+          {isMobile && (
+            <div className="flex md:hidden min-w-0">
+              <ModelSelector
+                value={selectedModel}
+                onChange={setSelectedModel}
+                disabled={isLoading || modelLocked}
+              />
+            </div>
+          )}
+          <Sparkles className="hidden md:flex w-4 h-4 md:w-5 md:h-5 text-primary shrink-0" />
           {isEditingTitle ? (
-            <div className="flex items-center gap-1 flex-1 min-w-0">
+            <div className="hidden md:flex items-center gap-1 flex-1 min-w-0">
               <input
                 type="text"
                 value={editedTitle}
@@ -894,7 +950,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
                 setEditedTitle(projectName);
                 setIsEditingTitle(true);
               }}
-              className="flex items-center gap-1.5 group flex-1 min-w-0"
+              className="hidden md:flex items-center gap-1.5 group flex-1 min-w-0"
             >
               <h1 className="text-sm md:text-lg font-bold truncate">
                 {projectName}
@@ -905,6 +961,19 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         </div>
 
         <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+          {/* Publish CTA — funnel to production services */}
+          <button
+            onClick={() => setPublishModal({ open: true, variant: "manual" })}
+            title="Publicar en internet con dominio propio"
+            className="group relative inline-flex items-center gap-1.5 rounded-full px-2.5 md:px-4 h-8 md:h-9 text-xs md:text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+            style={{
+              background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
+            }}
+          >
+            <Rocket className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span>Publicar</span>
+          </button>
+
           {!isMobile && (
             <Button
               variant="ghost"
@@ -919,11 +988,13 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
               )}
             </Button>
           )}
-          <ModelSelector
-            value={selectedModel}
-            onChange={setSelectedModel}
-            disabled={isLoading || modelLocked}
-          />
+          <div className="hidden md:flex">
+            <ModelSelector
+              value={selectedModel}
+              onChange={setSelectedModel}
+              disabled={isLoading || modelLocked}
+            />
+          </div>
           {balance !== null && (
             <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
               <Coins className="w-3 h-3" />
@@ -1039,6 +1110,15 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           onClose={() => setLimitModal(null)}
         />
       )}
+      <PublishModal
+        open={publishModal.open}
+        variant={publishModal.variant}
+        onClose={() => setPublishModal({ open: false, variant: publishModal.variant })}
+        onContact={() => {
+          // TODO: hook up contact flow (form/email/Calendly) in next iteration
+          setPublishModal({ open: false, variant: publishModal.variant });
+        }}
+      />
     </div>
   );
 }

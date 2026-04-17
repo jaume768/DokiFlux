@@ -1,9 +1,3 @@
-3- Sin Validación del Tamaño del Payload (arreglar, que sea grande pero tampoco inmenso)
-8- Persistencia de proyectos (Al tener el backend con django):
-    - Arquitectura típica:
-       Usuario → Frontend → API Backend → Base de datos
-                              → Object Storage (S3, falta almacenar los proyectos de los usuarios en el s3, ahora es en el backend)
-                              → LLM (OpenAI, Anthropic...)
 9- pricing (falta revisar los pricing y compra de craditos adicionales):
 12- “Si la generación no modifica archivos o falla sin producir avance, no se cobra (o se cobra 0)” (revisar esta estrategia)
 13- Que hacer cuando el usuario quiere iterar sobre un proyecto grande? Limite de los modelos en el output/input? (multi api keys y ir cambiando de uno a otro según el rate limit)
@@ -13,8 +7,6 @@
     - Auth + pagos (por ejemplo Stripe), DB provider popular (por ejemplo Supabase) y logging/errores (por ejemplo Sentry), 
     pero con setup explícito y guardrails. (El objetivo no es “100 integraciones”, es “3 que eviten re‑prompts”).    
     
-19- Incluir selector de modelos de ia gratis?
-22- Cambiar un poco la estetica para no parecer tanto a v0
 23- Añadir templates y poder hacer proyectos "Del staff" como templates con los prompts
 24- Enseñar anuncios si se genera con ia gratis?
 25- Oauth con google y github y envio de mail con Brevo
