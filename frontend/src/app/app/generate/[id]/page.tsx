@@ -856,21 +856,30 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
 
     const IDLE_MS = 12000;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let fired = false;
 
     const trigger = () => {
       if (isLoadingRef.current) return;
+      fired = true;
+      publishAutoDismissedRef.current = true;
       try {
         sessionStorage.setItem(storageKey, "1");
       } catch {}
       setPublishModal({ open: true, variant: "auto" });
+      // Detach listeners to avoid re-triggering on further activity
+      window.removeEventListener("keydown", resetOnActivity);
+      window.removeEventListener("input", resetOnActivity, true);
+      window.removeEventListener("pointerdown", resetOnActivity);
     };
 
     const schedule = () => {
+      if (fired) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(trigger, IDLE_MS);
     };
 
     const resetOnActivity = () => {
+      if (fired) return;
       if (timer) clearTimeout(timer);
       schedule();
     };
