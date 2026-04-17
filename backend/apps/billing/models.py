@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 
@@ -23,6 +25,9 @@ class UserPlan(models.Model):
     stripe_subscription_id = models.CharField(max_length=100, blank=True, default="")
     cancel_at_period_end = models.BooleanField(default=False)
     cancel_at = models.DateTimeField(null=True, blank=True)
+    debt = models.DecimalField(
+        max_digits=10, decimal_places=6, default=Decimal("0")
+    )
 
     class Meta:
         db_table = "user_plans"
@@ -70,6 +75,8 @@ class CreditTransaction(models.Model):
         ("generation", "Generation"),
         ("refund", "Refund"),
         ("expiry", "Expiry"),
+        ("debt", "Debt"),
+        ("debt_repaid", "Debt Repaid"),
     ]
 
     user = models.ForeignKey(

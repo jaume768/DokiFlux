@@ -10,9 +10,12 @@ from apps.billing.plans import PLAN_DEFINITIONS
 from apps.billing.services import get_balance
 from apps.projects.models import Project
 
+from .models import Generation
 from .serializers import EstimateRequestSerializer, GenerateRequestSerializer
 from .services import stream_generation, stream_phased_generation
 from .throttles import check_daily_generate_limit
+
+MAX_CONCURRENT_GENERATIONS = 2
 from .providers.registry import get_model_config, list_models, MODEL_REGISTRY, DEFAULT_MODEL, COST_MARKUP
 
 logger = logging.getLogger(__name__)
@@ -86,6 +89,22 @@ async def generate_view(request):
         return StreamingHttpResponse(
             _sse_error("Project not found"),
             status=404,
+            content_type="text/event-stream",
+        )
+
+    # --- Concurrent generation limit ---
+    active_count = await sync_to_async(
+        lambda: Generation.objects.filter(
+            project__user=user, status__in=["pending", "streaming"]
+        ).count()
+    )()
+    if active_count >= MAX_CONCURRENT_GENERATIONS:
+        return StreamingHttpResponse(
+            _sse_error(
+                f"Ya tienes {MAX_CONCURRENT_GENERATIONS} generaciones en curso. "
+                "Espera a que terminen antes de iniciar otra."
+            ),
+            status=429,
             content_type="text/event-stream",
         )
 

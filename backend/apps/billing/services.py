@@ -15,36 +15,48 @@ from .plans import (
 logger = logging.getLogger(__name__)
 
 
+def _get_debt(user) -> Decimal:
+    plan = getattr(user, "plan", None)
+    if plan is None:
+        try:
+            plan = UserPlan.objects.get(user=user)
+        except UserPlan.DoesNotExist:
+            return Decimal("0")
+    return plan.debt or Decimal("0")
+
+
 def get_balance(user):
-    """Total active credit balance (non-expired grants)."""
+    """
+    Net credit balance: active (non-expired) grants minus outstanding debt.
+    May return a negative Decimal if the user owes credits.
+    """
     result = (
         CreditGrant.objects.filter(
             user=user, remaining__gt=0, expires_at__gt=now()
         ).aggregate(total=Sum("remaining"))
     )
-    return result["total"] or Decimal("0")
+    gross = result["total"] or Decimal("0")
+    return gross - _get_debt(user)
 
 
 def consume_credits(user, amount, description="", generation_id=None):
     """
     Deduct credits using FIFO (oldest-expiring grant first).
-    Uses select_for_update for atomicity.
-    Returns True if sufficient balance, False otherwise.
+    If available balance is insufficient, the remainder is added to the
+    user's plan.debt so the balance goes negative. Always returns True.
     """
     amount = Decimal(str(amount))
+    if amount <= 0:
+        return True
 
     with transaction.atomic():
-        grants = (
+        grants = list(
             CreditGrant.objects.filter(
                 user=user, remaining__gt=0, expires_at__gt=now()
             )
             .select_for_update()
             .order_by("expires_at")
         )
-
-        total_available = sum(g.remaining for g in grants)
-        if total_available < amount:
-            return False
 
         remaining_to_deduct = amount
         for grant in grants:
@@ -64,7 +76,66 @@ def consume_credits(user, amount, description="", generation_id=None):
                 grant=grant,
             )
 
+        # Overdraft: anything left over becomes debt on the user's plan.
+        if remaining_to_deduct > 0:
+            plan = (
+                UserPlan.objects.select_for_update()
+                .filter(user=user)
+                .first()
+            )
+            if plan is None:
+                plan = UserPlan.objects.create(user=user, plan_type="free")
+                plan = (
+                    UserPlan.objects.select_for_update()
+                    .filter(pk=plan.pk)
+                    .first()
+                )
+            plan.debt = (plan.debt or Decimal("0")) + remaining_to_deduct
+            plan.save(update_fields=["debt"])
+
+            CreditTransaction.objects.create(
+                user=user,
+                amount=-remaining_to_deduct,
+                tx_type="debt",
+                description=(description or "") + " [overdraft]",
+                generation_id=generation_id,
+                grant=None,
+            )
+
     return True
+
+
+def apply_to_debt(user, amount):
+    """
+    Apply an incoming credit amount to the user's outstanding debt first.
+    Returns the remaining amount (Decimal) that should still be granted.
+    Must be called inside or outside a transaction safely.
+    """
+    amount = Decimal(str(amount))
+    if amount <= 0:
+        return amount
+
+    with transaction.atomic():
+        plan = (
+            UserPlan.objects.select_for_update()
+            .filter(user=user)
+            .first()
+        )
+        if plan is None or not plan.debt or plan.debt <= 0:
+            return amount
+
+        applied = min(plan.debt, amount)
+        plan.debt -= applied
+        plan.save(update_fields=["debt"])
+
+        CreditTransaction.objects.create(
+            user=user,
+            amount=applied,
+            tx_type="debt_repaid",
+            description=f"Applied {applied} to outstanding debt",
+            grant=None,
+        )
+        return amount - applied
 
 
 def grant_monthly_credits(user):
@@ -78,20 +149,32 @@ def grant_monthly_credits(user):
         plan = UserPlan.objects.create(user=user, plan_type="free")
 
     plan_def = PLAN_DEFINITIONS.get(plan.plan_type, PLAN_DEFINITIONS["free"])
-    credit_amount = plan_def["monthly_credits"]
+    credit_amount = Decimal(str(plan_def["monthly_credits"]))
     logger.info("[credits] Granting %s credits to user=%s (plan=%s)", credit_amount, user.email, plan.plan_type)
+
+    # Repay any outstanding debt first.
+    remaining_amount = apply_to_debt(user, credit_amount)
+    if remaining_amount <= 0:
+        CreditTransaction.objects.create(
+            user=user,
+            amount=credit_amount,
+            tx_type="monthly_grant",
+            description=f"Monthly {plan.plan_type} plan credits (applied entirely to debt)",
+            grant=None,
+        )
+        return None
 
     grant = CreditGrant.objects.create(
         user=user,
-        original_amount=credit_amount,
-        remaining=credit_amount,
+        original_amount=remaining_amount,
+        remaining=remaining_amount,
         source="monthly",
         expires_at=now() + timedelta(days=MONTHLY_GRANT_EXPIRY_DAYS),
     )
 
     CreditTransaction.objects.create(
         user=user,
-        amount=credit_amount,
+        amount=remaining_amount,
         tx_type="monthly_grant",
         description=f"Monthly {plan.plan_type} plan credits",
         grant=grant,

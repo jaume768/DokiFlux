@@ -176,8 +176,8 @@ async def stream_generation(
     """
     # 1. Pre-check credits
     balance = await sync_to_async(get_balance)(user)
-    if balance < MIN_COST_ESTIMATE:
-        yield {"type": "error", "error": "Insufficient credits. Please upgrade your plan or purchase more credits."}
+    if balance <= 0:
+        yield {"type": "error", "error": "Saldo agotado o en negativo. Recarga créditos para continuar."}
         return
 
     # 2. Serialize current project state
@@ -396,8 +396,8 @@ async def stream_phased_generation(
     """
     # 1. Pre-check credits
     balance = await sync_to_async(get_balance)(user)
-    if balance < MIN_COST_ESTIMATE:
-        yield {"type": "error", "error": "Insufficient credits. Please upgrade your plan or purchase more credits."}
+    if balance <= 0:
+        yield {"type": "error", "error": "Saldo agotado o en negativo. Recarga créditos para continuar."}
         return
 
     # 2. Serialize current project state

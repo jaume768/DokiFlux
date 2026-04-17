@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { apiPost, ApiError } from "@/lib/api";
 import { generateProjectTitle } from "@/lib/projectUtils";
@@ -22,6 +22,18 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [selectedModel, setSelectedModel] = useState<ModelId>(DEFAULT_MODEL);
   const [selectedFramework, setSelectedFramework] = useState<FrameworkId>(DEFAULT_FRAMEWORK);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, 120), 300)}px`;
+  }, []);
+
+  useEffect(() => {
+    autoResize();
+  }, [prompt, autoResize]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -96,6 +108,7 @@ export default function HomePage() {
               onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) { (e.currentTarget as HTMLDivElement).style.border = "1px solid rgba(255,255,255,0.09)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; } }}
             >
               <textarea
+                ref={textareaRef}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -103,7 +116,7 @@ export default function HomePage() {
                 disabled={isCreating}
                 rows={4}
                 className="w-full resize-none bg-transparent px-5 md:px-6 py-5 text-base md:text-lg outline-none disabled:cursor-not-allowed disabled:opacity-50 text-white"
-                style={{ color: "rgba(255,255,255,0.9)", caretColor: "#8b5cf6" }}
+                style={{ color: "rgba(255,255,255,0.9)", caretColor: "#8b5cf6", minHeight: "120px", maxHeight: "300px", overflowY: "auto" }}
               />
               <div className="flex items-center gap-2 px-4 pb-4">
                 <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
