@@ -476,6 +476,12 @@ export function useWebContainer(): UseWebContainerReturn {
 
   const mountFiles = useCallback(
     async (files: FileMap) => {
+      console.log("[useWebContainer] mountFiles called", {
+        fileCount: Object.keys(files).length,
+        hasContainer: !!containerRef.current,
+        hasServer: !!serverProcessRef.current,
+        crossOriginIsolated: typeof window !== "undefined" ? window.crossOriginIsolated : "n/a",
+      });
       try {
         setError(null);
 
@@ -484,8 +490,10 @@ export function useWebContainer(): UseWebContainerReturn {
           setStatus("booting");
           setPreviewUrl(null);
           addLog("Booting WebContainer...");
+          console.log("[useWebContainer] calling bootWebContainer");
 
           const instance = await bootWebContainer();
+          console.log("[useWebContainer] bootWebContainer resolved", { instance: !!instance });
           if (!isMountedRef.current) return;
 
           containerRef.current = instance;
@@ -594,6 +602,11 @@ export function useWebContainer(): UseWebContainerReturn {
 
   const restartContainer = useCallback(
     async (files: FileMap) => {
+      console.log("[useWebContainer] restartContainer called", {
+        fileCount: Object.keys(files).length,
+        hasContainer: !!containerRef.current,
+        hasServer: !!serverProcessRef.current,
+      });
       // Kill running server
       if (serverProcessRef.current) {
         try {
@@ -619,12 +632,14 @@ export function useWebContainer(): UseWebContainerReturn {
       setPreviewUrl(null);
       setError(null);
       setLogs([]);
-      setStatus("idle");
-      // Small delay to let the teardown settle
-      await new Promise((r) => setTimeout(r, 400));
-      if (isMountedRef.current) {
-        await mountFiles(files);
-      }
+      // NOTE: we do NOT set status="idle" here anymore. Previously we would
+      // setStatus("idle") → await 400ms → mountFiles. But if the component
+      // happened to unmount/remount during that delay (StrictMode cleanup in
+      // dev, HMR, parent re-render), isMountedRef.current could be false and
+      // mountFiles would be silently skipped — leaving status stuck at "idle"
+      // ("Waiting"). Transitioning straight into mountFiles (which sets
+      // status="booting" itself) avoids that stranded-idle state entirely.
+      await mountFiles(files);
     },
     [mountFiles]
   );

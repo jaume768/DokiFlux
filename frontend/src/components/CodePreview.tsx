@@ -300,8 +300,15 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
   const dragStartWidthRef = useRef(375);
   const MOBILE_MIN_WIDTH = 280;
   const MOBILE_MAX_WIDTH = 768;
-  const prevGenKeyRef = useRef<number>(generationKey);
-  const prevRestartKeyRef = useRef<number>(restartKey);
+  // IMPORTANT: initialise with -1 sentinel, NOT with `generationKey`/`restartKey`.
+  // With `reactCompiler: true` in next.config.ts the compiler auto-memoises
+  // expressions that reference props, and `useRef(propValue)` becomes fragile:
+  // the ref mutation (`ref.current = propValue`) from inside the effect may not
+  // be observed on the next render, so `genChanged`/`restartChanged` always
+  // evaluate to `false` and neither branch executes. Using a constant sentinel
+  // decouples the ref from props and makes the comparison reliable.
+  const prevGenKeyRef = useRef<number>(-1);
+  const prevRestartKeyRef = useRef<number>(-1);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const reportedErrorRef = useRef<string | null>(null);
@@ -499,14 +506,38 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
   // instead of an in-place mount — this avoids "Unable to create more instances"
   // errors accumulated during long streams (e.g. thinking models).
   useEffect(() => {
-    if (Object.keys(files).length === 0) return;
+    const fileCount = Object.keys(files).length;
+    console.log("[CodePreview effect]", {
+      fileCount,
+      generationKey,
+      restartKey,
+      prevGen: prevGenKeyRef.current,
+      prevRestart: prevRestartKeyRef.current,
+    });
+    if (fileCount === 0) return;
 
-    const restartChanged = restartKey !== prevRestartKeyRef.current;
-    const genChanged = generationKey !== prevGenKeyRef.current;
+    // Wait until the parent has explicitly signalled we should act — by
+    // bumping `generationKey` (initial load from backend / end of stream) or
+    // `restartKey` (end of stream). During mid-stream `setCurrentFiles` calls
+    // the parent populates files WITHOUT bumping either key; we must not
+    // react to those updates to avoid mid-stream mounts.
+    if (generationKey === 0 && restartKey === 0) return;
 
-    if (restartChanged) {
-      prevRestartKeyRef.current = restartKey;
-      prevGenKeyRef.current = generationKey;
+    const isFirstAction = prevGenKeyRef.current === -1;
+    const restartChanged = !isFirstAction && restartKey !== prevRestartKeyRef.current;
+    const genChanged = !isFirstAction && generationKey !== prevGenKeyRef.current;
+
+    if (!isFirstAction && !restartChanged && !genChanged) return;
+
+    prevGenKeyRef.current = generationKey;
+    prevRestartKeyRef.current = restartKey;
+
+    // A full restart is required when:
+    //  - This is our first action and the parent signalled end-of-stream (restartKey > 0), OR
+    //  - restartKey advanced after a previous action.
+    const shouldRestart = restartChanged || (isFirstAction && restartKey > 0);
+
+    if (shouldRestart) {
       setIframeLoaded(false);
       setLoadingProgress(0);
       if (iframeLoadTimeoutRef.current) {
@@ -517,14 +548,13 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
         clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = null;
       }
+      console.log("[CodePreview] → restartContainer");
       restartContainer(files);
       return;
     }
 
-    if (genChanged) {
-      prevGenKeyRef.current = generationKey;
-      mountFiles(files);
-    }
+    console.log("[CodePreview] → mountFiles");
+    mountFiles(files);
   }, [generationKey, restartKey, files, mountFiles, restartContainer]);
 
   // Auto-scroll logs
