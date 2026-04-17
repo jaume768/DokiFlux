@@ -854,7 +854,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     const storageKey = `publish_modal_shown_${projectId}`;
     if (typeof window !== "undefined" && sessionStorage.getItem(storageKey)) return;
 
-    const IDLE_MS = 12000;
+    const IDLE_MS = 15000;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let fired = false;
 
