@@ -503,9 +503,12 @@ async def stream_phased_generation(
             return
 
         # 6. Emit plan to frontend
+        #    `action` lets the frontend render a localized label; `label` is kept
+        #    for backward compatibility with older clients.
         tasks = [
             {
                 "file_path": fp,
+                "action": "update" if fp in (file_map or {}) else "create",
                 "label": ("Updating" if fp in (file_map or {}) else "Creating") + f" {fp}",
             }
             for fp in files
@@ -624,30 +627,32 @@ async def stream_phased_generation(
 
     finally:
         cancelled = not completed_normally and not error_occurred
+        explicit_cancel = False
 
-        # Client disconnected mid-stream → hand off to Celery instead of cancelling
+        # Client disconnected mid-stream → hand off to Celery instead of cancelling,
+        # UNLESS the user explicitly cancelled via the API (in which case we fall
+        # through to the billing block so consumed tokens are charged).
         if cancelled and not error_occurred:
             try:
-                # Reload from DB: if the user explicitly cancelled via the API
-                # (cancel_generation_view) before we got here, don't launch a background task.
                 await sync_to_async(generation.refresh_from_db)(fields=["status"])
                 if generation.status == "cancelled":
                     logger.info(
-                        "Generation %s was explicitly cancelled, skipping background task launch",
+                        "Generation %s was explicitly cancelled — billing and skipping background task launch",
                         generation.id,
                     )
+                    explicit_cancel = True
+                else:
+                    generation.status = "pending"
+                    await _save_generation(generation)
+                    from .tasks import run_background_generation  # deferred to avoid circular import
+                    task = run_background_generation.delay(generation.id)
+                    generation.celery_task_id = task.id
+                    await _save_generation(generation)
+                    logger.info(
+                        "Client disconnected — background task launched for generation %s (task %s)",
+                        generation.id, task.id,
+                    )
                     return
-                generation.status = "pending"
-                await _save_generation(generation)
-                from .tasks import run_background_generation  # deferred to avoid circular import
-                task = run_background_generation.delay(generation.id)
-                generation.celery_task_id = task.id
-                await _save_generation(generation)
-                logger.info(
-                    "Client disconnected — background task launched for generation %s (task %s)",
-                    generation.id, task.id,
-                )
-                return
             except Exception as exc:
                 logger.error(
                     "Failed to launch background generation for %s: %s",

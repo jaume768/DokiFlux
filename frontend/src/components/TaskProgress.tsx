@@ -10,6 +10,23 @@ interface TaskProgressProps {
   completedFiles: string[];
 }
 
+// Localized action labels. Kept in Spanish to match the current UI language.
+// TODO: replace with real i18n when multi-language support is introduced.
+const ACTION_LABELS: Record<"create" | "update", string> = {
+  create: "Creando",
+  update: "Actualizando",
+};
+
+function renderTaskLabel(task: { action?: "create" | "update"; file_path: string; label: string }): string {
+  if (task.action) {
+    return `${ACTION_LABELS[task.action]} ${task.file_path}`;
+  }
+  // Fallback for older backend that only sent `label` ("Creating /..." / "Updating /...").
+  return task.label
+    .replace(/^Creating\s+/, "Creando ")
+    .replace(/^Updating\s+/, "Actualizando ");
+}
+
 export function TaskProgress({ thinking, tasks, currentTaskIndex, completedFiles }: TaskProgressProps) {
   const completedSet = new Set(completedFiles);
 
@@ -27,6 +44,7 @@ export function TaskProgress({ thinking, tasks, currentTaskIndex, completedFiles
           const isDone = completedSet.has(task.file_path);
           const isActive = idx === currentTaskIndex && !isDone;
           const isPending = idx > currentTaskIndex && !isDone;
+          const displayLabel = renderTaskLabel(task);
 
           return (
             <div key={task.file_path} className="flex items-center gap-2">
@@ -52,7 +70,7 @@ export function TaskProgress({ thinking, tasks, currentTaskIndex, completedFiles
                       : "text-muted-foreground/60"
                   }`}
                 >
-                  {task.label}
+                  {displayLabel}
                 </span>
               </div>
             </div>

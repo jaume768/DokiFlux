@@ -356,7 +356,17 @@ async def cancel_generation_view(request, generation_id: int):
     if generation.status not in ("pending", "streaming"):
         return JsonResponse({"error": f"Generation is already {generation.status}"}, status=400)
 
-    # Revoke the Celery task if we have its ID
+    # Flip DB status FIRST so that if the worker is still alive it sees the
+    # cancellation at its next between-files checkpoint and exits via its
+    # own `finally` (which handles billing cleanly).
+    from django.utils.timezone import now as _now
+    generation.status = "cancelled"
+    generation.completed_at = _now()
+    await sync_to_async(generation.save)(update_fields=["status", "completed_at"])
+
+    # Revoke the Celery task if we have its ID. SIGTERM may kill the worker
+    # before it reaches its finally block, which is exactly why we persist
+    # token usage to the Generation row after every phase in tasks.py.
     if generation.celery_task_id:
         try:
             from celery.app import app_or_default
@@ -367,13 +377,55 @@ async def cancel_generation_view(request, generation_id: int):
         except Exception as exc:
             logger.warning("Failed to revoke Celery task %s: %s", generation.celery_task_id, exc)
 
-    generation.status = "cancelled"
-    from django.utils.timezone import now
-    generation.completed_at = now()
-    await sync_to_async(generation.save)(update_fields=["status", "completed_at"])
+    # Bill the user for tokens already consumed, using the snapshot the task
+    # persisted on its last phase boundary. Idempotent: if the task's finally
+    # already created a CreditTransaction for this generation, skip.
+    await sync_to_async(_charge_cancelled_generation)(generation, user)
+
+    # Refresh once more so we return the most up-to-date usage snapshot
+    # (the worker may have persisted more tokens between our first save
+    # above and the billing call).
+    await sync_to_async(generation.refresh_from_db)()
 
     logger.info("Generation %s cancelled by user %s", generation_id, user.email)
-    return JsonResponse({"cancelled": True, "generation_id": generation_id})
+    return JsonResponse({
+        "cancelled": True,
+        "generation_id": generation_id,
+        "cost": float(generation.cost or 0),
+        "input_tokens": generation.input_tokens or 0,
+        "output_tokens": generation.output_tokens or 0,
+    })
+
+
+def _charge_cancelled_generation(generation, user):
+    """Deduct credits for the tokens already persisted on the Generation row,
+    unless a transaction for this generation already exists (idempotent)."""
+    from apps.billing.models import CreditTransaction
+    from apps.billing.services import consume_credits
+
+    # Refresh to pick up any updates the worker wrote right before dying.
+    generation.refresh_from_db()
+
+    if generation.is_autofix:
+        return
+    if CreditTransaction.objects.filter(generation_id=generation.id).exists():
+        # Worker already billed (either normal completion or its own cancel path).
+        return
+
+    cost = generation.cost or Decimal("0")
+    if cost <= 0:
+        return
+
+    consume_credits(
+        user=user,
+        amount=cost,
+        description=f"Cancelled gen #{generation.id}: {generation.prompt[:100]}",
+        generation_id=generation.id,
+    )
+    logger.info(
+        "Cancelled generation %s billed %s (%s in / %s out tokens)",
+        generation.id, cost, generation.input_tokens, generation.output_tokens,
+    )
 
 
 def _sse_error(message: str):

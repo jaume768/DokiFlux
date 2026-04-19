@@ -59,6 +59,7 @@ export interface StreamChunk {
 export interface PlanTask {
   file_path: string;
   label: string;
+  action?: "create" | "update";
 }
 
 export type GenerationPhase =

@@ -90,11 +90,27 @@ def run_background_generation(self, generation_id: int):
         finally:
             loop.close()
 
+    # Flags that drive the final billing step in the `finally` block so that
+    # cancellation (user clicked "stop") still charges for tokens actually used.
+    was_cancelled = False
+    completed_normally = False
+
+    def _persist_usage():
+        """Persist the current token counters to DB so cancel_generation_view
+        (or a hard worker kill) can still bill the user for what was already
+        spent. Called after every phase boundary that could be interrupted."""
+        cost_now = calculate_cost(total_input_tokens, total_output_tokens, model)
+        generation.input_tokens = total_input_tokens
+        generation.output_tokens = total_output_tokens
+        generation.cost = cost_now
+        generation.save(update_fields=["input_tokens", "output_tokens", "cost"])
+
     try:
         # Check if already cancelled before starting
         generation.refresh_from_db(fields=["status"])
         if generation.status == "cancelled":
             logger.info("Generation %s was cancelled before task started", generation_id)
+            was_cancelled = True
             return
 
         generation.status = "streaming"
@@ -106,6 +122,7 @@ def run_background_generation(self, generation_id: int):
         plan_usage = plan.get("usage", {})
         total_input_tokens += plan_usage.get("inputTokens", 0)
         total_output_tokens += plan_usage.get("outputTokens", 0)
+        _persist_usage()
 
         files = plan.get("files", [])
 
@@ -114,6 +131,7 @@ def run_background_generation(self, generation_id: int):
             generation.status = "no_changes"
             generation.completed_at = now()
             generation.save(update_fields=["status", "completed_at"])
+            completed_normally = True
             return
 
         # Ensure entry-point files (App.tsx / index.tsx / main.tsx) are generated
@@ -127,6 +145,7 @@ def run_background_generation(self, generation_id: int):
             generation.refresh_from_db(fields=["status"])
             if generation.status == "cancelled":
                 logger.info("Generation %s cancelled mid-run, stopping at file %s", generation_id, file_path)
+                was_cancelled = True
                 return
 
             already_gen_ctx = (
@@ -158,6 +177,10 @@ def run_background_generation(self, generation_id: int):
 
             run(collect_file())
 
+            # Persist updated usage so it is billable even if the worker is
+            # killed before the next checkpoint.
+            _persist_usage()
+
             code_with_marker = _extract_file_content(file_raw)
             if code_with_marker:
                 content_only = _get_file_from_code(code_with_marker, file_path)
@@ -168,6 +191,7 @@ def run_background_generation(self, generation_id: int):
             generation.status = "no_changes"
             generation.completed_at = now()
             generation.save(update_fields=["status", "completed_at"])
+            completed_normally = True
             return
 
         # 2b. Cross-file review phase — only when ≥2 files were produced.
@@ -251,9 +275,47 @@ def run_background_generation(self, generation_id: int):
         )
 
         logger.info("Background generation %s completed (%s files)", generation_id, len(accumulated_files))
+        completed_normally = True
 
     except Exception:
         logger.exception("Background generation %s failed", generation_id)
         generation.status = "failed"
         generation.completed_at = now()
         generation.save(update_fields=["status", "completed_at"])
+
+    finally:
+        # If we exited due to user cancellation (detected via refresh_from_db
+        # check between phases) and actually consumed tokens, bill for them.
+        # The foreground path already handles this in services._finalize_generation,
+        # but the background task used to just `return` without charging.
+        if was_cancelled and not is_autofix:
+            try:
+                generation.refresh_from_db(fields=["status", "cost"])
+                final_cost = calculate_cost(total_input_tokens, total_output_tokens, model)
+                # Update record with final usage/cost for the cancel path.
+                generation.input_tokens = total_input_tokens
+                generation.output_tokens = total_output_tokens
+                generation.cost = final_cost
+                if generation.status != "cancelled":
+                    generation.status = "cancelled"
+                if not generation.completed_at:
+                    generation.completed_at = now()
+                generation.save(update_fields=[
+                    "input_tokens", "output_tokens", "cost", "status", "completed_at",
+                ])
+
+                if final_cost > 0:
+                    consume_credits(
+                        user,
+                        final_cost,
+                        description=f"Cancelled bg gen #{generation.id}: {prompt[:100]}",
+                        generation_id=generation.id,
+                    )
+                    logger.info(
+                        "Background generation %s cancelled — billed %s for %s input / %s output tokens",
+                        generation_id, final_cost, total_input_tokens, total_output_tokens,
+                    )
+            except Exception:
+                logger.exception(
+                    "Failed to bill cancelled background generation %s", generation_id,
+                )

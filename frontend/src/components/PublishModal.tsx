@@ -41,15 +41,15 @@ export function PublishModal({ open, onClose, onContact, variant = "manual" }: P
       : "Nuestro equipo se encarga de todo para que tu web esté online, lista para tus clientes.";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center sm:p-4 overflow-y-auto overscroll-contain">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-border bg-background shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+      <div className="relative z-10 my-auto w-full max-w-lg min-h-full sm:min-h-0 sm:rounded-2xl border border-border bg-background shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200 flex flex-col">
         {/* Close */}
         <button
           onClick={onClose}
@@ -61,71 +61,71 @@ export function PublishModal({ open, onClose, onContact, variant = "manual" }: P
 
         {/* Hero illustration */}
         <div
-          className="relative w-full flex items-center justify-center pt-10 pb-4"
+          className="relative w-full flex items-center justify-center pt-8 pb-3 sm:pt-10 sm:pb-4 shrink-0"
           style={{
             background:
               "radial-gradient(ellipse 80% 60% at 50% 40%, rgba(139,92,246,0.18) 0%, rgba(99,102,241,0.06) 55%, transparent 80%)",
           }}
         >
-          <div className="relative w-56 h-40 md:w-104 md:h-74"> 
+          <div className="relative w-40 h-28 sm:w-56 sm:h-40 md:w-104 md:h-74">
             <Image
               src="/tarjetas-4-pasos/tarjeta-04.png"
               alt="Publicar tu proyecto"
               fill
               priority
-              sizes="376px"
+              sizes="(max-width: 640px) 160px, 376px"
               className="object-contain drop-shadow-[0_10px_30px_rgba(139,92,246,0.35)]"
             />
           </div>
         </div>
 
-        <div className="px-6 md:px-7 pt-4 pb-6 md:pb-7 relative">
+        <div className="px-5 sm:px-6 md:px-7 pt-4 pb-6 md:pb-7 relative flex-1 flex flex-col">
           {/* Copy */}
-          <h2 className="text-2xl font-bold tracking-tight mb-2">{title}</h2>
-          <p className="text-muted-foreground text-sm md:text-base mb-5 leading-relaxed">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-2">{title}</h2>
+          <p className="text-muted-foreground text-sm md:text-base mb-4 sm:mb-5 leading-relaxed">
             {subtitle}
           </p>
 
           {/* Bullets */}
-          <div className="mb-6 space-y-3">
-          <Feature
-            icon={<Globe className="h-4 w-4" />}
-            title="Tu propio dominio"
-            desc="Conectamos tu web a un dominio personalizado (tu-marca.com)."
-          />
-          <Feature
-            icon={<Database className="h-4 w-4" />}
-            title="Base de datos y hosting"
-            desc="Configuramos servidor, base de datos y copias de seguridad."
-          />
-          <Feature
-            icon={<ShieldCheck className="h-4 w-4" />}
-            title="Soporte y mantenimiento"
-            desc="Certificado SSL, seguridad y actualizaciones incluidas."
-          />
-        </div>
+          <div className="mb-5 sm:mb-6 space-y-3">
+            <Feature
+              icon={<Globe className="h-4 w-4" />}
+              title="Tu propio dominio"
+              desc="Conectamos tu web a un dominio personalizado (tu-marca.com)."
+            />
+            <Feature
+              icon={<Database className="h-4 w-4" />}
+              title="Base de datos y hosting"
+              desc="Configuramos servidor, base de datos y copias de seguridad."
+            />
+            <Feature
+              icon={<ShieldCheck className="h-4 w-4" />}
+              title="Soporte y mantenimiento"
+              desc="Certificado SSL, seguridad y actualizaciones incluidas."
+            />
+          </div>
 
-        {/* Trust line */}
-        <p className="text-xs text-muted-foreground mb-5 text-center">
-          Sin compromiso · Presupuesto personalizado en 24h
-        </p>
+          {/* Trust line */}
+          <p className="text-xs text-muted-foreground mb-4 sm:mb-5 text-center">
+            Sin compromiso · Presupuesto personalizado en 24h
+          </p>
 
-        {/* CTAs */}
-        <div className="flex flex-col gap-2">
-          <Button
-            onClick={onContact}
-            className="w-full gap-2 h-11 text-base font-semibold"
-            style={{
-              background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
-            }}
-          >
-            Solicitar presupuesto gratis
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" className="w-full" onClick={onClose}>
-            Ahora no
-          </Button>
-        </div>
+          {/* CTAs */}
+          <div className="flex flex-col gap-2 mt-auto">
+            <Button
+              onClick={onContact}
+              className="w-full gap-2 h-11 text-base font-semibold"
+              style={{
+                background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
+              }}
+            >
+              Solicitar presupuesto gratis
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={onClose}>
+              Ahora no
+            </Button>
+          </div>
         </div>
       </div>
     </div>

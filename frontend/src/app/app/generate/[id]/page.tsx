@@ -17,7 +17,7 @@ import { PublishModal } from "@/components/PublishModal";
 import { useIsMobile, useIsIOS } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/button";
 import { ModelSelector } from "@/components/ModelSelector";
-import { DEFAULT_MODEL, type ModelId } from "@/lib/pricing";
+import { DEFAULT_MODEL, formatCost, type ModelId } from "@/lib/pricing";
 import { useModels } from "@/context/ModelsContext";
 import { LimitReachedModal, type LimitType } from "@/components/LimitReachedModal";
 import { useMobileSidebar } from "@/context/MobileSidebarContext";
@@ -47,6 +47,10 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const codeRef = useRef("");
   const abortRef = useRef<AbortController | null>(null);
   const streamingGenIdRef = useRef<number | null>(null);
+  // When the user cancels a streaming generation we call /cancel/ first and
+  // stash the cost it charged here so the AbortError handler below can surface
+  // it in the "Generación cancelada" message.
+  const pendingCancelCostRef = useRef<{ cost: number; input: number; output: number } | null>(null);
   const currentFilesRef = useRef<FileMap>({});
   const messagesRef = useRef<Message[]>([]);
   const autoFixCountRef = useRef(0);
@@ -262,9 +266,22 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             {
               id: crypto.randomUUID(),
               role: "assistant" as const,
-              content: `Generación ${status.status === "failed" ? "fallida" : "cancelada"}.`,
+              content:
+                status.status === "failed"
+                  ? "Generación fallida."
+                  : status.cost > 0
+                  ? `Generación cancelada. Se han cobrado ${formatCost(status.cost)} por los tokens consumidos hasta el momento.`
+                  : "Generación cancelada.",
               timestamp: Date.now(),
               type: "error" as const,
+              usage:
+                status.cost > 0
+                  ? {
+                      inputTokens: status.input_tokens,
+                      outputTokens: status.output_tokens,
+                      cost: status.cost,
+                    }
+                  : undefined,
             },
           ]);
         }
@@ -323,6 +340,9 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
 
       const chatHistory = buildCompressedPayload();
       const streamingMsgId = crypto.randomUUID();
+      // Hoisted out of the try block so the AbortError catch can read whatever
+      // usage info the stream delivered before cancellation.
+      let receivedUsage: { inputTokens: number; outputTokens: number; cost: number } | null = null;
 
       try {
         const res = await fetch(`${API_BASE}/generate/`, {
@@ -354,7 +374,6 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         let fullCode = "";
         let chatText = "";
         let buffer = "";
-        let receivedUsage: { inputTokens: number; outputTokens: number; cost: number } | null = null;
         let streamingGenerationId: number | null = null;
         let hasCode = false;
         let hasChat = false;
@@ -671,16 +690,71 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
+          const cancelMsgId = crypto.randomUUID();
+          const stashed = pendingCancelCostRef.current;
+          pendingCancelCostRef.current = null;
+
+          // Seed with whatever we already know (cancel API response may still
+          // report 0 if the backend hadn't finalized yet).
+          const initialCost = stashed?.cost ?? receivedUsage?.cost ?? 0;
+          const initialInput = stashed?.input ?? receivedUsage?.inputTokens ?? 0;
+          const initialOutput = stashed?.output ?? receivedUsage?.outputTokens ?? 0;
+
           setMessages((prev) => [
             ...prev.filter((m) => m.id !== streamingMsgId),
             {
-              id: crypto.randomUUID(),
+              id: cancelMsgId,
               role: "assistant" as const,
-              content: "Generación cancelada.",
+              content:
+                initialCost > 0
+                  ? `Generación cancelada. Se han cobrado ${formatCost(initialCost)} por los tokens consumidos hasta el momento.`
+                  : "Generación cancelada.",
               timestamp: Date.now(),
               type: "error" as const,
+              usage:
+                initialCost > 0
+                  ? { inputTokens: initialInput, outputTokens: initialOutput, cost: initialCost }
+                  : undefined,
             },
           ]);
+
+          // Poll the generation record briefly — the backend's finally runs
+          // asynchronously after we abort, and the cost persisted there is
+          // the authoritative amount charged. Update the message once it
+          // shows up.
+          const genId = streamingGenIdRef.current;
+          if (genId) {
+            (async () => {
+              for (let attempt = 0; attempt < 5; attempt++) {
+                await new Promise((r) => setTimeout(r, 600));
+                try {
+                  const s = await getGenerationStatus(genId);
+                  if (s.status === "streaming" || s.status === "pending") continue;
+                  if (s.cost && s.cost > initialCost) {
+                    setMessages((prev) =>
+                      prev.map((m) =>
+                        m.id === cancelMsgId
+                          ? {
+                              ...m,
+                              content: `Generación cancelada. Se han cobrado ${formatCost(s.cost)} por los tokens consumidos hasta el momento.`,
+                              usage: {
+                                inputTokens: s.input_tokens,
+                                outputTokens: s.output_tokens,
+                                cost: s.cost,
+                              },
+                            }
+                          : m
+                      )
+                    );
+                    refreshBalance();
+                  }
+                  break;
+                } catch {
+                  // keep trying
+                }
+              }
+            })();
+          }
         } else {
           setMessages((prev) => [
             ...prev.filter((m) => m.id !== streamingMsgId),
@@ -809,38 +883,61 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
 
   const handleCancel = useCallback(async () => {
     if (backgroundGenId) {
+      let cancelResult: { cost: number; input_tokens: number; output_tokens: number } | null = null;
       try {
-        await cancelGeneration(backgroundGenId);
+        cancelResult = await cancelGeneration(backgroundGenId);
       } catch (err) {
         console.error("Failed to cancel background generation:", err);
       }
       setBackgroundGenId(null);
       setIsLoading(false);
       setGenProgress({ phase: null, filesDetected: 0, charsReceived: 0, streamingCode: "" });
+
+      const cost = cancelResult?.cost ?? 0;
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           role: "assistant" as const,
-          content: "Generación cancelada.",
+          content:
+            cost > 0
+              ? `Generación cancelada. Se han cobrado ${formatCost(cost)} por los tokens consumidos hasta el momento.`
+              : "Generación cancelada.",
           timestamp: Date.now(),
           type: "error" as const,
+          usage:
+            cost > 0 && cancelResult
+              ? {
+                  inputTokens: cancelResult.input_tokens,
+                  outputTokens: cancelResult.output_tokens,
+                  cost,
+                }
+              : undefined,
         },
       ]);
+      if (cost > 0) refreshBalance();
     } else {
       // Pre-cancel on the backend so it won't launch a background task when
-      // it detects the client disconnect in the finally block.
+      // it detects the client disconnect in the finally block. Stash the
+      // billed cost so the AbortError handler can surface it.
       const genId = streamingGenIdRef.current;
       if (genId) {
         try {
-          await cancelGeneration(genId);
+          const res = await cancelGeneration(genId);
+          if (res.cost > 0) {
+            pendingCancelCostRef.current = {
+              cost: res.cost,
+              input: res.input_tokens,
+              output: res.output_tokens,
+            };
+          }
         } catch (err) {
           console.error("Failed to pre-cancel streaming generation:", err);
         }
       }
       abortRef.current?.abort();
     }
-  }, [backgroundGenId]);
+  }, [backgroundGenId, refreshBalance]);
 
   // Auto-popup: show publish modal ~12s after the preview is ready,
   // if the user is idle (not loading, not iterating, not typing).
@@ -854,7 +951,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
     const storageKey = `publish_modal_shown_${projectId}`;
     if (typeof window !== "undefined" && sessionStorage.getItem(storageKey)) return;
 
-    const IDLE_MS = 15000;
+    const IDLE_MS = 35000;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let fired = false;
 
