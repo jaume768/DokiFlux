@@ -695,10 +695,14 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           pendingCancelCostRef.current = null;
 
           // Seed with whatever we already know (cancel API response may still
-          // report 0 if the backend hadn't finalized yet).
-          const initialCost = stashed?.cost ?? receivedUsage?.cost ?? 0;
-          const initialInput = stashed?.input ?? receivedUsage?.inputTokens ?? 0;
-          const initialOutput = stashed?.output ?? receivedUsage?.outputTokens ?? 0;
+          // report 0 if the backend hadn't finalized yet). `receivedUsage`
+          // gets narrowed to `null` by TS's control-flow analysis inside the
+          // catch block (it can't see the assignment that happens inside the
+          // try), so we re-widen via an explicit alias.
+          const ru = receivedUsage as { inputTokens: number; outputTokens: number; cost: number } | null;
+          const initialCost = stashed?.cost ?? ru?.cost ?? 0;
+          const initialInput = stashed?.input ?? ru?.inputTokens ?? 0;
+          const initialOutput = stashed?.output ?? ru?.outputTokens ?? 0;
 
           setMessages((prev) => [
             ...prev.filter((m) => m.id !== streamingMsgId),
