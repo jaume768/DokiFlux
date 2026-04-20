@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { X, Send, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { apiPost } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 
 interface ContactModalProps {
   open: boolean;
   onClose: () => void;
   user: { email: string; full_name?: string } | null;
-  project?: { id: number; name?: string; description?: string } | null;
+  project?: { id: number; name?: string } | null;
 }
 
 export function ContactModal({ open, onClose, user, project }: ContactModalProps) {
@@ -27,14 +27,21 @@ export function ContactModal({ open, onClose, user, project }: ContactModalProps
     setName(user?.full_name || "");
     setEmail(user?.email || "");
     setPhone("");
-    setMessage(
-      project
-        ? `Quiero llevar a producción mi proyecto "${project.name ?? ""}".\n\n` +
-          `Descripción original:\n${project.description ?? ""}`
-        : ""
-    );
     setSent(false);
     setError("");
+
+    // Fetch fresh project name — the AI title task may have completed after page load
+    if (project?.id) {
+      apiGet<{ name: string }>(`/projects/${project.id}/`)
+        .then((p) => {
+          setMessage(`Quiero llevar a producción mi proyecto "${p.name || project.name || ""}".`);
+        })
+        .catch(() => {
+          setMessage(project.name ? `Quiero llevar a producción mi proyecto "${project.name}".` : "");
+        });
+    } else {
+      setMessage("");
+    }
   }, [open, user, project]);
 
   useEffect(() => {
@@ -148,7 +155,7 @@ export function ContactModal({ open, onClose, user, project }: ContactModalProps
                   />
                 </Field>
 
-                <Field label="Sobre tu proyecto">
+                <Field label="¿Cuéntanos más?">
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}

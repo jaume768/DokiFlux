@@ -1252,7 +1252,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         open={contactModalOpen}
         onClose={() => setContactModalOpen(false)}
         user={user ? { email: user.email, full_name: user.full_name } : null}
-        project={{ id: projectId, name: projectName, description: projectDescription }}
+        project={{ id: projectId, name: projectName }}
       />
     </div>
   );
