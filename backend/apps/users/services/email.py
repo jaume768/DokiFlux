@@ -73,6 +73,41 @@ class EmailService:
             ),
         )
 
+    def send_contact_request(self, contact):
+        """Notify the sales inbox of a new 'take project to production' lead."""
+        to_email = getattr(settings, "CONTACT_EMAIL_TO", "") or settings.BREVO_SENDER_EMAIL
+        if not to_email:
+            logger.warning("CONTACT_EMAIL_TO not set — contact request %s not emailed", contact.id)
+            return False
+
+        phone_line = f"<p><b>Teléfono:</b> {contact.phone}</p>" if contact.phone else ""
+        project_line = (
+            f"<p><b>Proyecto:</b> {contact.project_name} (id={contact.project_id})</p>"
+            if contact.project_name or contact.project_id
+            else ""
+        )
+        message_html = (contact.message or "").replace("\n", "<br>")
+
+        self._send_email(
+            to_email=to_email,
+            to_name="DokiFlux Ventas",
+            subject=f"[DokiFlux] Nueva solicitud de presupuesto — {contact.name}",
+            html_content=(
+                f"<h2>Nueva solicitud de presupuesto</h2>"
+                f"<p><b>Nombre:</b> {contact.name}</p>"
+                f"<p><b>Email:</b> <a href='mailto:{contact.email}'>{contact.email}</a></p>"
+                f"{phone_line}"
+                f"{project_line}"
+                f"<p><b>Mensaje del usuario:</b></p>"
+                f"<blockquote style='border-left:3px solid #8b5cf6;padding:8px 12px;color:#333;'>"
+                f"{message_html or '<i>(sin mensaje)</i>'}"
+                f"</blockquote>"
+                f"<hr><p style='color:#888;font-size:12px;'>Solicitud #{contact.id} — "
+                f"revisa el admin de Django para gestionarla.</p>"
+            ),
+        )
+        return True
+
     def _send_email(self, to_email, to_name, subject, html_content):
         """Send an email using the Brevo API."""
         client = self._get_client()

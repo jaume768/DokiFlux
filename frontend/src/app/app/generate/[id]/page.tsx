@@ -14,6 +14,7 @@ import { parseMultiFileOutput, mergeFiles, serializeFileMap, type FileMap, getFi
 import { MAX_CHAT_HISTORY } from "@/lib/prompts";
 import { Sparkles, MessageSquare, Monitor, ArrowLeft, Coins, Loader2, Pencil, Check, X, PanelLeftClose, PanelLeftOpen, Menu, Rocket } from "lucide-react";
 import { PublishModal } from "@/components/PublishModal";
+import { ContactModal } from "@/components/ContactModal";
 import { useIsMobile, useIsIOS } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/button";
 import { ModelSelector } from "@/components/ModelSelector";
@@ -30,7 +31,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const projectId = parseInt(id, 10);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { balance, refreshBalance, planType } = useAuth();
+  const { balance, refreshBalance, planType, user } = useAuth();
   const { isValidModelId, defaultModel } = useModels();
 
   const [projectName, setProjectName] = useState("");
@@ -69,6 +70,8 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const [hasNewPreview, setHasNewPreview] = useState(false);
   const [limitModal, setLimitModal] = useState<{ open: boolean; type: LimitType } | null>(null);
   const [publishModal, setPublishModal] = useState<{ open: boolean; variant: "auto" | "manual" }>({ open: false, variant: "manual" });
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [projectDescription, setProjectDescription] = useState("");
   const [previewReady, setPreviewReady] = useState(false);
   const publishAutoDismissedRef = useRef(false);
   const modelParam = searchParams.get("model");
@@ -120,6 +123,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         const project = await apiGet<ProjectDetail>(`/projects/${projectId}/`);
         if (cancelled) return;
         setProjectName(project.name);
+        setProjectDescription(project.description || "");
         if (project.file_map && Object.keys(project.file_map).length > 0) {
           setCurrentFiles(project.file_map);
           currentFilesRef.current = project.file_map;
@@ -1240,9 +1244,15 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           try {
             sessionStorage.setItem(`publish_modal_shown_${projectId}`, "1");
           } catch {}
-          // TODO: hook up contact flow (form/email/Calendly) in next iteration
           setPublishModal({ open: false, variant: publishModal.variant });
+          setContactModalOpen(true);
         }}
+      />
+      <ContactModal
+        open={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+        user={user ? { email: user.email, full_name: user.full_name } : null}
+        project={{ id: projectId, name: projectName, description: projectDescription }}
       />
     </div>
   );

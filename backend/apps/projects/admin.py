@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ChatMessage, Project
+from .models import ChatMessage, ContactRequest, Project
 
 
 @admin.register(Project)
@@ -19,3 +19,13 @@ class ChatMessageAdmin(admin.ModelAdmin):
     search_fields = ["content"]
     readonly_fields = ["created_at"]
     raw_id_fields = ["project"]
+
+
+@admin.register(ContactRequest)
+class ContactRequestAdmin(admin.ModelAdmin):
+    list_display = ["id", "name", "email", "project_name", "status", "email_sent", "created_at"]
+    list_filter = ["status", "email_sent", "created_at"]
+    search_fields = ["name", "email", "project_name", "message"]
+    readonly_fields = ["created_at"]
+    raw_id_fields = ["user", "project"]
+    list_editable = ["status"]

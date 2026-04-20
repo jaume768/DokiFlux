@@ -5,10 +5,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.generation.models import Generation
-from .models import ChatMessage, Project
+from .models import ChatMessage, ContactRequest, Project
 from .permissions import IsProjectOwner
 from .serializers import (
     ChatMessageSerializer,
+    ContactRequestSerializer,
     ProjectCreateSerializer,
     ProjectDetailSerializer,
     ProjectListSerializer,
@@ -152,3 +153,56 @@ class ProjectRestoreView(APIView):
         project.save(update_fields=["file_map", "updated_at"])
 
         return Response({"file_map": result_file_map}, status=status.HTTP_200_OK)
+
+
+class ContactRequestView(APIView):
+    """POST /api/contact/  → create a lead + send email to sales."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        user = request.user
+
+        # Idempotency: ignore a second submit from the same user within 60s.
+        recent = ContactRequest.objects.filter(
+            user=user,
+            created_at__gte=timezone.now() - timedelta(seconds=60),
+        ).first()
+        if recent:
+            return Response(
+                ContactRequestSerializer(recent).data, status=status.HTTP_200_OK
+            )
+
+        # Validate ownership of project if sent
+        project_id = request.data.get("project")
+        if project_id:
+            if not Project.objects.filter(id=project_id, user=user).exists():
+                return Response(
+                    {"error": "Proyecto no encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        serializer = ContactRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        contact = serializer.save(user=user)
+
+        try:
+            from apps.users.services.email import email_service
+
+            sent = email_service.send_contact_request(contact)
+            if sent:
+                contact.email_sent = True
+                contact.save(update_fields=["email_sent"])
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).exception(
+                "Failed to send contact email for request %s", contact.id
+            )
+
+        return Response(
+            ContactRequestSerializer(contact).data, status=status.HTTP_201_CREATED
+        )

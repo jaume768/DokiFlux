@@ -2,7 +2,7 @@ import json
 
 from rest_framework import serializers
 
-from .models import ChatMessage, Project
+from .models import ChatMessage, ContactRequest, Project
 
 
 class ProjectListSerializer(serializers.ModelSerializer):
@@ -96,3 +96,28 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
+
+
+class ContactRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactRequest
+        fields = [
+            "id",
+            "name",
+            "email",
+            "phone",
+            "project",
+            "project_name",
+            "message",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def validate_name(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("El nombre es obligatorio.")
+        return value
+
+    def validate_message(self, value):
+        return (value or "").strip()

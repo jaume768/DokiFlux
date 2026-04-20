@@ -186,6 +186,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 BREVO_API_KEY = config("BREVO_API_KEY", default="")
 BREVO_SENDER_EMAIL = config("BREVO_SENDER_EMAIL", default="noreply@dokiflux.com")
 BREVO_SENDER_NAME = config("BREVO_SENDER_NAME", default="Dokiflux")
+CONTACT_EMAIL_TO = config("CONTACT_EMAIL_TO", default="")
 
 # --- Google OAuth ---
 
