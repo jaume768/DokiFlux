@@ -203,6 +203,7 @@ FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
 STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="")
 STRIPE_PREMIUM_PRICE_ID = config("STRIPE_PREMIUM_PRICE_ID", default="")
+STRIPE_TOPUP_MIN_EUR = config("STRIPE_TOPUP_MIN_EUR", default=5, cast=int)
 
 # --- AI Provider API Keys ---
 # Single key (backward compat)

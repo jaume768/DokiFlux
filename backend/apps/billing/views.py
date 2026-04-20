@@ -16,7 +16,7 @@ from .serializers import (
     CreditTransactionSerializer,
     PlanDefinitionSerializer,
 )
-from .services import downgrade_to_free, get_balance, renew_monthly_credits, set_subscription_cancellation, upgrade_to_premium
+from .services import add_topup_credits, downgrade_to_free, get_balance, renew_monthly_credits, set_subscription_cancellation, upgrade_to_premium
 
 User = get_user_model()
 
@@ -126,6 +126,88 @@ class CreateCheckoutSessionView(APIView):
                 metadata={"user_id": str(user.id)},
                 subscription_data={"metadata": {"user_id": str(user.id)}},
                 allow_promotion_codes=True,
+            )
+            return Response({"checkout_url": session.url})
+        except stripe.StripeError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class CreateTopupSessionView(APIView):
+    """
+    POST /api/billing/create-topup-session/
+    Body: { amount_eur: number } (min 5)
+    Creates a Stripe Checkout session with a dynamic price to buy credits.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if not settings.STRIPE_SECRET_KEY:
+            return Response(
+                {"error": "Stripe not configured."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        min_eur = int(getattr(settings, "STRIPE_TOPUP_MIN_EUR", 5) or 5)
+        try:
+            amount_eur = int(float(request.data.get("amount_eur", 0)))
+        except (TypeError, ValueError):
+            return Response({"error": "amount_eur must be a number."}, status=status.HTTP_400_BAD_REQUEST)
+        if amount_eur < min_eur:
+            return Response(
+                {"error": f"El importe mínimo es {min_eur} €."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if amount_eur > 500:
+            return Response(
+                {"error": "El importe máximo es 500 €."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        user = request.user
+        plan = getattr(user, "plan", None)
+        frontend_url = settings.FRONTEND_URL
+
+        try:
+            customer_id = plan.stripe_customer_id if plan else ""
+            if not customer_id:
+                customer = stripe.Customer.create(
+                    email=user.email,
+                    metadata={"user_id": str(user.id)},
+                )
+                customer_id = customer.id
+                if plan:
+                    plan.stripe_customer_id = customer_id
+                    plan.save(update_fields=["stripe_customer_id"])
+
+            session = stripe.checkout.Session.create(
+                customer=customer_id,
+                payment_method_types=["card"],
+                line_items=[
+                    {
+                        "price_data": {
+                            "currency": "eur",
+                            "unit_amount": amount_eur * 100,
+                            "product_data": {
+                                "name": "Créditos DokiFlux",
+                                "description": f"Recarga de {amount_eur} € en saldo para generaciones con IA.",
+                            },
+                        },
+                        "quantity": 1,
+                    }
+                ],
+                mode="payment",
+                success_url=f"{frontend_url}/app/billing?topup=success&session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{frontend_url}/app/billing?topup=cancelled",
+                metadata={
+                    "user_id": str(user.id),
+                    "kind": "topup",
+                    "amount_eur": str(amount_eur),
+                },
             )
             return Response({"checkout_url": session.url})
         except stripe.StripeError as e:
@@ -296,6 +378,19 @@ class StripeWebhookView(APIView):
             user = self._get_user_from_customer(customer_id)
         if not user:
             logger.error("[webhook] checkout.session.completed — could not find user. metadata=%s customer=%s", metadata, session.customer)
+            return
+
+        # Top-up (one-off payment) branch
+        if metadata.get("kind") == "topup":
+            try:
+                amount_eur = int(metadata.get("amount_eur") or 0)
+            except (TypeError, ValueError):
+                amount_eur = 0
+            if amount_eur <= 0 and session.amount_total:
+                amount_eur = int(session.amount_total) // 100
+            logger.info("[webhook] checkout.session.completed (topup) — user=%s amount_eur=%s session=%s",
+                        user.email, amount_eur, session.id)
+            add_topup_credits(user, amount_eur, stripe_session_id=session.id)
             return
 
         customer_id = session.customer or ""

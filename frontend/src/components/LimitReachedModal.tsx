@@ -74,13 +74,22 @@ export function LimitReachedModal({ type, onClose }: LimitReachedModalProps) {
         {/* CTAs */}
         <div className="flex flex-col gap-2">
           <Link
-            href="/pricing"
+            href={isCredits ? "/pricing" : "/app/billing"}
             className={buttonVariants({ className: "w-full gap-2" })}
             onClick={onClose}
           >
-            Ver planes
+            {isCredits ? "Ver planes" : "Añadir fondos"}
             <ArrowRight className="h-4 w-4" />
           </Link>
+          {isCredits && (
+            <Link
+              href="/app/billing"
+              className="text-center text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+              onClick={onClose}
+            >
+              o añade fondos puntuales
+            </Link>
+          )}
           <Button variant="ghost" className="w-full" onClick={onClose}>
             Cerrar
           </Button>

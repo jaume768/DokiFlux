@@ -138,6 +138,60 @@ def apply_to_debt(user, amount):
         return amount - applied
 
 
+def add_topup_credits(user, amount, stripe_session_id: str = ""):
+    """
+    Credit the user with a one-off top-up purchase.
+    - Pays outstanding debt first (FIFO against plan.debt).
+    - Remainder becomes a CreditGrant with source="purchase" and long expiry.
+    - Idempotent by stripe_session_id: if a transaction already references this
+      session_id, do nothing.
+    """
+    amount = Decimal(str(amount))
+    if amount <= 0:
+        return None
+
+    if stripe_session_id:
+        exists = CreditTransaction.objects.filter(
+            user=user,
+            tx_type="purchase",
+            description__icontains=stripe_session_id,
+        ).exists()
+        if exists:
+            logger.info("[topup] session=%s already processed for user=%s", stripe_session_id, user.email)
+            return None
+
+    # Apply to debt first
+    remaining_amount = apply_to_debt(user, amount)
+    if remaining_amount <= 0:
+        CreditTransaction.objects.create(
+            user=user,
+            amount=amount,
+            tx_type="purchase",
+            description=f"Top-up fully applied to debt [stripe:{stripe_session_id}]",
+            grant=None,
+        )
+        logger.info("[topup] user=%s amount=%s entirely applied to debt", user.email, amount)
+        return None
+
+    # Grant remainder with 1-year expiry
+    grant = CreditGrant.objects.create(
+        user=user,
+        original_amount=remaining_amount,
+        remaining=remaining_amount,
+        source="purchase",
+        expires_at=now() + timedelta(days=365),
+    )
+    CreditTransaction.objects.create(
+        user=user,
+        amount=remaining_amount,
+        tx_type="purchase",
+        description=f"Top-up {amount} [stripe:{stripe_session_id}]",
+        grant=grant,
+    )
+    logger.info("[topup] granted %s to user=%s (session=%s)", remaining_amount, user.email, stripe_session_id)
+    return grant
+
+
 def grant_monthly_credits(user):
     """
     Grant monthly credits based on the user's plan.

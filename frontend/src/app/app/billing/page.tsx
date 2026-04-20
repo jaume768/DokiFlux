@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { apiPost } from "@/lib/api";
 import {
@@ -11,15 +12,62 @@ import {
   Loader2,
   ArrowLeft,
   Coins,
+  CheckCircle2,
+  XCircle,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+const PRESET_AMOUNTS = [5, 10, 25, 50];
+const MIN_TOPUP = 5;
+
 export default function BillingPage() {
-  const { balance, planType } = useAuth();
+  const { balance, planType, refreshBalance } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isPortalLoading, setIsPortalLoading] = useState(false);
+  const [isToppingUp, setIsToppingUp] = useState(false);
+  const [topupAmount, setTopupAmount] = useState<number>(10);
+  const [topupBanner, setTopupBanner] = useState<"success" | "cancelled" | null>(null);
   const [error, setError] = useState("");
+
+  // Handle ?topup=success|cancelled redirect from Stripe
+  useEffect(() => {
+    const topup = searchParams.get("topup");
+    if (topup === "success" || topup === "cancelled") {
+      setTopupBanner(topup);
+      if (topup === "success") {
+        // Refresh balance a few times — webhook may run slightly after redirect
+        refreshBalance();
+        const timers = [1500, 4000, 8000].map((ms) =>
+          setTimeout(() => refreshBalance(), ms)
+        );
+        return () => timers.forEach(clearTimeout);
+      }
+    }
+  }, [searchParams, refreshBalance]);
+
+  async function handleTopup() {
+    if (topupAmount < MIN_TOPUP) {
+      setError(`El importe mínimo es ${MIN_TOPUP} €.`);
+      return;
+    }
+    setIsToppingUp(true);
+    setError("");
+    try {
+      const data = await apiPost<{ checkout_url: string }>(
+        "/billing/create-topup-session/",
+        { amount_eur: topupAmount }
+      );
+      window.location.href = data.checkout_url;
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error al crear la sesión de pago.";
+      setError(msg);
+      setIsToppingUp(false);
+    }
+  }
 
   const isPremium = planType === "premium";
 
@@ -80,6 +128,30 @@ export default function BillingPage() {
           <div className="mb-6 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
         )}
 
+        {/* Top-up banners (from Stripe redirect) */}
+        {topupBanner === "success" && (
+          <div className="mb-5 flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+            <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold">¡Recarga completada!</p>
+              <p className="text-emerald-200/80 text-xs mt-0.5">
+                Tu saldo se actualizará en unos segundos. Si no lo ves, recarga la página.
+              </p>
+            </div>
+            <button onClick={() => { setTopupBanner(null); router.replace("/app/billing"); }} className="text-emerald-300/70 hover:text-emerald-300 text-xs">Cerrar</button>
+          </div>
+        )}
+        {topupBanner === "cancelled" && (
+          <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            <XCircle className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold">Recarga cancelada</p>
+              <p className="text-amber-200/70 text-xs mt-0.5">No se ha cobrado nada. Puedes intentarlo de nuevo cuando quieras.</p>
+            </div>
+            <button onClick={() => { setTopupBanner(null); router.replace("/app/billing"); }} className="text-amber-200/60 hover:text-amber-200 text-xs">Cerrar</button>
+          </div>
+        )}
+
         {/* Current plan */}
         <div className="mb-5 rounded-2xl p-5" style={cardStyle}>
           <div className="flex items-center justify-between mb-3">
@@ -99,6 +171,63 @@ export default function BillingPage() {
             <span className="text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>Saldo disponible:</span>
             <span className="ml-auto text-sm font-semibold text-white">${balance ?? "0.000000"}</span>
           </div>
+        </div>
+
+        {/* Añadir fondos (top-up) */}
+        <div className="mb-5 rounded-2xl p-5" style={cardStyle}>
+          <div className="flex items-center gap-2 mb-1">
+            <Plus className="h-5 w-5" style={{ color: "#a78bfa" }} />
+            <h3 className="text-lg font-bold text-white">Añadir fondos</h3>
+          </div>
+          <p className="text-sm mb-4" style={{ color: "rgba(255,255,255,0.55)" }}>
+            Recarga tu saldo con la cantidad que quieras. Se usa automáticamente al generar.
+            Mínimo {MIN_TOPUP} €.
+          </p>
+
+          <div className="flex flex-wrap gap-2 mb-3">
+            {PRESET_AMOUNTS.map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setTopupAmount(n)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                  topupAmount === n
+                    ? "border-primary/60 bg-primary/15 text-white"
+                    : "border-white/10 bg-white/5 text-white/70 hover:text-white hover:border-white/25"
+                }`}
+              >
+                {n} €
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3 mb-4">
+            <label className="text-sm shrink-0" style={{ color: "rgba(255,255,255,0.65)" }}>Cantidad:</label>
+            <div className="relative flex-1 max-w-[160px]">
+              <input
+                type="number"
+                min={MIN_TOPUP}
+                max={500}
+                step={1}
+                value={topupAmount}
+                onChange={(e) => setTopupAmount(Math.max(MIN_TOPUP, Math.min(500, Number(e.target.value) || 0)))}
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-primary/60"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/50">€</span>
+            </div>
+          </div>
+
+          <Button
+            onClick={handleTopup}
+            disabled={isToppingUp || topupAmount < MIN_TOPUP}
+            className="w-full sm:w-auto gap-2 h-11 text-base font-semibold"
+            style={{
+              background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
+            }}
+          >
+            {isToppingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+            Comprar {topupAmount} € de saldo
+          </Button>
         </div>
 
         {/* Plans comparison */}
