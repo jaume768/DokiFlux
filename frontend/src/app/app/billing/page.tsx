@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { apiPost } from "@/lib/api";
@@ -23,6 +23,14 @@ const PRESET_AMOUNTS = [5, 10, 25, 50];
 const MIN_TOPUP = 5;
 
 export default function BillingPage() {
+  return (
+    <Suspense fallback={<div className="h-full flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}>
+      <BillingPageInner />
+    </Suspense>
+  );
+}
+
+function BillingPageInner() {
   const { balance, planType, refreshBalance } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
