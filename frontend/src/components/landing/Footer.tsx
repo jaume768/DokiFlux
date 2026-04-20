@@ -6,7 +6,6 @@ const FOOTER_LINKS = {
   Producto: [
     { label: "Cómo funciona", href: "#como-funciona" },
     { label: "Templates", href: "#templates" },
-    { label: "Precios", href: "/pricing" },
     { label: "Changelog", href: "#" },
   ],
   Empresa: [

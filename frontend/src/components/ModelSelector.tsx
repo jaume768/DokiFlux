@@ -155,7 +155,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
                     onClick={() => {
                       if (locked) {
                         setOpen(false);
-                        router.push("/pricing");
+                        router.push("/app/billing");
                         return;
                       }
                       onChange(m.id);

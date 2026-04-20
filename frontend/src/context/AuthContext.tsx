@@ -40,7 +40,6 @@ const PUBLIC_PATHS = [
   "/verify-email",
   "/password-reset",
   "/password-reset-confirm",
-  "/pricing",
   "/auth/google/callback",
 ];
 
