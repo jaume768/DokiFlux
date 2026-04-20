@@ -205,10 +205,21 @@ class GeminiProvider(BaseProvider):
         config = get_model_config(model)
         api_model = config["api_model"]
 
+        # Fold developer-role context (framework override + project state) into
+        # the system instruction. _convert_messages strips developer roles, so
+        # without this the planner never sees framework-specific rules.
+        developer_ctx = "\n\n".join(
+            msg["content"] for msg in messages if msg.get("role") == "developer"
+        )
+        system_text = (
+            f"{PLANNER_SYSTEM_PROMPT}\n\n{developer_ctx}"
+            if developer_ctx else PLANNER_SYSTEM_PROMPT
+        )
+
         contents = self._convert_messages(messages)
 
         payload = {
-            "system_instruction": {"parts": [{"text": PLANNER_SYSTEM_PROMPT}]},
+            "system_instruction": {"parts": [{"text": system_text}]},
             "contents": contents,
             "generation_config": {"max_output_tokens": 600, "temperature": 0.1},
         }

@@ -77,6 +77,7 @@ export interface ProjectListItem {
   id: number;
   name: string;
   description: string;
+  framework?: string;
   created_at: string;
   updated_at: string;
   message_count: number;
@@ -86,6 +87,7 @@ export interface ProjectDetail {
   id: number;
   name: string;
   description: string;
+  framework?: string;
   file_map: Record<string, string>;
   last_used_model?: string;
   created_at: string;
@@ -97,6 +99,7 @@ export interface ProjectDetail {
 export interface ProjectCreateRequest {
   name: string;
   description?: string;
+  framework?: string;
 }
 
 export interface ChatMessageResponse {

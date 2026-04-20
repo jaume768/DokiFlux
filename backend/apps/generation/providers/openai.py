@@ -179,7 +179,19 @@ class OpenAIProvider(BaseProvider):
         config = get_model_config(model)
         api_model = config["api_model"]
 
-        chat_messages = [{"role": "system", "content": PLANNER_SYSTEM_PROMPT}]
+        # Extract developer-role context (framework override + current project
+        # state) and fold it into the system prompt so the planner sees it.
+        # Without this, framework-specific rules (Vue .vue entry, Next.js
+        # /app/page.tsx) never reach the planner and it falls back to the
+        # React-centric base prompt.
+        developer_ctx = "\n\n".join(
+            msg["content"] for msg in messages if msg.get("role") == "developer"
+        )
+        system_content = (
+            f"{PLANNER_SYSTEM_PROMPT}\n\n{developer_ctx}"
+            if developer_ctx else PLANNER_SYSTEM_PROMPT
+        )
+        chat_messages = [{"role": "system", "content": system_content}]
         for msg in messages:
             if msg.get("role") not in ("system", "developer"):
                 chat_messages.append({"role": msg["role"], "content": msg["content"]})

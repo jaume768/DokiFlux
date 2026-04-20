@@ -166,12 +166,27 @@ def _sanitize_chat_history(chat_history: list[dict]) -> list[dict]:
     return [m for i, m in enumerate(chat_history) if i not in drop_indexes]
 
 
-def build_messages(prompt: str, current_project: str | None, chat_history: list[dict]) -> list[dict]:
+def build_messages(
+    prompt: str,
+    current_project: str | None,
+    chat_history: list[dict],
+    framework: str = "react",
+) -> list[dict]:
     """
     Build the message list for the AI provider.
     Mirrors the frontend's buildCompressedPayload logic.
+
+    When framework != "react", a developer-role override message is prepended
+    with framework-specific rules that take precedence over the (React-centric)
+    base system prompt.
     """
+    from .providers.prompts import get_framework_override
+
     messages = []
+
+    override = get_framework_override(framework)
+    if override:
+        messages.append({"role": "developer", "content": override})
 
     if current_project:
         messages.append({
@@ -213,6 +228,7 @@ async def stream_generation(
 
     # 2. Serialize current project state
     file_map = await sync_to_async(lambda: project.file_map or {})()
+    framework = await sync_to_async(lambda: getattr(project, "framework", "react") or "react")()
     current_project = None
     if file_map:
         current_project = "\n\n".join(
@@ -221,7 +237,7 @@ async def stream_generation(
         )
 
     # 3. Build messages
-    messages = build_messages(prompt, current_project, chat_history)
+    messages = build_messages(prompt, current_project, chat_history, framework=framework)
 
     # 4. Create Generation record (with snapshot of current state)
     generation = await _create_generation(user, project, prompt, model, file_map or {}, is_autofix, chat_history)
@@ -294,8 +310,11 @@ def _build_file_messages(
     current_project: str | None,
     already_generated: str | None,
     chat_history: list[dict],
+    framework: str = "react",
 ) -> list[dict]:
     """Build the message list for generating a single file."""
+    from .providers.prompts import get_framework_override
+
     context_parts = [f"User request: {prompt}"]
     if current_project:
         context_parts.append(f"Existing project files:\n{current_project}")
@@ -303,7 +322,11 @@ def _build_file_messages(
         context_parts.append(f"Files already generated in this session:\n{already_generated}")
     context_parts.append(f"\nYour task: Generate ONLY the file '{file_path}'.")
 
-    messages = [{"role": "developer", "content": "\n\n".join(context_parts)}]
+    messages: list[dict] = []
+    override = get_framework_override(framework)
+    if override:
+        messages.append({"role": "developer", "content": override})
+    messages.append({"role": "developer", "content": "\n\n".join(context_parts)})
     for msg in _sanitize_chat_history(chat_history)[-4:]:
         messages.append({"role": msg["role"], "content": msg["content"]})
     messages.append({"role": "user", "content": f"Generate the file {file_path}"})
@@ -433,6 +456,7 @@ async def stream_phased_generation(
 
     # 2. Serialize current project state
     file_map = await sync_to_async(lambda: project.file_map or {})()
+    framework = await sync_to_async(lambda: getattr(project, "framework", "react") or "react")()
     current_project = None
     if file_map:
         current_project = "\n\n".join(
@@ -441,7 +465,7 @@ async def stream_phased_generation(
         )
 
     # 3. Build planner messages (same structure as standard, without system prompt override)
-    planner_messages = build_messages(prompt, current_project, chat_history)
+    planner_messages = build_messages(prompt, current_project, chat_history, framework=framework)
 
     # 4. Create generation record
     generation = await _create_generation(user, project, prompt, model, file_map or {}, is_autofix, chat_history)
@@ -565,6 +589,7 @@ async def stream_phased_generation(
                 current_project=current_project,
                 already_generated=already_gen_ctx,
                 chat_history=chat_history,
+                framework=framework,
             )
 
             file_raw = ""
@@ -606,6 +631,7 @@ async def stream_phased_generation(
             review_messages = build_reviewer_messages(
                 user_prompt=prompt,
                 all_files=accumulated_files,
+                framework=framework,
             )
             review_raw = ""
             try:

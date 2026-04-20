@@ -14,18 +14,16 @@ const FRAMEWORK_REGISTRY: Record<string, FrameworkConfig> = {
   vue: {
     displayName: "Vue 3 + Vite",
     shortName: "Vue",
-    available: false,
-    badgeText: "Próximamente",
-  },
-  angular: {
-    displayName: "Angular",
-    shortName: "Angular",
-    available: false,
-    badgeText: "Próximamente",
+    available: true,
   },
   nextjs: {
     displayName: "Next.js",
     shortName: "Next.js",
+    available: true,
+  },
+  angular: {
+    displayName: "Angular",
+    shortName: "Angular",
     available: false,
     badgeText: "Próximamente",
   },

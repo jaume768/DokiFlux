@@ -16,6 +16,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "description",
+            "framework",
             "created_at",
             "updated_at",
             "message_count",
@@ -35,6 +36,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "description",
+            "framework",
             "file_map",
             "last_used_model",
             "created_at",
@@ -44,6 +46,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
+            "framework",
             "last_used_model",
             "created_at",
             "updated_at",
@@ -78,7 +81,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 class ProjectCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
-        fields = ["id", "name", "description"]
+        fields = ["id", "name", "description", "framework"]
         read_only_fields = ["id"]
 
 

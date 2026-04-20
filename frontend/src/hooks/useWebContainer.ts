@@ -3,6 +3,8 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { WebContainer } from "@webcontainer/api";
 import type { FileMap } from "@/lib/parser";
+import type { FrameworkId } from "@/lib/frameworks";
+import { getScaffold } from "@/lib/scaffolds";
 
 export type ContainerStatus =
   | "idle"
@@ -24,220 +26,6 @@ interface UseWebContainerReturn {
   mountFiles: (files: FileMap) => Promise<void>;
   restartContainer: (files: FileMap) => Promise<void>;
 }
-
-const VITE_PACKAGE_JSON = {
-  name: "preview-project",
-  private: true,
-  type: "module" as const,
-  scripts: {
-    dev: "vite --host 0.0.0.0",
-  },
-  dependencies: {
-    react: "^18.3.1",
-    "react-dom": "^18.3.1",
-    "lucide-react": "^0.460.0",
-    "react-router-dom": "^7.1.1",
-  },
-  devDependencies: {
-    "@vitejs/plugin-react": "^4.3.4",
-    vite: "^6.0.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    typescript: "^5.6.0",
-    tailwindcss: "^3.4.17",
-    postcss: "^8.4.49",
-    autoprefixer: "^10.4.20",
-  },
-};
-
-const VITE_CONFIG = `import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    headers: {
-      "Cross-Origin-Embedder-Policy": "credentialless",
-    },
-  },
-});
-`;
-
-const TAILWIND_CONFIG = `/** @type {import('tailwindcss').Config} */
-export default {
-  content: ["./**/*.{js,ts,jsx,tsx}"],
-  theme: { extend: {} },
-  plugins: [],
-};
-`;
-
-const POSTCSS_CONFIG = `export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-};
-`;
-
-const INDEX_CSS = `@tailwind base;
-@tailwind components;
-@tailwind utilities;
-`;
-
-const INDEX_HTML = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Preview</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    <script>
-      (function() {
-        function reportPath() {
-          var p = location.pathname + location.search + location.hash;
-          window.parent.postMessage({ type: 'dokiflux-navigation', path: p }, '*');
-        }
-        var origPush = history.pushState;
-        var origReplace = history.replaceState;
-        history.pushState = function() {
-          origPush.apply(this, arguments);
-          reportPath();
-        };
-        history.replaceState = function() {
-          origReplace.apply(this, arguments);
-          reportPath();
-        };
-        window.addEventListener('popstate', reportPath);
-        window.addEventListener('message', function(e) {
-          if (e.data && e.data.type === 'dokiflux-navigate') {
-            history.pushState({}, '', e.data.path);
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }
-        });
-        document.addEventListener('DOMContentLoaded', reportPath);
-      })();
-    </script>
-  </body>
-</html>
-`;
-
-const MAIN_TSX = `import React from "react";
-import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
-import App from "./App";
-import "./index.css";
-
-// Runtime error capture - send to parent for autofix
-(function setupErrorCapture() {
-  var lastError = "";
-  var errorTimeout = null;
-  
-  function sendError(error) {
-    // Debounce to avoid spam
-    if (error === lastError) return;
-    lastError = error;
-    if (errorTimeout) clearTimeout(errorTimeout);
-    errorTimeout = setTimeout(function() {
-      window.parent.postMessage({ type: "dokiflux-runtime-error", error: error }, "*");
-    }, 500);
-  }
-  
-  window.onerror = function(message, source, lineno, colno, error) {
-    var errorMsg = message + " at " + source + ":" + lineno + ":" + colno;
-    if (error && error.stack) errorMsg += "\\n" + error.stack;
-    sendError(errorMsg);
-    return false;
-  };
-  
-  window.onunhandledrejection = function(event) {
-    var reason = event.reason;
-    var errorMsg = "Unhandled Promise Rejection: ";
-    if (reason instanceof Error) {
-      errorMsg += reason.message;
-      if (reason.stack) errorMsg += "\\n" + reason.stack;
-    } else {
-      errorMsg += String(reason);
-    }
-    sendError(errorMsg);
-  };
-  
-  // Capture console.error as well
-  var originalConsoleError = console.error;
-  console.error = function() {
-    var args = Array.prototype.slice.call(arguments);
-    var errorMsg = args.map(function(arg) {
-      if (arg instanceof Error) return arg.message + (arg.stack ? "\\n" + arg.stack : "");
-      if (typeof arg === "object") return JSON.stringify(arg);
-      return String(arg);
-    }).join(" ");
-    sendError("Console Error: " + errorMsg);
-    originalConsoleError.apply(console, arguments);
-  };
-})();
-
-const root = ReactDOM.createRoot(document.getElementById("root")!);
-root.render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>
-);
-
-// Notify parent frame ONLY after React has actually painted visible content.
-// MutationObserver detects when React inserts children into #root,
-// then we wait for stylesheets + paint to settle before signalling ready.
-(function waitForContent() {
-  var rootEl = document.getElementById("root");
-  if (!rootEl) return;
-
-  function signalReady() {
-    requestAnimationFrame(function() {
-      setTimeout(function() {
-        window.parent.postMessage({ type: "dokiflux-content-ready" }, "*");
-      }, 150);
-    });
-  }
-
-  if (rootEl.children.length > 0) {
-    signalReady();
-    return;
-  }
-
-  var observer = new MutationObserver(function() {
-    if (rootEl.children.length > 0) {
-      observer.disconnect();
-      signalReady();
-    }
-  });
-  observer.observe(rootEl, { childList: true });
-})();
-`;
-
-const TSCONFIG = {
-  compilerOptions: {
-    target: "ES2020",
-    useDefineForClassFields: true,
-    lib: ["ES2020", "DOM", "DOM.Iterable"],
-    module: "ESNext",
-    skipLibCheck: true,
-    moduleResolution: "bundler",
-    allowImportingTsExtensions: true,
-    isolatedModules: true,
-    moduleDetection: "force",
-    noEmit: true,
-    jsx: "react-jsx",
-    strict: true,
-    noUnusedLocals: false,
-    noUnusedParameters: false,
-    noFallthroughCasesInSwitch: true,
-    allowJs: true,
-  },
-  include: ["src"],
-};
 
 // Singleton: only one WebContainer can exist per browser tab.
 // Module-level variables survive HMR but are lost on full page refresh.
@@ -264,7 +52,6 @@ async function clearServiceWorkers(): Promise<void> {
   } catch {
     // ignore
   }
-  // Also clear stale caches that previous WebContainer sessions may have left
   try {
     if (typeof caches !== "undefined") {
       const keys = await caches.keys();
@@ -283,31 +70,18 @@ async function bootWebContainer(): Promise<WebContainer> {
     try {
       // SharedArrayBuffer (required by WebContainer) is only available when
       // crossOriginIsolated is true, which depends on COOP/COEP headers from
-      // the initial page load. If a client-side navigation (Next.js router)
-      // brought us here from a page without those headers, the flag will be
-      // false and WebContainer.boot() will throw before it even starts.
-      // Force a single hard reload so the browser re-requests the page with
-      // the correct headers applied. This is a one-shot — there is no retry
-      // loop here.
+      // the initial page load. Force a hard reload if missing — one-shot, no retry.
       if (typeof window !== "undefined" && !window.crossOriginIsolated) {
         console.warn("[WebContainer] crossOriginIsolated is false – reloading to apply COOP/COEP headers.");
         window.location.reload();
-        // Return a never-resolving promise so callers don't continue while
-        // the page reloads.
         return new Promise<WebContainer>(() => {});
       }
 
-      // Proactively clear stale Service Workers from previous sessions
-      // to prevent them from serving blank/stale content in the iframe.
       await clearServiceWorkers();
       const instance = await WebContainer.boot();
       wcInstance = instance;
       return instance;
     } catch (err) {
-      // WebContainer.boot() failed. Calling boot() again in the same page session
-      // will always throw "Unable to create more instances" because WebContainer
-      // internally registers the instance even when it throws. Clear stale Service
-      // Workers so a manual reload succeeds, then surface the original error.
       console.warn("[WebContainer] Boot failed, clearing SWs…", err);
       await clearServiceWorkers();
       wcBootPromise = null;
@@ -319,54 +93,42 @@ async function bootWebContainer(): Promise<WebContainer> {
   return wcBootPromise;
 }
 
-function buildFileTree(files: FileMap) {
-  const fileTree: Record<string, any> = {};
+/**
+ * Build a nested directory tree (WebContainer mount format) from a flat
+ * path → contents map, merging scaffold base files with user-generated files.
+ */
+function buildFileTree(
+  userFiles: FileMap,
+  baseFiles: Record<string, string>,
+  userFilesRoot: string,
+) {
+  const flat: Record<string, string> = { ...baseFiles };
 
-  // Scaffold files
-  fileTree["package.json"] = {
-    file: { contents: JSON.stringify(VITE_PACKAGE_JSON, null, 2) },
-  };
-  fileTree["vite.config.ts"] = { file: { contents: VITE_CONFIG } };
-  fileTree["tailwind.config.js"] = {
-    file: { contents: TAILWIND_CONFIG },
-  };
-  fileTree["postcss.config.js"] = { file: { contents: POSTCSS_CONFIG } };
-  fileTree["index.html"] = { file: { contents: INDEX_HTML } };
-  fileTree["tsconfig.json"] = {
-    file: { contents: JSON.stringify(TSCONFIG, null, 2) },
-  };
-
-  // Build src directory tree
-  const srcFiles: Record<string, any> = {};
-  srcFiles["main.tsx"] = { file: { contents: MAIN_TSX } };
-  srcFiles["index.css"] = { file: { contents: INDEX_CSS } };
-
-  // Map user files into src/
-  for (const [path, content] of Object.entries(files)) {
-    const cleanPath = path.startsWith("/") ? path.slice(1) : path;
-    const parts = cleanPath.split("/");
-
-    if (parts.length === 1) {
-      srcFiles[parts[0]] = { file: { contents: content } };
-    } else {
-      let current = srcFiles;
-      for (let i = 0; i < parts.length - 1; i++) {
-        if (!current[parts[i]]) {
-          current[parts[i]] = { directory: {} };
-        }
-        current = current[parts[i]].directory;
-      }
-      current[parts[parts.length - 1]] = {
-        file: { contents: content },
-      };
-    }
+  // Prefix user files with the scaffold's userFilesRoot (e.g. "src/" or "").
+  const prefix = userFilesRoot ? `${userFilesRoot.replace(/\/$/, "")}/` : "";
+  for (const [rawPath, content] of Object.entries(userFiles)) {
+    const cleanPath = rawPath.startsWith("/") ? rawPath.slice(1) : rawPath;
+    flat[`${prefix}${cleanPath}`] = content;
   }
 
-  fileTree["src"] = { directory: srcFiles };
-  return fileTree;
+  // Build nested tree from flat map.
+  const tree: Record<string, any> = {};
+  for (const [fullPath, content] of Object.entries(flat)) {
+    const parts = fullPath.split("/").filter(Boolean);
+    if (parts.length === 0) continue;
+    let cursor: Record<string, any> = tree;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const seg = parts[i];
+      if (!cursor[seg]) cursor[seg] = { directory: {} };
+      cursor = cursor[seg].directory;
+    }
+    cursor[parts[parts.length - 1]] = { file: { contents: content } };
+  }
+  return tree;
 }
 
-// Patterns that indicate a build/compile error in Vite dev server output
+// Patterns that indicate a build/compile error in dev server output (works
+// for Vite, Next.js and generally for node-based build errors).
 const BUILD_ERROR_PATTERNS = [
   /\[plugin:vite:/,
   /SyntaxError:/,
@@ -379,13 +141,14 @@ const BUILD_ERROR_PATTERNS = [
   /Could not resolve/,
   /Module not found/,
   /Failed to resolve import/,
+  /Failed to compile/,
 ];
 
 function isBuildErrorLine(line: string): boolean {
   return BUILD_ERROR_PATTERNS.some((p) => p.test(line));
 }
 
-export function useWebContainer(): UseWebContainerReturn {
+export function useWebContainer(framework: FrameworkId | string = "react"): UseWebContainerReturn {
   const [status, setStatus] = useState<ContainerStatus>("idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -399,6 +162,10 @@ export function useWebContainer(): UseWebContainerReturn {
   const errorBufferRef = useRef<string[]>([]);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDevServerRef = useRef(false);
+  const frameworkRef = useRef<string>(framework);
+
+  // Keep ref in sync; we read it lazily inside callbacks.
+  frameworkRef.current = framework;
 
   const clearBuildError = useCallback(() => {
     setLastBuildError(null);
@@ -416,9 +183,7 @@ export function useWebContainer(): UseWebContainerReturn {
   const flushErrorBuffer = useCallback(() => {
     if (errorBufferRef.current.length > 0 && isMountedRef.current) {
       const fullError = errorBufferRef.current.join("\n").trim();
-      if (fullError) {
-        setLastBuildError(fullError);
-      }
+      if (fullError) setLastBuildError(fullError);
       errorBufferRef.current = [];
     }
     errorTimerRef.current = null;
@@ -428,25 +193,19 @@ export function useWebContainer(): UseWebContainerReturn {
     if (!isMountedRef.current) return;
     setLogs((prev) => [...prev.slice(-150), msg]);
 
-    // Only detect build errors from the dev server phase
     if (!isDevServerRef.current) return;
 
-    // If this line looks like an error start, begin collecting
     if (isBuildErrorLine(msg)) {
       errorBufferRef.current = [msg];
-      // Debounce: wait for more lines to arrive before reporting
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
       errorTimerRef.current = setTimeout(flushErrorBuffer, 2000);
     } else if (errorBufferRef.current.length > 0) {
-      // Continue collecting lines after an error start (context lines)
       errorBufferRef.current.push(msg);
-      // Reset the debounce timer
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
       errorTimerRef.current = setTimeout(flushErrorBuffer, 2000);
     }
   }, [flushErrorBuffer]);
 
-  // Track component mount state
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -462,7 +221,6 @@ export function useWebContainer(): UseWebContainerReturn {
     };
   }, []);
 
-  // Listen for runtime errors from iframe
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
       if (!e.data || !isMountedRef.current) return;
@@ -476,11 +234,12 @@ export function useWebContainer(): UseWebContainerReturn {
 
   const mountFiles = useCallback(
     async (files: FileMap) => {
+      const scaffold = getScaffold(frameworkRef.current as FrameworkId);
       console.log("[useWebContainer] mountFiles called", {
+        framework: scaffold.framework,
         fileCount: Object.keys(files).length,
         hasContainer: !!containerRef.current,
         hasServer: !!serverProcessRef.current,
-        crossOriginIsolated: typeof window !== "undefined" ? window.crossOriginIsolated : "n/a",
       });
       try {
         setError(null);
@@ -490,16 +249,13 @@ export function useWebContainer(): UseWebContainerReturn {
           setStatus("booting");
           setPreviewUrl(null);
           addLog("Booting WebContainer...");
-          console.log("[useWebContainer] calling bootWebContainer");
 
           const instance = await bootWebContainer();
-          console.log("[useWebContainer] bootWebContainer resolved", { instance: !!instance });
           if (!isMountedRef.current) return;
 
           containerRef.current = instance;
           addLog("WebContainer booted.");
 
-          // Listen for server-ready (only once per instance)
           instance.on("server-ready", (_port: number, url: string) => {
             if (!isMountedRef.current) return;
             addLog(`Server ready at ${url}`);
@@ -529,7 +285,7 @@ export function useWebContainer(): UseWebContainerReturn {
         }
 
         // --- 3. Mount files ---
-        const fileTree = buildFileTree(files);
+        const fileTree = buildFileTree(files, scaffold.baseFiles, scaffold.userFilesRoot);
         addLog("Mounting files...");
         await container.mount(fileTree);
         if (!isMountedRef.current) return;
@@ -546,7 +302,6 @@ export function useWebContainer(): UseWebContainerReturn {
 
           const installWriter = new WritableStream({
             write(data) {
-              // Filter out spinner characters for cleaner logs
               const clean = data.replace(/\[[\d;]*[A-Za-z]|\[[\?\d;]*[hlm]/g, "").trim();
               if (clean) addLog(clean);
             },
@@ -569,9 +324,10 @@ export function useWebContainer(): UseWebContainerReturn {
         setStatus("starting");
         isDevServerRef.current = true;
         clearBuildError();
-        addLog("Starting Vite dev server...");
+        addLog(`Starting ${scaffold.devServerLabel}...`);
 
-        const devProcess = await container.spawn("npm", ["run", "dev"], {
+        const [cmd, ...args] = scaffold.devCommand;
+        const devProcess = await container.spawn(cmd, args, {
           terminal: { cols: 80, rows: 10 },
         });
         if (!isMountedRef.current) {
@@ -602,12 +358,6 @@ export function useWebContainer(): UseWebContainerReturn {
 
   const restartContainer = useCallback(
     async (files: FileMap) => {
-      console.log("[useWebContainer] restartContainer called", {
-        fileCount: Object.keys(files).length,
-        hasContainer: !!containerRef.current,
-        hasServer: !!serverProcessRef.current,
-      });
-      // Kill running server
       if (serverProcessRef.current) {
         try {
           serverProcessRef.current.kill();
@@ -616,7 +366,6 @@ export function useWebContainer(): UseWebContainerReturn {
         }
         serverProcessRef.current = null;
       }
-      // Teardown container instance so it gets re-booted
       if (containerRef.current) {
         try {
           containerRef.current.teardown();
@@ -632,13 +381,6 @@ export function useWebContainer(): UseWebContainerReturn {
       setPreviewUrl(null);
       setError(null);
       setLogs([]);
-      // NOTE: we do NOT set status="idle" here anymore. Previously we would
-      // setStatus("idle") → await 400ms → mountFiles. But if the component
-      // happened to unmount/remount during that delay (StrictMode cleanup in
-      // dev, HMR, parent re-render), isMountedRef.current could be false and
-      // mountFiles would be silently skipped — leaving status stuck at "idle"
-      // ("Waiting"). Transitioning straight into mountFiles (which sets
-      // status="booting" itself) avoids that stranded-idle state entirely.
       await mountFiles(files);
     },
     [mountFiles]

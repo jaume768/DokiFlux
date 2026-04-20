@@ -81,6 +81,7 @@ interface CodePreviewProps {
   restartKey?: number;
   isIOS?: boolean;
   isMobile?: boolean;
+  framework?: string;
   onBuildError?: (error: string) => void;
   onRuntimeError?: (error: string) => void;
   onRestart?: () => void;
@@ -285,17 +286,28 @@ function IterationDiffView({ content, oldContent, isStreaming, codeEndRef }: Ite
   );
 }
 
-export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, onBuildError, onRuntimeError, onRestart, onReady, onAfterDownload, genProgress }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, framework = "react", onBuildError, onRuntimeError, onRestart, onReady, onAfterDownload, genProgress }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
+  const [selectedFile, setSelectedFile] = useState<string>(() => {
+    // Pick a sensible entry-file default per framework (Vue → /App.vue,
+    // Next → /app/page.tsx, React → /App.tsx). Falls back to first file
+    // if the preferred entry isn't in the map yet.
+    const preferred =
+      framework === "vue" ? "/App.vue"
+      : framework === "nextjs" ? "/app/page.tsx"
+      : "/App.tsx";
+    if (files[preferred]) return preferred;
+    const first = Object.keys(files)[0];
+    return first ?? preferred;
+  });
   const [fileTreeOpen, setFileTreeOpen] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframePath, setIframePath] = useState("/");
   const [urlInput, setUrlInput] = useState("/");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const { status, previewUrl, error, logs, lastBuildError, lastRuntimeError, clearBuildError, clearRuntimeError, mountFiles, restartContainer } = useWebContainer();
+  const { status, previewUrl, error, logs, lastBuildError, lastRuntimeError, clearBuildError, clearRuntimeError, mountFiles, restartContainer } = useWebContainer(framework);
 
   useEffect(() => {
     if (status === "ready" && iframeLoaded) {

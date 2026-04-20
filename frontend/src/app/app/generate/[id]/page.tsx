@@ -72,6 +72,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const [publishModal, setPublishModal] = useState<{ open: boolean; variant: "auto" | "manual" }>({ open: false, variant: "manual" });
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [projectDescription, setProjectDescription] = useState("");
+  const [projectFramework, setProjectFramework] = useState<string>("react");
   const [previewReady, setPreviewReady] = useState(false);
   const publishAutoDismissedRef = useRef(false);
   const modelParam = searchParams.get("model");
@@ -124,6 +125,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         if (cancelled) return;
         setProjectName(project.name);
         setProjectDescription(project.description || "");
+        setProjectFramework(project.framework || "react");
         if (project.file_map && Object.keys(project.file_map).length > 0) {
           setCurrentFiles(project.file_map);
           currentFilesRef.current = project.file_map;
@@ -1208,6 +1210,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             restartKey={restartKey}
             isIOS={isIOS}
             isMobile={isMobile}
+            framework={projectFramework}
             onBuildError={handleBuildError}
             onRuntimeError={handleRuntimeError}
             onRestart={() => {

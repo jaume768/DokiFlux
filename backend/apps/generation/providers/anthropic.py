@@ -223,12 +223,23 @@ class AnthropicProvider(BaseProvider):
         config = get_model_config(model)
         api_model = config["api_model"]
 
+        # Fold developer-role context (framework override + project state) into
+        # the system prompt. _convert_messages strips developer roles, so
+        # without this the planner never sees framework-specific rules.
+        developer_ctx = "\n\n".join(
+            msg["content"] for msg in messages if msg.get("role") == "developer"
+        )
+        system_prompt = (
+            f"{PLANNER_SYSTEM_PROMPT}\n\n{developer_ctx}"
+            if developer_ctx else PLANNER_SYSTEM_PROMPT
+        )
+
         anthropic_messages = self._convert_messages(messages)
 
         payload = {
             "model": api_model,
             "max_tokens": 600,
-            "system": PLANNER_SYSTEM_PROMPT,
+            "system": system_prompt,
             "messages": anthropic_messages,
         }
 

@@ -3,6 +3,12 @@ from django.db import models
 
 
 class Project(models.Model):
+    FRAMEWORK_CHOICES = [
+        ("react", "React + Vite"),
+        ("vue", "Vue 3 + Vite"),
+        ("nextjs", "Next.js"),
+    ]
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -10,6 +16,12 @@ class Project(models.Model):
     )
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    framework = models.CharField(
+        max_length=20,
+        choices=FRAMEWORK_CHOICES,
+        default="react",
+        help_text="UI framework used to scaffold and generate this project.",
+    )
     file_map = models.JSONField(default=dict, blank=True)
     last_used_model = models.CharField(max_length=50, blank=True, default="")
     file_map_url = models.URLField(

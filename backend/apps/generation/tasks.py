@@ -69,12 +69,13 @@ def run_background_generation(self, generation_id: int):
     is_autofix = generation.is_autofix
 
     file_map = project.file_map or {}
+    framework = getattr(project, "framework", "react") or "react"
     current_project = (
         "\n\n".join(f"// --- FILE: {p} ---\n{c}" for p, c in file_map.items())
         if file_map else None
     )
 
-    messages = build_messages(prompt, current_project, chat_history)
+    messages = build_messages(prompt, current_project, chat_history, framework=framework)
     provider = get_provider(model)
     model_config = get_model_config(model)
     file_max_tokens = min(model_config["max_output_tokens"], 12000)
@@ -159,6 +160,7 @@ def run_background_generation(self, generation_id: int):
                 current_project=current_project,
                 already_generated=already_gen_ctx,
                 chat_history=chat_history,
+                framework=framework,
             )
 
             file_raw = ""
@@ -202,6 +204,7 @@ def run_background_generation(self, generation_id: int):
             review_messages = build_reviewer_messages(
                 user_prompt=prompt,
                 all_files=accumulated_files,
+                framework=framework,
             )
             review_raw = ""
 

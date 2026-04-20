@@ -2,6 +2,138 @@
 Shared prompts and tool definitions for all AI providers.
 """
 
+
+# ---------- Framework-specific overrides ----------
+# Injected as a high-priority developer message when project.framework != "react".
+# Base prompts are React-centric for backward compat; these blocks override when
+# the project was created with a different framework.
+
+FRAMEWORK_OVERRIDES = {
+    "react": "",  # no override needed; base prompts already target React + Vite
+    "vue": """FRAMEWORK OVERRIDE — THIS PROJECT IS VUE 3 + VITE + TYPESCRIPT + TAILWIND.
+
+Ignore any React-specific rules in the base system prompt. Apply these instead:
+
+ENTRY & FILE STRUCTURE:
+- The entry component is /App.vue (NOT /App.tsx). It uses Single File Component format with <script setup lang="ts">.
+- Use .vue files for all components (Single File Components with <template>, <script setup lang="ts">, and optional <style>).
+- Use .ts files for composables, stores, types and utility logic.
+- The multi-file marker format stays the same: `// --- FILE: /App.vue ---`, `// --- FILE: /components/Hero.vue ---`.
+
+GENERATION ORDER (MANDATORY):
+- In the planner's `files` array, /App.vue MUST be the LAST entry. Components go first (in dependency order: leaves → containers), App.vue last.
+- Rationale: App.vue imports every component. Generating it last guarantees the model sees the real filenames already produced and can't invent wrong imports like "Hero.tsx" instead of "Hero.vue".
+
+VUE RULES (CRITICAL):
+- Always use Composition API with `<script setup lang="ts">`. Never use Options API.
+- Use `ref()`, `reactive()`, `computed()`, `watch()` imported from "vue".
+- Props: define with `defineProps<{ ... }>()`. Emits: `defineEmits<{ ... }>()`.
+- Template directives: v-if, v-else, v-for (with :key), v-model, @click, :class, :style.
+- For dynamic classes use `:class="[...]"` or `:class="{ active: isActive }"`.
+- Always add `:key` on v-for items. Prefer stable IDs over array index.
+
+ROUTER RULES:
+- NEVER create a router instance (no `createRouter`, no `createWebHistory`) in your files. The environment provides the router at the top level via /src/main.ts (which YOU MUST NOT regenerate).
+- Use <router-link :to="...">, <router-view />, and the `useRoute()` / `useRouter()` composables from "vue-router".
+- A default /router.ts is already provided that renders /App.vue at "/". For a SINGLE-PAGE app, do NOT generate /router.ts — leave the default.
+- For MULTI-PAGE apps, overwrite /router.ts with this exact shape:
+  export const routes: RouteRecordRaw[] = [
+    { path: "/", component: Home },
+    { path: "/about", component: About },
+  ];
+  The file MUST keep the named export `routes` (an array of RouteRecordRaw). main.ts imports it statically.
+
+ICONS & STYLING:
+- Icons: import from "lucide-vue-next" (Vue equivalent of lucide-react). Example: `import { Home } from "lucide-vue-next"`.
+- Styling: Tailwind CSS utility classes in `class="..."` only. No scoped styles unless the user explicitly asks.
+
+IMPORTS AVAILABLE:
+- "vue" — Composition API, ref, reactive, computed, watch, onMounted, etc.
+- "vue-router" — router-link, router-view, useRoute, useRouter (NO createRouter)
+- "lucide-vue-next" — icons
+
+EXAMPLE /App.vue:
+// --- FILE: /App.vue ---
+<script setup lang="ts">
+import { ref } from "vue";
+import { Home } from "lucide-vue-next";
+const count = ref(0);
+</script>
+<template>
+  <div class="min-h-screen bg-zinc-900 text-white p-8">
+    <Home class="w-6 h-6" />
+    <button @click="count++" class="px-4 py-2 bg-blue-600 rounded">{{ count }}</button>
+  </div>
+</template>
+
+FORBIDDEN:
+- No JSX, no .tsx files, no React imports.
+- No `createRouter` / `createApp` calls (provided by environment).
+""",
+    "nextjs": """FRAMEWORK OVERRIDE — THIS PROJECT IS NEXT.JS 14 (APP ROUTER) + REACT 18 + TYPESCRIPT + TAILWIND.
+
+Ignore any Vite / react-router-dom rules in the base system prompt. Apply these instead:
+
+ENTRY & FILE STRUCTURE:
+- The main page is /app/page.tsx (NOT /App.tsx). It uses `export default function Page()`.
+- The root layout /app/layout.tsx and /app/globals.css are PROVIDED BY THE ENVIRONMENT. DO NOT regenerate them — they wire the runtime helpers needed for the preview iframe.
+- Multi-page apps: create /app/<route>/page.tsx for each route (e.g. /app/about/page.tsx → /about).
+- Shared components go under /components/<Name>.tsx (use named exports except for pages/layouts).
+
+GENERATION ORDER (MANDATORY):
+- In the planner's `files` array, /app/page.tsx MUST be the LAST entry. Components go first (leaves → containers), /app/page.tsx last.
+- Rationale: /app/page.tsx imports every component. Generating it last guarantees the model sees the real filenames already produced and can't invent wrong imports.
+
+NEXT.JS RULES (CRITICAL):
+- All interactive components (useState, useEffect, onClick, etc.) MUST start with `"use client";` as the very first line of the file.
+- Server components (default) can fetch data directly but cannot use hooks or event handlers.
+- Pages and layouts use DEFAULT exports. Other components use NAMED exports.
+- Use <Link href="/about"> from "next/link" for navigation (NOT <a>).
+- Use next/image only if absolutely needed; plain <img> with Unsplash URLs is fine and simpler.
+
+ROUTING:
+- File-based. /app/page.tsx = "/", /app/pricing/page.tsx = "/pricing", /app/blog/[slug]/page.tsx = dynamic.
+- NO react-router-dom. NEVER import <Routes>, <Route>, <BrowserRouter>, useNavigate, etc.
+- For programmatic navigation use `useRouter` from "next/navigation" (in client components).
+
+ICONS & STYLING:
+- Icons: "lucide-react" (works fine in Next.js).
+- Styling: Tailwind CSS. Global styles in /app/globals.css with `@tailwind base; @tailwind components; @tailwind utilities;`.
+
+IMPORTS AVAILABLE:
+- "react" — hooks (only in "use client" files)
+- "next/link" — <Link> component
+- "next/navigation" — useRouter, usePathname, useSearchParams (client components only)
+- "lucide-react" — icons
+
+EXAMPLE /app/page.tsx:
+// --- FILE: /app/page.tsx ---
+"use client";
+import { useState } from "react";
+import { Home } from "lucide-react";
+export default function Page() {
+  const [count, setCount] = useState(0);
+  return (
+    <div className="min-h-screen bg-zinc-900 text-white p-8">
+      <Home className="w-6 h-6" />
+      <button onClick={() => setCount(count + 1)} className="px-4 py-2 bg-blue-600 rounded">{count}</button>
+    </div>
+  );
+}
+
+FORBIDDEN:
+- No /App.tsx. No react-router-dom. No <BrowserRouter>. No Vite configs.
+- No "use server" directives unless explicitly requested.
+""",
+}
+
+
+def get_framework_override(framework: str) -> str:
+    """Return the developer-message override block for a given framework, or empty string."""
+    return FRAMEWORK_OVERRIDES.get(framework, "")
+
+
+
 # System prompt + codegen rules (mirrored from frontend)
 SYSTEM_PROMPT = """You are Dokiflux, an expert UI/UX assistant and full-stack React engineer.
 
@@ -210,11 +342,15 @@ Language rule (applies to BOTH options):
 - The `thinking` field MUST be written in the same natural language the user wrote their request in (Spanish → Spanish, English → English, French → French, etc.). Never default to English if the user wrote in another language.
 
 Rules for choosing Option A:
-- Always include /App.tsx when creating a new project from scratch
-- List files in dependency order: utilities/types first, then components, entry point last
-- Maximum 8 files per generation
-- For iterations on existing projects, list ONLY files that need to change
-- Use .tsx for React components, .ts for logic/types, .css for global styles
+- Always include the framework's entry file when creating a new project from scratch. Default is /App.tsx for React. If a FRAMEWORK OVERRIDE block below specifies a different entry (e.g. /App.vue for Vue, /app/page.tsx for Next.js), use that instead — the FRAMEWORK OVERRIDE block takes absolute precedence over any file-extension hint in this base prompt.
+- STRICT ORDERING (critical for correctness): the `files` array is the exact order in which each file will be generated, one at a time, with the previous files visible as context. Therefore:
+  1. Utilities / types / constants first.
+  2. Leaf components (Hero, Skills, Card, Button...) next.
+  3. Container components that import leaves.
+  4. The ENTRY / ROOT file ABSOLUTELY LAST — always. For React this is /App.tsx, for Vue /App.vue, for Next.js /app/page.tsx. The entry file imports everything else, so putting it last lets the model see all real component names and avoid fabricating imports.
+- Maximum 8 files per generation.
+- For iterations on existing projects, list ONLY files that need to change.
+- File extensions follow the framework: React uses .tsx/.ts, Vue uses .vue/.ts, Next.js uses .tsx/.ts. When a FRAMEWORK OVERRIDE block is present, its rules are authoritative.
 
 Rules for chat_response (Option B only):
 - Write 2-3 direct bullet questions, no intro, no filler text
@@ -260,11 +396,17 @@ Rules:
 def build_reviewer_messages(
     user_prompt: str,
     all_files: dict[str, str],
+    framework: str = "react",
 ) -> list[dict]:
     """Build message list for the final cross-file review pass."""
     files_ctx = "\n\n".join(
         f"// --- FILE: {path} ---\n{content}"
         for path, content in all_files.items()
+    )
+    override = get_framework_override(framework)
+    system_content = (
+        f"{REVIEWER_SYSTEM_PROMPT}\n\n{override}"
+        if override else REVIEWER_SYSTEM_PROMPT
     )
     user_msg = (
         f"Original user request:\n{user_prompt}\n\n"
@@ -274,7 +416,7 @@ def build_reviewer_messages(
         "If everything is consistent and correct, output nothing at all."
     )
     return [
-        {"role": "system", "content": REVIEWER_SYSTEM_PROMPT},
+        {"role": "system", "content": system_content},
         {"role": "user", "content": user_msg},
     ]
 
