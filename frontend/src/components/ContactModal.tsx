@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { X, Send, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
 
 interface ContactModalProps {
   open: boolean;
@@ -30,18 +30,7 @@ export function ContactModal({ open, onClose, user, project }: ContactModalProps
     setSent(false);
     setError("");
 
-    // Fetch fresh project name — the AI title task may have completed after page load
-    if (project?.id) {
-      apiGet<{ name: string }>(`/projects/${project.id}/`)
-        .then((p) => {
-          setMessage(`Quiero llevar a producción mi proyecto "${p.name || project.name || ""}".`);
-        })
-        .catch(() => {
-          setMessage(project.name ? `Quiero llevar a producción mi proyecto "${project.name}".` : "");
-        });
-    } else {
-      setMessage("");
-    }
+    setMessage("");
   }, [open, user, project]);
 
   useEffect(() => {
