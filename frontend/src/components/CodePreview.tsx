@@ -85,6 +85,7 @@ interface CodePreviewProps {
   onRuntimeError?: (error: string) => void;
   onRestart?: () => void;
   onReady?: () => void;
+  onAfterDownload?: () => void;
   genProgress?: GenerationProgress;
 }
 
@@ -284,7 +285,7 @@ function IterationDiffView({ content, oldContent, isStreaming, codeEndRef }: Ite
   );
 }
 
-export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, onBuildError, onRuntimeError, onRestart, onReady, genProgress }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, onBuildError, onRuntimeError, onRestart, onReady, onAfterDownload, genProgress }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("/App.tsx");
@@ -701,6 +702,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
     a.download = "dokiflux-project.zip";
     a.click();
     URL.revokeObjectURL(url);
+    onAfterDownload?.();
   }
 
   const effectiveFileList = Object.keys(isIterationStreaming ? mergedTreeFiles : displayFiles);
