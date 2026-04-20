@@ -48,11 +48,20 @@ Riesgos legales a tener en cuenta:
 
 - RGPD: vas a tratar datos personales (cuentas, emails) y potencialmente datos personales dentro del código que el usuario pegue/suba. 
         Necesitas base legal, minimización, retención, derechos, y acuerdos con encargados. 
-- Transferencias internacionales: al usar APIs de modelos (OpenAI/Anthropic/Google), debes gestionar subprocesadores, transferencias fuera del EEE, y tu arquitectura contractual. 
 - Cookies y medición: si usas analítica, debes cumplir criterios AEPD y LSSI. 
         La AEPD ha publicado guías específicas y notas de implementación. 
 - EU AI Act: si comercializas un sistema que genera contenido/código con IA, tienes obligaciones de transparencia y gobernanza según rol (proveedor/deployer) y el tipo de uso. 
         No es “parálisis legal”, pero sí exige disciplina mínima.
+
+Marketing:
+
+- El Muro del Login: Si obligas al usuario a registrarse antes de probar el producto, estás matando el 80% de tu conversión.
+
+- Falta de "Aha! Moment" rápido: El usuario debe experimentar el valor en menos de 10 segundos.
+
+- Solución Arquitectónica/CRO: Implementa un entorno Playground en la página principal. Que puedan usar la herramienta sin login, usando localStorage para guardar su estado. Solo cuando quieran "Exportar", "Guardar en la nube" o "Compartir", les saltas el paywall/login wall.
+
+- Añade el botón para agendar una consultoría contigo en el footer o en la sección de "Pricing" bajo el plan "Enterprise/Custom".
 
 Para la empresa:
 
