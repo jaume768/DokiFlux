@@ -26,7 +26,7 @@ export interface ModelConfig {
 
 export type ModelId = string;
 
-export const DEFAULT_MODEL: ModelId = "claude-haiku-4-5";
+export const DEFAULT_MODEL: ModelId = "claude-haiku-4.5";
 
 /** Map a raw backend model response to the frontend ModelConfig shape */
 export function normaliseModel(m: BackendModel): ModelConfig {
