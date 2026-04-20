@@ -36,6 +36,16 @@ MODEL_REGISTRY = {
     },
 
     # ── Anthropic ─────────────────────────────────────────────
+
+    "claude-haiku-4.5": {
+        "provider": "anthropic",
+        "api_model": "claude-haiku-4-5",
+        "input_per_million": Decimal("1.00"),
+        "output_per_million": Decimal("5.00"),
+        "max_output_tokens": 8192,
+        "display_name": "Claude Haiku 4.5",
+        "category": "anthropic",
+    },
     "claude-sonnet-4.6": {
         "provider": "anthropic",
         "api_model": "claude-sonnet-4-6",
@@ -86,15 +96,6 @@ MODEL_REGISTRY = {
         "display_name": "Claude Opus 4.6",
         "category": "anthropic",
         "premium_only": True,
-    },
-    "claude-haiku-4.5": {
-        "provider": "anthropic",
-        "api_model": "claude-haiku-4-5",
-        "input_per_million": Decimal("1.00"),
-        "output_per_million": Decimal("5.00"),
-        "max_output_tokens": 8192,
-        "display_name": "Claude Haiku 4.5",
-        "category": "anthropic",
     },
 
     # ── OpenAI ────────────────────────────────────────────────
@@ -157,7 +158,7 @@ MODEL_REGISTRY = {
 VALID_MODEL_IDS = frozenset(MODEL_REGISTRY.keys())
 
 # Default model
-DEFAULT_MODEL = "claude-opus-4.7-low"
+DEFAULT_MODEL = "claude-haiku-4-5"
 
 
 def get_model_config(model_id: str) -> dict:
