@@ -55,6 +55,11 @@ export default function HomePage() {
       router.push(`/app/generate/${project.id}?model=${selectedModel}`);
     } catch (err) {
       if (err instanceof ApiError) {
+        if (err.status === 403) {
+          // Premium-only framework — redirect to billing
+          router.push("/app/billing");
+          return;
+        }
         setError(err.message);
       } else {
         setError("Error al crear proyecto.");

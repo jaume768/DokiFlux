@@ -42,6 +42,19 @@ class ProjectListCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        # --- Premium-only framework gating ---
+        PREMIUM_FRAMEWORKS = {"vue", "nextjs"}
+        requested_framework = serializer.validated_data.get("framework", "react") or "react"
+        plan_type = getattr(getattr(request.user, "plan", None), "plan_type", "free")
+        if requested_framework in PREMIUM_FRAMEWORKS and plan_type != "premium":
+            fw_names = {"vue": "Vue 3 + Vite", "nextjs": "Next.js"}
+            fw_label = fw_names.get(requested_framework, requested_framework)
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied(
+                f"El framework '{fw_label}' solo está disponible en el plan Premium."
+            )
+
         self.perform_create(serializer)
         project = serializer.instance
 

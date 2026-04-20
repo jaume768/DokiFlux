@@ -2,6 +2,7 @@ export interface FrameworkConfig {
   displayName: string;
   shortName: string;
   available: boolean;
+  premiumOnly?: boolean;
   badgeText?: string;
 }
 
@@ -15,11 +16,13 @@ const FRAMEWORK_REGISTRY: Record<string, FrameworkConfig> = {
     displayName: "Vue 3 + Vite",
     shortName: "Vue",
     available: true,
+    premiumOnly: true,
   },
   nextjs: {
     displayName: "Next.js",
     shortName: "Next.js",
     available: true,
+    premiumOnly: true,
   },
   angular: {
     displayName: "Angular",

@@ -128,6 +128,21 @@ async def generate_view(request):
             content_type="text/event-stream",
         )
 
+    # --- Premium-only framework gating ---
+    PREMIUM_FRAMEWORKS = {"vue", "nextjs"}
+    project_framework = await sync_to_async(lambda: getattr(project, "framework", "react") or "react")()
+    if project_framework in PREMIUM_FRAMEWORKS and plan_type != "premium":
+        fw_names = {"vue": "Vue 3 + Vite", "nextjs": "Next.js"}
+        fw_label = fw_names.get(project_framework, project_framework)
+        return StreamingHttpResponse(
+            _sse_error(
+                f"El framework '{fw_label}' solo está disponible en el plan Premium. "
+                "Mejora tu plan para usarlo."
+            ),
+            status=402,
+            content_type="text/event-stream",
+        )
+
     file_map_size = await sync_to_async(lambda: project.file_map_size_kb)()
     if file_map_size > max_kb:
         return StreamingHttpResponse(

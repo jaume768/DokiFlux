@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { FRAMEWORK_LIST, DEFAULT_FRAMEWORK, type FrameworkId } from "@/lib/frameworks";
+import { useAuth } from "@/context/AuthContext";
 
 interface FrameworkSelectorProps {
   value: FrameworkId;
@@ -27,6 +29,9 @@ const FRAMEWORK_ICONS: Record<string, string> = {
 export function FrameworkSelector({ value, onChange, disabled }: FrameworkSelectorProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { planType } = useAuth();
+  const router = useRouter();
+  const isPremium = planType === "premium";
 
   const selected = FRAMEWORK_LIST.find((f) => f.id === value) ?? FRAMEWORK_LIST[0];
 
@@ -60,31 +65,52 @@ export function FrameworkSelector({ value, onChange, disabled }: FrameworkSelect
           <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 bg-zinc-900/80 sticky top-0">
             Framework
           </div>
-          {FRAMEWORK_LIST.map((fw) => (
-            <button
-              key={fw.id}
-              type="button"
-              disabled={!fw.available}
-              onClick={() => {
-                if (fw.available) {
+          {FRAMEWORK_LIST.map((fw) => {
+            const locked = (fw.premiumOnly && !isPremium) || !fw.available;
+            const comingSoon = !fw.available;
+            return (
+              <button
+                key={fw.id}
+                type="button"
+                onClick={() => {
+                  if (comingSoon) return;
+                  if (locked) {
+                    setOpen(false);
+                    router.push("/app/billing");
+                    return;
+                  }
                   onChange(fw.id);
                   setOpen(false);
-                }
-              }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors ${fw.available ? `hover:bg-zinc-800 ${fw.id === value ? "bg-zinc-800 text-white" : "text-zinc-300"}` : "text-zinc-600 cursor-not-allowed"}`}
-            >
-              <span className={fw.available ? (FRAMEWORK_COLORS[fw.id] ?? "text-zinc-300") : "opacity-50"}>
-                {FRAMEWORK_ICONS[fw.id]}
-              </span>
-              <span className="flex-1 font-medium">{fw.displayName}</span>
-              {!fw.available && fw.badgeText && (
-                <span className="flex items-center gap-0.5 text-[9px] font-medium text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full">
-                  <Lock className="w-2.5 h-2.5" />
-                  {fw.badgeText}
+                }}
+                title={locked && !comingSoon ? "Disponible solo en Premium — haz clic para mejorar tu plan" : undefined}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors ${
+                  comingSoon
+                    ? "text-zinc-600 cursor-not-allowed"
+                    : locked
+                    ? "hover:bg-zinc-800 text-zinc-300 opacity-60"
+                    : `hover:bg-zinc-800 ${fw.id === value ? "bg-zinc-800 text-white" : "text-zinc-300"}`
+                }`}
+              >
+                <span className={comingSoon ? "opacity-50" : (FRAMEWORK_COLORS[fw.id] ?? "text-zinc-300")}>
+                  {FRAMEWORK_ICONS[fw.id]}
                 </span>
-              )}
-            </button>
-          ))}
+                <span className="flex-1 font-medium flex items-center gap-1.5">
+                  {fw.displayName}
+                  {locked && !comingSoon && <Lock className="w-3 h-3 text-amber-400" />}
+                </span>
+                {comingSoon && fw.badgeText && (
+                  <span className="flex items-center gap-0.5 text-[9px] font-medium text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full">
+                    {fw.badgeText}
+                  </span>
+                )}
+                {!comingSoon && fw.premiumOnly && (
+                  <span className="text-[9px] font-medium text-amber-400/80 bg-amber-400/10 px-1.5 py-0.5 rounded-full shrink-0">
+                    Premium
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
