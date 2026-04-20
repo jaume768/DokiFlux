@@ -5,9 +5,14 @@ from .models import Generation
 
 @admin.register(Generation)
 class GenerationAdmin(admin.ModelAdmin):
+    @admin.display(description="Project ID", ordering="project_id")
+    def get_project_id(self, obj):
+        return obj.project_id
+
     list_display = [
         "id",
         "user",
+        "get_project_id",
         "project",
         "model",
         "status",
