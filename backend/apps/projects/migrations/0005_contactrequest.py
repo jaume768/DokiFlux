@@ -13,6 +13,17 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Defensive cleanup: a previous (failed) deploy may have left behind a
+        # `contact_requests` table or sequence without recording the migration
+        # in django_migrations. Drop any remnants so CreateModel below succeeds.
+        # Safe no-op on fresh installs thanks to IF EXISTS.
+        migrations.RunSQL(
+            sql=(
+                "DROP TABLE IF EXISTS contact_requests CASCADE;"
+                "DROP SEQUENCE IF EXISTS contact_requests_id_seq CASCADE;"
+            ),
+            reverse_sql=migrations.RunSQL.noop,
+        ),
         migrations.CreateModel(
             name='ContactRequest',
             fields=[
