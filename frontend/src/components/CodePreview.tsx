@@ -860,7 +860,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
                   }`}>
                     <div className="w-64 flex flex-col gap-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Loading preview...</span>
+                        <span className="text-muted-foreground">Cargando vista previa...</span>
                         <span className="text-primary font-medium">{loadingProgress}%</span>
                       </div>
                       <div className="h-2 w-full bg-muted rounded-full overflow-hidden">

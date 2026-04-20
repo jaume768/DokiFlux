@@ -135,6 +135,37 @@ def get_provider(model: str = "gpt-5.4"):
         raise ValueError(f"Unknown provider: {provider_name}")
 
 
+# Sentinel substrings of the off-topic refusal responses emitted by the planner.
+# Any assistant message containing one of these is stripped from chat history
+# (together with its triggering user message) so it does not contaminate future
+# generations — otherwise weaker models mimic the refusal pattern and emit prose
+# instead of code (see incident: gemini-3.1-flash-lite producing 2k tokens of
+# refusal with 0 file markers after 3 off-topic refusals in history).
+_OFF_TOPIC_REFUSAL_SENTINELS = (
+    "Soy el asistente de Dokiflux",
+    "I'm Dokiflux's assistant",
+)
+
+
+def _sanitize_chat_history(chat_history: list[dict]) -> list[dict]:
+    """Drop off-topic refusal pairs (user prompt + assistant refusal) from history."""
+    if not chat_history:
+        return chat_history
+    drop_indexes: set[int] = set()
+    for i, msg in enumerate(chat_history):
+        if msg.get("role") != "assistant":
+            continue
+        content = msg.get("content") or ""
+        if any(s in content for s in _OFF_TOPIC_REFUSAL_SENTINELS):
+            drop_indexes.add(i)
+            # Also drop the immediately preceding user message that triggered it.
+            if i > 0 and chat_history[i - 1].get("role") == "user":
+                drop_indexes.add(i - 1)
+    if not drop_indexes:
+        return chat_history
+    return [m for i, m in enumerate(chat_history) if i not in drop_indexes]
+
+
 def build_messages(prompt: str, current_project: str | None, chat_history: list[dict]) -> list[dict]:
     """
     Build the message list for the AI provider.
@@ -148,7 +179,7 @@ def build_messages(prompt: str, current_project: str | None, chat_history: list[
             "content": f"Current project state (all files):\n{current_project}",
         })
 
-    for msg in chat_history:
+    for msg in _sanitize_chat_history(chat_history):
         messages.append({
             "role": msg["role"],
             "content": msg["content"],
@@ -273,7 +304,7 @@ def _build_file_messages(
     context_parts.append(f"\nYour task: Generate ONLY the file '{file_path}'.")
 
     messages = [{"role": "developer", "content": "\n\n".join(context_parts)}]
-    for msg in chat_history[-4:]:
+    for msg in _sanitize_chat_history(chat_history)[-4:]:
         messages.append({"role": msg["role"], "content": msg["content"]})
     messages.append({"role": "user", "content": f"Generate the file {file_path}"})
     return messages
