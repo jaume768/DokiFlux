@@ -736,6 +736,16 @@ async def _finalize_generation(
 ):
     """Handle billing and record updates after streaming ends (normally, cancelled, or error)."""
 
+    # Persist the user's model choice on the project regardless of outcome:
+    # even cancelled/failed gens carry a valid "last picked model" signal so
+    # re-entering the project restores the UI selection accurately.
+    if model:
+        try:
+            await _update_project_model(project, model)
+            logger.info("[model] persisted last_used_model=%s for project=%s", model, project.id)
+        except Exception as exc:
+            logger.warning("[model] failed to persist last_used_model for project=%s: %s", project.id, exc)
+
     if error_occurred and not cancelled:
         generation.status = "failed"
         await _save_generation(generation)

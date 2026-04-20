@@ -71,7 +71,6 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
   const [publishModal, setPublishModal] = useState<{ open: boolean; variant: "auto" | "manual" }>({ open: false, variant: "manual" });
   const [previewReady, setPreviewReady] = useState(false);
   const publishAutoDismissedRef = useRef(false);
-  const [modelLocked, setModelLocked] = useState(false);
   const modelParam = searchParams.get("model");
   const [selectedModel, setSelectedModel] = useState<ModelId>(
     modelParam && isValidModelId(modelParam) ? modelParam : (defaultModel || DEFAULT_MODEL)
@@ -134,7 +133,6 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         }
         if (project.last_used_model && isValidModelId(project.last_used_model)) {
           setSelectedModel(project.last_used_model);
-          setModelLocked(true);
         }
 
         // Load chat history
@@ -1033,7 +1031,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
               <ModelSelector
                 value={selectedModel}
                 onChange={setSelectedModel}
-                disabled={isLoading || modelLocked}
+                disabled={isLoading}
               />
             </div>
           )}
@@ -1106,7 +1104,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             <ModelSelector
               value={selectedModel}
               onChange={setSelectedModel}
-              disabled={isLoading || modelLocked}
+              disabled={isLoading}
             />
           </div>
           {balance !== null && (
