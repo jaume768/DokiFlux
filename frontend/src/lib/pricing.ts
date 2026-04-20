@@ -5,6 +5,7 @@ export interface BackendModel {
   provider: string;
   category: string;
   max_output_tokens: number;
+  premium_only?: boolean;
   pricing: {
     input_per_million: number;
     output_per_million: number;
@@ -20,6 +21,7 @@ export interface ModelConfig {
   inputPerMillion: number;
   outputPerMillion: number;
   maxOutputTokens: number;
+  premiumOnly: boolean;
 }
 
 export type ModelId = string;
@@ -36,6 +38,7 @@ export function normaliseModel(m: BackendModel): ModelConfig {
     inputPerMillion: m.pricing.input_per_million,
     outputPerMillion: m.pricing.output_per_million,
     maxOutputTokens: m.max_output_tokens,
+    premiumOnly: m.premium_only ?? false,
   };
 }
 

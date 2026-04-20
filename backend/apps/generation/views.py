@@ -115,6 +115,19 @@ async def generate_view(request):
     max_kb = plan_def.get("max_file_map_kb", 500)
     daily_limit = plan_def.get("messages_per_day", 7)
 
+    # --- Premium-only model gating ---
+    from .providers.registry import MODEL_REGISTRY
+    model_cfg = MODEL_REGISTRY.get(model, {})
+    if model_cfg.get("premium_only") and plan_type != "premium":
+        return StreamingHttpResponse(
+            _sse_error(
+                f"El modelo '{model_cfg.get('display_name', model)}' solo está "
+                "disponible en el plan Premium. Mejora tu plan para usarlo."
+            ),
+            status=402,
+            content_type="text/event-stream",
+        )
+
     file_map_size = await sync_to_async(lambda: project.file_map_size_kb)()
     if file_map_size > max_kb:
         return StreamingHttpResponse(

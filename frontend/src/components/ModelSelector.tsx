@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChevronDown, Cpu, Brain, Sparkles } from "lucide-react";
+import { ChevronDown, Cpu, Brain, Sparkles, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { type ModelId, type ModelConfig } from "@/lib/pricing";
 import { useModels } from "@/context/ModelsContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface ModelSelectorProps {
   value: ModelId;
@@ -57,6 +59,9 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
   const { models, isLoaded } = useModels();
+  const { planType } = useAuth();
+  const router = useRouter();
+  const isPremium = planType === "premium";
 
   const selected = models.find((m) => m.id === value) ?? models[0];
   const grouped = groupModels(models);
@@ -141,25 +146,37 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
               <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 bg-zinc-900 sticky top-0">
                 {group.label}
               </div>
-              {group.models.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => {
-                    onChange(m.id);
-                    setOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-800 ${m.id === value ? "bg-zinc-800 text-white" : "text-zinc-300"}`}
-                >
-                  <span className={PROVIDER_COLORS[m.provider]}>
-                    {PROVIDER_ICONS[m.provider]}
-                  </span>
-                  <span className="flex-1 font-medium">{m.displayName}</span>
-                  <span className="text-[10px] text-zinc-500 shrink-0">
-                    ${m.inputPerMillion}/{m.outputPerMillion}
-                  </span>
-                </button>
-              ))}
+              {group.models.map((m) => {
+                const locked = m.premiumOnly && !isPremium;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      if (locked) {
+                        setOpen(false);
+                        router.push("/pricing");
+                        return;
+                      }
+                      onChange(m.id);
+                      setOpen(false);
+                    }}
+                    title={locked ? "Disponible solo en Premium — haz clic para mejorar tu plan" : undefined}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-800 ${m.id === value ? "bg-zinc-800 text-white" : "text-zinc-300"} ${locked ? "opacity-60" : ""}`}
+                  >
+                    <span className={PROVIDER_COLORS[m.provider]}>
+                      {PROVIDER_ICONS[m.provider]}
+                    </span>
+                    <span className="flex-1 font-medium flex items-center gap-1.5">
+                      {m.displayName}
+                      {locked && <Lock className="w-3 h-3 text-amber-400" />}
+                    </span>
+                    <span className="text-[10px] text-zinc-500 shrink-0">
+                      ${m.inputPerMillion}/{m.outputPerMillion}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           ))}
           <div className="px-3 py-1.5 border-t border-zinc-800 text-[10px] text-zinc-600">

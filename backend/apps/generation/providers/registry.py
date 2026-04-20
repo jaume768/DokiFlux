@@ -23,6 +23,7 @@ MODEL_REGISTRY = {
         "max_output_tokens": 65536,
         "display_name": "Gemini 3.1 Pro",
         "category": "gemini",
+        "premium_only": True,
     },
     "gemini-3.1-flash-lite": {
         "provider": "gemini",
@@ -63,6 +64,7 @@ MODEL_REGISTRY = {
         "max_output_tokens": 24576,
         "display_name": "Claude Opus 4.7 (Medium)",
         "category": "anthropic",
+        "premium_only": True,
     },
     "claude-opus-4.7-high": {
         "provider": "anthropic",
@@ -73,6 +75,7 @@ MODEL_REGISTRY = {
         "max_output_tokens": 32768,
         "display_name": "Claude Opus 4.7 (High)",
         "category": "anthropic",
+        "premium_only": True,
     },
     "claude-opus-4.6": {
         "provider": "anthropic",
@@ -82,6 +85,7 @@ MODEL_REGISTRY = {
         "max_output_tokens": 16384,
         "display_name": "Claude Opus 4.6",
         "category": "anthropic",
+        "premium_only": True,
     },
     "claude-haiku-4.5": {
         "provider": "anthropic",
@@ -123,6 +127,7 @@ MODEL_REGISTRY = {
         "max_output_tokens": 31000,
         "display_name": "GPT-5.4 (Medium)",
         "category": "openai",
+        "premium_only": True,
     },
     "gpt-5.4-high": {
         "provider": "openai",
@@ -133,6 +138,7 @@ MODEL_REGISTRY = {
         "max_output_tokens": 31000,
         "display_name": "GPT-5.4 (High)",
         "category": "openai",
+        "premium_only": True,
     },
     "gpt-5.4-xhigh": {
         "provider": "openai",
@@ -143,6 +149,7 @@ MODEL_REGISTRY = {
         "max_output_tokens": 31000,
         "display_name": "GPT-5.4 (xHigh)",
         "category": "openai",
+        "premium_only": True,
     },
 }
 
@@ -190,6 +197,7 @@ def list_models() -> list[dict]:
                 "provider": cfg["provider"],
                 "category": cfg["category"],
                 "max_output_tokens": cfg["max_output_tokens"],
+                "premium_only": cfg.get("premium_only", False),
                 "pricing": {
                     "input_per_million": float(cfg["input_per_million"]),
                     "output_per_million": float(cfg["output_per_million"]),
