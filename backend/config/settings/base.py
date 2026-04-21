@@ -39,6 +39,7 @@ LOCAL_APPS = [
     "apps.projects",
     "apps.billing",
     "apps.generation",
+    "apps.demo",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -226,3 +227,15 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 600  # 10 minutes max per task
+
+# --- Demo mode ---
+DEMO_IP_SALT = config("DEMO_IP_SALT", default="")
+DEMO_INITIAL_CREDITS = config("DEMO_INITIAL_CREDITS", default=2.0, cast=float)
+DEMO_SIGNUP_BONUS_CREDITS = config("DEMO_SIGNUP_BONUS_CREDITS", default=3.0, cast=float)
+DEMO_MAX_SESSIONS_PER_IP_24H = config("DEMO_MAX_SESSIONS_PER_IP_24H", default=3, cast=int)
+DEMO_MAX_SESSIONS_PER_FP_24H = config("DEMO_MAX_SESSIONS_PER_FP_24H", default=1, cast=int)
+# When True (defaults to DEBUG): disables IP/fingerprint quotas and refills
+# demo credits on every /api/demo/start/ — lets you test the demo freely
+# during development.
+DEMO_DEV_MODE = config("DEMO_DEV_MODE", default=None, cast=lambda v: (str(v).lower() in ("1", "true", "yes")) if v is not None else None)
+TRUSTED_PROXIES = config("TRUSTED_PROXIES", default="", cast=Csv())

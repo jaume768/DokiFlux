@@ -13,3 +13,5 @@ export { TemplatesShowcase } from "./TemplatesShowcase";
 export { DualPersona } from "./DualPersona";
 export { FAQSection } from "./FAQSection";
 export { FinalCTA } from "./FinalCTA";
+export { DemoChatInput } from "./DemoChatInput";
+export { ConsultationModal } from "./ConsultationModal";

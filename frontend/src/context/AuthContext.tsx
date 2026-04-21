@@ -17,6 +17,22 @@ import type {
   BalanceResponse,
 } from "@/types/auth";
 import { apiPost, apiGet } from "@/lib/api";
+import { demoMigrate, hasDemoState, type DemoMigrateResponse } from "@/lib/demo";
+
+/**
+ * Migrate an anonymous demo session into the just-authenticated user's account.
+ * - Called on login / register / Google OAuth.
+ * - No-op if there is no local demo state.
+ * - Swallows errors so auth flow never breaks on demo-migration failure.
+ */
+async function maybeMigrateDemoSession(): Promise<DemoMigrateResponse | null> {
+  if (!hasDemoState()) return null;
+  try {
+    return await demoMigrate();
+  } catch {
+    return null;
+  }
+}
 
 interface AuthContextType {
   user: User | null;
@@ -41,6 +57,7 @@ const PUBLIC_PATHS = [
   "/password-reset",
   "/password-reset-confirm",
   "/auth/google/callback",
+  "/demo",
 ];
 
 function isPublicPath(pathname: string): boolean {
@@ -133,8 +150,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(res.user);
       refreshBalance();
 
+      const migrated = await maybeMigrateDemoSession();
+
       if (!res.user.has_completed_onboarding) {
         router.push("/onboarding");
+      } else if (migrated && migrated.project_id) {
+        window.location.href = `/app/generate/${migrated.project_id}?demo_migrated=1`;
       } else {
         window.location.href = "/app";
       }
@@ -152,6 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // AUTO_VERIFY_EMAIL=True (dev) — cookies already set, go straight to onboarding
         setUser(res.user);
         refreshBalance();
+        await maybeMigrateDemoSession();
         router.push("/onboarding");
       }
       // If is_email_verified=false, do nothing here — the register page handles the UI
@@ -167,8 +189,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(res.user);
       refreshBalance();
 
+      const migrated = await maybeMigrateDemoSession();
+
       if (!res.user.has_completed_onboarding) {
         router.push("/onboarding");
+      } else if (migrated && migrated.project_id) {
+        window.location.href = `/app/generate/${migrated.project_id}?demo_migrated=1`;
       } else {
         window.location.href = "/app";
       }

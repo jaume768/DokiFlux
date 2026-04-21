@@ -82,12 +82,13 @@ export function LandingNavbar() {
                 >
                   Iniciar sesión
                 </Link>
-                <Link
-                  href="/register"
+                {/* Hard <a> — /demo needs full page load to get COOP/COEP headers */}
+                <a
+                  href="/demo"
                   className="btn-primary relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white"
                 >
                   <span className="relative z-10">Empieza gratis</span>
-                </Link>
+                </a>
               </>
             )}
           </div>
@@ -190,13 +191,13 @@ export function LandingNavbar() {
               >
                 Iniciar sesión
               </Link>
-              <Link
-                href="/register"
+              <a
+                href="/demo"
                 onClick={() => setMobileOpen(false)}
                 className="btn-primary relative flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-white"
               >
                 <span className="relative z-10">Empieza gratis</span>
-              </Link>
+              </a>
             </>
           )}
         </div>

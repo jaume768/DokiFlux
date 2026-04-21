@@ -1,6 +1,6 @@
 from django.db.models import Count
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -169,34 +169,58 @@ class ProjectRestoreView(APIView):
 
 
 class ContactRequestView(APIView):
-    """POST /api/contact/  → create a lead + send email to sales."""
+    """POST /api/contact/  → create a lead + send email to sales.
 
-    permission_classes = [IsAuthenticated]
+    Accepts BOTH authenticated users (with optional project ref) and anonymous
+    visitors from the landing page / pricing / footer. Anonymous submissions
+    are rate-limited by IP in memory (via Redis cache)."""
+
+    permission_classes = [AllowAny]
 
     def post(self, request):
         from datetime import timedelta
+        from django.core.cache import cache
         from django.utils import timezone
 
-        user = request.user
+        user = request.user if request.user.is_authenticated else None
+
+        # Rate-limit anonymous submissions: 3/hour per IP.
+        if user is None:
+            remote_addr = (
+                request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+                or request.META.get("REMOTE_ADDR", "unknown")
+            )
+            cache_key = f"contact:anon:{remote_addr}"
+            count = cache.get(cache_key, 0)
+            if count >= 3:
+                return Response(
+                    {"error": "Demasiadas solicitudes. Intenta en una hora."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+            cache.set(cache_key, count + 1, timeout=3600)
 
         # Idempotency: ignore a second submit from the same user within 60s.
-        recent = ContactRequest.objects.filter(
-            user=user,
-            created_at__gte=timezone.now() - timedelta(seconds=60),
-        ).first()
-        if recent:
-            return Response(
-                ContactRequestSerializer(recent).data, status=status.HTTP_200_OK
-            )
+        if user is not None:
+            recent = ContactRequest.objects.filter(
+                user=user,
+                created_at__gte=timezone.now() - timedelta(seconds=60),
+            ).first()
+            if recent:
+                return Response(
+                    ContactRequestSerializer(recent).data, status=status.HTTP_200_OK
+                )
 
-        # Validate ownership of project if sent
+        # Validate ownership of project if sent (only for authenticated users)
         project_id = request.data.get("project")
-        if project_id:
+        if project_id and user is not None:
             if not Project.objects.filter(id=project_id, user=user).exists():
                 return Response(
                     {"error": "Proyecto no encontrado."},
                     status=status.HTTP_404_NOT_FOUND,
                 )
+        elif project_id and user is None:
+            # Anonymous users cannot reference projects
+            project_id = None
 
         serializer = ContactRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

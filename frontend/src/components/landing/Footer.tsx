@@ -1,6 +1,10 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Twitter, Github, Linkedin, ArrowUpRight } from "lucide-react";
+import { Twitter, Github, Linkedin, ArrowUpRight, Calendar } from "lucide-react";
+import { ConsultationModal } from "./ConsultationModal";
 
 const FOOTER_LINKS = {
   Producto: [
@@ -29,6 +33,7 @@ const SOCIAL_LINKS = [
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const [consultOpen, setConsultOpen] = useState(false);
 
   return (
     <footer className="relative border-t border-white/[0.06] overflow-hidden">
@@ -85,6 +90,17 @@ export function Footer() {
                 </a>
               ))}
             </div>
+
+            {/* Consultation CTA */}
+            <button
+              type="button"
+              onClick={() => setConsultOpen(true)}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg w-fit text-[13px] font-semibold text-white transition-all hover:shadow-[0_0_14px_rgba(139,92,246,0.35)]"
+              style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}
+            >
+              <Calendar size={13} />
+              Agendar consultoría
+            </button>
 
             {/* Status badge */}
             <div
@@ -193,6 +209,7 @@ export function Footer() {
           </div>
         </div>
       </div>
+      <ConsultationModal open={consultOpen} onClose={() => setConsultOpen(false)} source="footer" />
     </footer>
   );
 }

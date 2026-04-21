@@ -11,6 +11,7 @@ import {
   DualPersona,
   FinalCTA,
   Footer,
+  DemoChatInput,
 } from "@/components/landing";
 
 export default function LandingPage() {
@@ -22,6 +23,7 @@ export default function LandingPage() {
       <LandingNavbar />
       <main>
         <Hero />
+        <DemoChatInput />
         <HowItWorks />
         <Comparison />
         <TemplatesShowcase />

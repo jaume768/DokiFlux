@@ -9,19 +9,28 @@ const nextConfig: NextConfig = {
         // WebContainer pages need strict COOP/COEP
         source: "/app/:path*",
         headers: [
-          {
-            key: "Cross-Origin-Embedder-Policy",
-            value: "credentialless",
-          },
-          {
-            key: "Cross-Origin-Opener-Policy",
-            value: "same-origin",
-          },
+          { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+        ],
+      },
+      {
+        // /demo also runs WebContainer (anonymous preview) → needs isolation.
+        source: "/demo/:path*",
+        headers: [
+          { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+        ],
+      },
+      {
+        source: "/demo",
+        headers: [
+          { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
         ],
       },
       {
         // All other pages: allow Google Sign-In popups
-        source: "/((?!app/).*)",
+        source: "/((?!app/|demo/|demo$).*)",
         headers: [
           {
             key: "Cross-Origin-Opener-Policy",
