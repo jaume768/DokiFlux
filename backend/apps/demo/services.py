@@ -30,10 +30,10 @@ logger = logging.getLogger(__name__)
 
 # --- Demo hard limits ---
 DEMO_MODEL = "gemini-3.1-flash-lite"
-DEMO_MAX_FILE_TOKENS = 4000
-DEMO_MAX_PLANNER_TOKENS = 4000
+DEMO_MAX_FILE_TOKENS = 12000
+DEMO_MAX_PLANNER_TOKENS = 12000
 DEMO_MAX_FILES_PER_GEN = 8  # safety cap
-DEMO_MAX_PROMPT_LENGTH = 1000
+DEMO_MAX_PROMPT_LENGTH = 10000
 
 
 @sync_to_async
@@ -103,7 +103,7 @@ async def stream_demo_generation(
         yield {"type": "error", "error": "Prompt demasiado corto."}
         return
     if len(prompt) > DEMO_MAX_PROMPT_LENGTH:
-        prompt = prompt[:DEMO_MAX_PROMPT_LENGTH]
+        prompt = prompt[:DEMO_MAX_PROMPT_LENGTH]  # soft cap — still very large
 
     framework = session.framework or "react"
     file_map = dict(session.file_map or {})

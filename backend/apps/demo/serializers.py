@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 class DemoStartSerializer(serializers.Serializer):
     fingerprint = serializers.CharField(max_length=256, required=False, allow_blank=True, default="")
-    prompt = serializers.CharField(max_length=5000, required=False, allow_blank=True, default="")
+    prompt = serializers.CharField(max_length=10000, required=False, allow_blank=True, default="")
     framework = serializers.ChoiceField(
         choices=["react", "vue", "nextjs"], default="react"
     )
@@ -14,7 +14,7 @@ class DemoStartSerializer(serializers.Serializer):
 
 
 class DemoGenerateSerializer(serializers.Serializer):
-    prompt = serializers.CharField(max_length=5000)
+    prompt = serializers.CharField(max_length=10000)
 
 
 class DemoSessionStateSerializer(serializers.Serializer):
