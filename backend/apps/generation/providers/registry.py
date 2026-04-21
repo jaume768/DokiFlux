@@ -25,15 +25,6 @@ MODEL_REGISTRY = {
         "category": "gemini",
         "premium_only": True,
     },
-    "gemini-3.1-flash": {
-        "provider": "gemini",
-        "api_model": "gemini-3.1-flash-preview",
-        "input_per_million": Decimal("0.30"),
-        "output_per_million": Decimal("2.50"),
-        "max_output_tokens": 65536,
-        "display_name": "Gemini 3.1 Flash",
-        "category": "gemini",
-    },
     "gemini-3.1-flash-lite": {
         "provider": "gemini",
         "api_model": "gemini-3.1-flash-lite-preview",
@@ -167,7 +158,7 @@ MODEL_REGISTRY = {
 VALID_MODEL_IDS = frozenset(MODEL_REGISTRY.keys())
 
 # Default model
-DEFAULT_MODEL = "gemini-3.1-flash"
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
 
 
 def get_model_config(model_id: str) -> dict:
