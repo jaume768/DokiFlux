@@ -289,9 +289,9 @@ async def demo_generate_view(request):
             content_type="text/event-stream",
         )
 
-    # Basic per-session rate-limit: no more than 5 generations total (cheap guard).
+    # Basic per-session rate-limit: no more than 7 generations total (cheap guard).
     # Bypassed in dev mode so you can iterate freely on /demo while developing.
-    if session.generation_count >= 3 and not is_dev_mode():
+    if session.generation_count >= 7 and not is_dev_mode():
         return StreamingHttpResponse(
             _sse_error("Demo cap reached.", code="demo_cap_reached"),
             status=429,

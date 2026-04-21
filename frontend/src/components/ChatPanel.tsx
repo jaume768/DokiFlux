@@ -25,28 +25,28 @@ function AssistantMessage({ msg, onRestore, isRestoring }: { msg: Message; onRes
   if (msgType === "chat") {
     return (
       <div className="space-y-1.5 pt-1">
-        <div className="text-sm text-foreground leading-relaxed max-w-none">
+        <div className="text-[17px] leading-[1.55] text-foreground max-w-none">
           <ReactMarkdown
             components={{
-              p: ({ children }) => <p className="my-1">{children}</p>,
+              p: ({ children }) => <p className="my-1.5">{children}</p>,
               strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
               em: ({ children }) => <em className="italic">{children}</em>,
-              ul: ({ children }) => <ul className="my-1 ml-4 list-disc space-y-0.5">{children}</ul>,
-              ol: ({ children }) => <ol className="my-1 ml-4 list-decimal space-y-0.5">{children}</ol>,
+              ul: ({ children }) => <ul className="my-1.5 ml-4 list-disc space-y-1">{children}</ul>,
+              ol: ({ children }) => <ol className="my-1.5 ml-4 list-decimal space-y-1">{children}</ol>,
               li: ({ children }) => <li className="pl-0.5">{children}</li>,
-              h1: ({ children }) => <h2 className="text-base font-bold mt-3 mb-1">{children}</h2>,
-              h2: ({ children }) => <h3 className="text-sm font-bold mt-2 mb-1">{children}</h3>,
-              h3: ({ children }) => <h4 className="text-sm font-semibold mt-2 mb-1">{children}</h4>,
+              h1: ({ children }) => <h2 className="text-lg font-bold mt-3 mb-1.5">{children}</h2>,
+              h2: ({ children }) => <h3 className="text-base font-bold mt-2.5 mb-1">{children}</h3>,
+              h3: ({ children }) => <h4 className="text-[17px] font-semibold mt-2 mb-1">{children}</h4>,
               code: ({ children, className }) => {
                 const isBlock = className?.includes("language-");
                 if (isBlock) {
                   return (
                     <pre className="my-2 rounded-md bg-muted p-3 overflow-x-auto">
-                      <code className="text-xs font-mono text-foreground">{children}</code>
+                      <code className="text-sm font-mono text-foreground">{children}</code>
                     </pre>
                   );
                 }
-                return <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono text-primary">{children}</code>;
+                return <code className="rounded bg-muted px-1 py-0.5 text-sm font-mono text-primary">{children}</code>;
               },
               pre: ({ children }) => <>{children}</>,
               a: ({ href, children }) => (
@@ -73,8 +73,8 @@ function AssistantMessage({ msg, onRestore, isRestoring }: { msg: Message; onRes
     return (
       <div className="space-y-1.5 pt-1">
         <div className="flex items-center gap-2">
-          <Code2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-          <span className="text-sm text-muted-foreground">
+          <Code2 className="w-4 h-4 text-emerald-500 shrink-0" />
+          <span className="text-[17px] text-muted-foreground">
             {msg.content}
           </span>
         </div>
@@ -100,8 +100,8 @@ function AssistantMessage({ msg, onRestore, isRestoring }: { msg: Message; onRes
   return (
     <div className="space-y-1.5 pt-1">
       <div className="flex items-center gap-2">
-        <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
-        <span className="text-sm text-destructive">
+        <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+        <span className="text-[17px] text-destructive">
           {msg.content}
         </span>
       </div>
@@ -158,8 +158,8 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
   if (hasTasks) {
     return (
       <div className="flex gap-3">
-        <div className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
-          <Bot className="w-3.5 h-3.5" />
+        <div className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
+          <Bot className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
           <TaskProgress
@@ -193,13 +193,13 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
 
   return (
     <div className="flex gap-3">
-      <div className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
-        <Bot className="w-3.5 h-3.5" />
+      <div className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
+        <Bot className="w-4 h-4" />
       </div>
       <div className="flex-1 pt-1 space-y-2.5">
         <div className="flex items-center gap-2">
-          <Icon className={`w-3.5 h-3.5 ${config.color} ${phase !== "mounting" ? "animate-pulse" : ""}`} />
-          <span className={`text-sm font-medium ${config.color}`}>
+          <Icon className={`w-4 h-4 ${config.color} ${phase !== "mounting" ? "animate-pulse" : ""}`} />
+          <span className={`text-[17px] font-medium ${config.color}`}>
             {config.label}{filesLabel}
           </span>
         </div>
@@ -210,7 +210,7 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
           />
         </div>
         {progress.charsReceived > 0 && (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {(progress.charsReceived / 1000).toFixed(1)}k caracteres recibidos
           </p>
         )}
@@ -246,12 +246,12 @@ export function ChatPanel({ messages, isLoading, genProgress, onRestore, isResto
 
   return (
     <ScrollArea className="flex-1 min-h-0 overflow-hidden">
-      <div className="p-4 space-y-3">
+      <div className="p-4 space-y-4">
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center text-muted-foreground">
             <Bot className="w-12 h-12 mb-4 opacity-50" />
-            <h3 className="text-lg font-medium">Dokiflux</h3>
-            <p className="text-sm mt-1 max-w-[280px]">
+            <h3 className="text-xl font-medium">Dokiflux</h3>
+            <p className="text-[17px] mt-2 max-w-[280px] leading-relaxed">
               Describe lo que quieres crear. Puedo ayudarte a definir la idea y generar el código cuando estés listo.
             </p>
           </div>
@@ -260,21 +260,21 @@ export function ChatPanel({ messages, isLoading, genProgress, onRestore, isResto
         {messages.map((msg) => (
           <div key={msg.id} className="flex gap-3">
             <div
-              className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
+              className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${
                 msg.role === "user"
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground"
               }`}
             >
               {msg.role === "user" ? (
-                <User className="w-3.5 h-3.5" />
+                <User className="w-4 h-4" />
               ) : (
-                <Bot className="w-3.5 h-3.5" />
+                <Bot className="w-4 h-4" />
               )}
             </div>
             <div className="flex-1 min-w-0">
               {msg.role === "user" ? (
-                <p className="text-sm text-foreground whitespace-pre-wrap pt-1">
+                <p className="text-[17px] leading-[1.55] text-foreground whitespace-pre-wrap pt-1">
                   {msg.content}
                 </p>
               ) : (
@@ -290,28 +290,28 @@ export function ChatPanel({ messages, isLoading, genProgress, onRestore, isResto
 
         {isLoading && !isStreamingChat && (!isGeneratingCode || isBackgroundGen) && (
           <div className="flex gap-3">
-            <div className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
-              <Bot className="w-3.5 h-3.5" />
+            <div className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
+              <Bot className="w-4 h-4" />
             </div>
             <div className="flex-1 flex items-center gap-2 pt-1">
               {isAutoFixing ? (
                 <>
-                  <Wrench className="w-3.5 h-3.5 animate-pulse text-amber-500" />
-                  <span className="text-sm text-amber-500">
+                  <Wrench className="w-4 h-4 animate-pulse text-amber-500" />
+                  <span className="text-[17px] text-amber-500">
                     Corrigiendo error...
                   </span>
                 </>
               ) : isBackgroundGen ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
-                  <span className="text-sm text-blue-500">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                  <span className="text-[17px] text-blue-500">
                     Generando en segundo plano...
                   </span>
                 </>
               ) : (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  <span className="text-[17px] text-muted-foreground">
                     Generando...
                   </span>
                 </>

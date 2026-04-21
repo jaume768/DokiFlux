@@ -17,6 +17,10 @@ import {
   Loader2,
   MessageSquare,
   Monitor,
+  LogIn,
+  CheckCircle2,
+  Zap,
+  Lock,
 } from "lucide-react";
 import { ChatPanel } from "@/components/ChatPanel";
 import { PromptInput } from "@/components/PromptInput";
@@ -67,6 +71,7 @@ export default function DemoPage() {
   const [restartKey, setRestartKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [signupReason, setSignupReason] = useState<"credits" | "cap" | "feature">("credits");
   const [mobileView, setMobileView] = useState<MobileView>("chat");
   const [hasNewPreview, setHasNewPreview] = useState(false);
 
@@ -233,6 +238,7 @@ export default function DemoPage() {
       const s = await ensureSession();
       if (!s) return;
       if (parseFloat(s.credits_remaining) <= 0) {
+        setSignupReason("credits");
         setShowSignupModal(true);
         return;
       }
@@ -437,8 +443,15 @@ export default function DemoPage() {
           }
 
           if (chunk.type === "error") {
+            const code = chunk.code;
             const msg = chunk.error || "Generation error";
-            if (msg === "demo_credits_exhausted") {
+            if (code === "demo_credits_exhausted") {
+              setSignupReason("credits");
+              setShowSignupModal(true);
+              return;
+            }
+            if (code === "demo_cap_reached") {
+              setSignupReason("cap");
               setShowSignupModal(true);
               return;
             }
@@ -741,6 +754,10 @@ export default function DemoPage() {
                 isMobile={isMobile}
                 isIOS={isIOS}
                 genProgress={genProgress}
+                onDemoGate={() => {
+                  setSignupReason("feature");
+                  setShowSignupModal(true);
+                }}
               />
             )}
           </div>
@@ -751,48 +768,116 @@ export default function DemoPage() {
       {showSignupModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          style={{ background: "rgba(0,0,0,0.7)" }}
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
           onClick={() => setShowSignupModal(false)}
         >
           <div
-            className="max-w-md w-full rounded-2xl p-6 text-center"
+            className="max-w-md w-full rounded-2xl p-7 text-center"
             style={{
               background:
-                "linear-gradient(135deg, rgba(139,92,246,0.15) 0%, #0a0a0f 80%)",
-              border: "1px solid rgba(139,92,246,0.3)",
+                "linear-gradient(160deg, rgba(139,92,246,0.18) 0%, rgba(10,10,15,0.98) 60%)",
+              border: "1px solid rgba(139,92,246,0.35)",
+              boxShadow: "0 24px 60px -12px rgba(139,92,246,0.35)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Icon */}
             <div
-              className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full"
+              className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
               style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}
             >
-              <Crown className="w-7 h-7 text-white" />
+              {signupReason === "cap" ? (
+                <Zap className="w-8 h-8 text-white" />
+              ) : signupReason === "feature" ? (
+                <Lock className="w-8 h-8 text-white" />
+              ) : (
+                <Crown className="w-8 h-8 text-white" />
+              )}
             </div>
-            <h2 className="text-2xl font-bold mb-2 text-white">
-              ¡Tu demo se ha acabado!
-            </h2>
-            <p className="text-white/70 mb-6">
-              Regístrate gratis y te guardamos tu proyecto +{" "}
-              <strong className="text-white">3€ de crédito extra</strong> (5€ en
-              total el primer mes).
-            </p>
-            <div className="flex flex-col gap-2">
+
+            {/* Headline */}
+            {signupReason === "cap" ? (
+              <>
+                <h2 className="text-2xl font-black mb-1 text-white">
+                  Límite de la demo alcanzado
+                </h2>
+                <p className="text-white/60 text-sm mb-5">
+                  La demo gratuita incluye{" "}
+                  <strong className="text-white">7 generaciones</strong> sin
+                  necesidad de registro. Crea tu cuenta gratis en segundos y sigue
+                  construyendo sin límites, a{" "}
+                  <strong className="text-white">coste cero</strong>.
+                </p>
+              </>
+            ) : signupReason === "feature" ? (
+              <>
+                <h2 className="text-2xl font-black mb-1 text-white">
+                  Crea una cuenta para continuar
+                </h2>
+                <p className="text-white/60 text-sm mb-5">
+                  Ver el código fuente y descargar el proyecto son funciones{" "}
+                  <strong className="text-white">exclusivas de cuenta</strong>.{" "}
+                  Regístrate gratis — es inmediato.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-black mb-1 text-white">
+                  ¡Tu saldo demo se agotó!
+                </h2>
+                <p className="text-white/60 text-sm mb-5">
+                  Regístrate gratis y te guardamos tu proyecto +{" "}
+                  <strong className="text-white">3 € de crédito extra</strong>{" "}
+                  (5 € en total el primer mes).
+                </p>
+              </>
+            )}
+
+            {/* Benefits */}
+            <ul className="text-left space-y-2 mb-6">
+              {[
+                "Muchas más iteraciones incluidas",
+                "Proyecto guardado automáticamente en la nube",
+                "3 € de crédito gratis al registrarte",
+                "Acceso a modelos más potentes (GPT-4o, Claude, Gemini)",
+              ].map((benefit) => (
+                <li key={benefit} className="flex items-start gap-2.5 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-violet-400 mt-0.5 shrink-0" />
+                  <span className="text-white/80">{benefit}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* CTAs */}
+            <div className="flex flex-col gap-2.5">
               <Link
                 href="/register"
-                className="w-full py-3 rounded-xl text-sm font-semibold text-white"
+                className="w-full py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
                 style={{
                   background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
+                  boxShadow: "0 6px 20px -4px rgba(139,92,246,0.5)",
                 }}
               >
+                <Sparkles className="w-4 h-4" />
                 Crear cuenta gratis
+              </Link>
+              <Link
+                href="/login"
+                className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors hover:bg-white/10"
+                style={{
+                  color: "rgba(255,255,255,0.7)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                }}
+              >
+                <LogIn className="w-4 h-4" />
+                Ya tengo cuenta — Iniciar sesión
               </Link>
               <button
                 type="button"
                 onClick={() => setShowSignupModal(false)}
-                className="text-xs text-white/40 hover:text-white/70 py-2"
+                className="text-xs text-white/30 hover:text-white/60 py-1.5 transition-colors"
               >
-                Cerrar
+                Ahora no
               </button>
             </div>
           </div>

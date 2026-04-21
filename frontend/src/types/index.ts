@@ -47,6 +47,7 @@ export interface StreamChunk {
   content?: string;
   usage?: TokenUsage;
   error?: string;
+  code?: string;
   id?: number;
   tasks?: PlanTask[];
   file_path?: string;

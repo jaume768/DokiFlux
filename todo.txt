@@ -57,18 +57,8 @@ Riesgos legales a tener en cuenta:
 
 Marketing:
 
-- El Muro del Login: Si obligas al usuario a registrarse antes de probar el producto, estás matando el 80% de tu conversión.
-
-- Falta de "Aha! Moment" rápido: El usuario debe experimentar el valor en menos de 10 segundos.
-
-- Solución Arquitectónica/CRO: Implementa un entorno Demo en la página principal. 
-  - Que puedan usar la herramienta sin login, usando localStorage para guardar su estado. 
-  - como mucho 2€ en creditos (al hacer login se suman 3€) y bloqueado por ip o lo máximo posible para evitar abusos.
-  - Solo poder utilizar claude-haiku-4.5 lo demás pedir login.
-
-- Añade el botón para agendar una consultoría contigo en el footer o en la sección de "Pricing" bajo los planes.
-
-- Incluir un chat "input" en la página principal con call to action y al momento de hacerlo se utilize el modo demo. Poner despues del "De prompt a producto en 4 pasos".
+- Si permites exportar todo el código gratis o muy barato, el cliente se irá a Fiverr a buscar a alguien que lo termine. 
+El código debe estar "secuestrado" o limitado, a menos que pasen por caja o hablen contigo.
 
 Para la empresa:
 

@@ -62,7 +62,7 @@ export function PromptInput({ onSubmit, onCancel, isLoading }: PromptInputProps)
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Describe la interfaz que quieres generar..."
-          className="w-full resize-none bg-transparent px-4 pt-3 pb-12 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full resize-none bg-transparent px-4 pt-3 pb-12 text-[17px] leading-[1.55] outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isLoading}
           rows={1}
           style={{ minHeight: "44px", maxHeight: "300px" }}
@@ -89,7 +89,7 @@ export function PromptInput({ onSubmit, onCancel, isLoading }: PromptInputProps)
           )}
         </div>
       </div>
-      <p className="text-[11px] text-muted-foreground mt-1.5 text-center">
+      <p className="text-xs text-muted-foreground mt-1.5 text-center">
         {isLoading ? "Haz clic en parar para cancelar" : "Enter para enviar · Shift+Enter para nueva línea"}
       </p>
     </div>

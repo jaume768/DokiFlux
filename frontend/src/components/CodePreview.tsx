@@ -87,6 +87,7 @@ interface CodePreviewProps {
   onRestart?: () => void;
   onReady?: () => void;
   onAfterDownload?: () => void;
+  onDemoGate?: () => void;
   genProgress?: GenerationProgress;
 }
 
@@ -286,7 +287,7 @@ function IterationDiffView({ content, oldContent, isStreaming, codeEndRef }: Ite
   );
 }
 
-export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, framework = "react", onBuildError, onRuntimeError, onRestart, onReady, onAfterDownload, genProgress }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, framework = "react", onBuildError, onRuntimeError, onRestart, onReady, onAfterDownload, onDemoGate, genProgress }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>(() => {
@@ -666,6 +667,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
   }, []);
 
   async function handleDownloadProject() {
+    if (onDemoGate) { onDemoGate(); return; }
     const { default: JSZip } = await import("jszip");
     const zip = new JSZip();
 
@@ -740,7 +742,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
             <Button
               variant={activeTab === "code" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setActiveTab("code")}
+              onClick={() => { if (onDemoGate) { onDemoGate(); return; } setActiveTab("code"); }}
               className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3"
             >
               <Code2 className="w-3.5 h-3.5" />
