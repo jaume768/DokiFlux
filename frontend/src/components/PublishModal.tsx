@@ -81,8 +81,8 @@ export function PublishModal({ open, onClose, onContact, variant = "manual" }: P
 
         <div className="px-5 sm:px-6 md:px-7 pt-4 pb-6 md:pb-7 relative flex-1 flex flex-col">
           {/* Copy */}
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-2">{title}</h2>
-          <p className="text-muted-foreground text-sm md:text-base mb-4 sm:mb-5 leading-relaxed">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">{title}</h2>
+          <p className="text-muted-foreground text-base md:text-[17px] mb-4 sm:mb-5 leading-relaxed">
             {subtitle}
           </p>
 
@@ -106,7 +106,7 @@ export function PublishModal({ open, onClose, onContact, variant = "manual" }: P
           </div>
 
           {/* Trust line */}
-          <p className="text-xs text-muted-foreground mb-4 sm:mb-5 text-center">
+          <p className="text-sm text-muted-foreground mb-4 sm:mb-5 text-center">
             Sin compromiso · Presupuesto personalizado en 24h
           </p>
 
@@ -122,7 +122,7 @@ export function PublishModal({ open, onClose, onContact, variant = "manual" }: P
               Solicitar presupuesto gratis
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" className="w-full" onClick={onClose}>
+            <Button variant="ghost" className="w-full text-base" onClick={onClose}>
               Ahora no
             </Button>
           </div>
@@ -147,8 +147,8 @@ function Feature({
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-semibold leading-tight">{title}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{desc}</p>
+        <p className="text-[15px] font-semibold leading-tight">{title}</p>
+        <p className="text-sm text-muted-foreground mt-0.5 leading-snug">{desc}</p>
       </div>
     </div>
   );

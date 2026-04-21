@@ -148,8 +148,8 @@ export function FinalCTA() {
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
-          <Link
-            href="/register"
+          <a
+            href="/demo"
             className="btn-primary relative group inline-flex items-center gap-3 text-base sm:text-lg font-bold text-white px-9 py-5 rounded-2xl"
             style={{
               boxShadow: hovered
@@ -169,7 +169,7 @@ export function FinalCTA() {
             <span className="relative z-10">Empieza gratis</span>
 
             <ArrowRight size={20} className="relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
-          </Link>
+          </a>
         </div>
 
         {/* Trust line */}

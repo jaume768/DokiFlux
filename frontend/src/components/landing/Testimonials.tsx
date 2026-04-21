@@ -127,8 +127,8 @@ export function Testimonials() {
                   />
                 </div>
                 <div>
-                  <div className="text-white text-[14px] font-semibold">{t.name}</div>
-                  <div className="text-white/75 text-[12px]">{t.role}</div>
+                  <div className="text-white text-[15px] font-semibold">{t.name}</div>
+                  <div className="text-white/75 text-[13px]">{t.role}</div>
                 </div>
               </div>
             </div>
@@ -148,7 +148,7 @@ export function Testimonials() {
           {STATS.map((stat, i) => (
             <div key={i} className="text-center">
               <div className="text-2xl md:text-3xl font-black gradient-text mb-1">{stat.value}</div>
-              <div className="text-white/75 text-[13px] font-medium">{stat.label}</div>
+              <div className="text-white/75 text-[14px] font-medium">{stat.label}</div>
             </div>
           ))}
         </div>

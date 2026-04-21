@@ -632,7 +632,7 @@ export default function DemoPage() {
         <div className="flex items-center gap-3 min-w-0">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-base text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Volver</span>
@@ -640,12 +640,12 @@ export default function DemoPage() {
           <div className="h-5 w-px bg-border" />
           <div className="flex items-center gap-2 min-w-0">
             <Sparkles className="w-4 h-4 text-violet-400 shrink-0" />
-            <span className="text-sm font-semibold truncate">Demo gratuita</span>
+            <span className="text-base font-semibold truncate">Demo gratuita</span>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <div
-            className="hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full"
+            className="hidden sm:flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full"
             style={{
               background: "rgba(255,255,255,0.04)",
               border: "1px solid rgba(255,255,255,0.08)",
@@ -674,7 +674,7 @@ export default function DemoPage() {
           )}
           <Link
             href="/register"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-white transition-all"
             style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)" }}
           >
             <Crown className="w-3.5 h-3.5" />
@@ -690,7 +690,7 @@ export default function DemoPage() {
           <button
             type="button"
             onClick={() => setMobileView("chat")}
-            className={`flex-1 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+            className={`flex-1 py-3 text-[15px] font-semibold flex items-center justify-center gap-1.5 transition-colors ${
               mobileView === "chat"
                 ? "text-foreground border-b-2 border-primary"
                 : "text-muted-foreground"
@@ -705,7 +705,7 @@ export default function DemoPage() {
               setMobileView("preview");
               setHasNewPreview(false);
             }}
-            className={`flex-1 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors relative ${
+            className={`flex-1 py-3 text-[15px] font-semibold flex items-center justify-center gap-1.5 transition-colors relative ${
               mobileView === "preview"
                 ? "text-foreground border-b-2 border-primary"
                 : "text-muted-foreground"
@@ -817,7 +817,7 @@ export default function DemoPage() {
                 <p className="text-white/60 text-sm mb-5">
                   Ver el código fuente y descargar el proyecto son funciones{" "}
                   <strong className="text-white">exclusivas de cuenta</strong>.{" "}
-                  Regístrate gratis — es inmediato.
+                  Regístrate gratis.
                 </p>
               </>
             ) : (
@@ -838,7 +838,6 @@ export default function DemoPage() {
               {[
                 "Muchas más iteraciones incluidas",
                 "Proyecto guardado automáticamente en la nube",
-                "3 € de crédito gratis al registrarte",
                 "Acceso a modelos más potentes (GPT-4o, Claude, Gemini)",
               ].map((benefit) => (
                 <li key={benefit} className="flex items-start gap-2.5 text-sm">

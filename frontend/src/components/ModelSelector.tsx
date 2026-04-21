@@ -115,7 +115,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
 
   if (!isLoaded || !selected) {
     return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-500 animate-pulse">
+      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium bg-zinc-800 border border-zinc-700 text-zinc-500 animate-pulse">
         Loading models…
       </div>
     );
@@ -127,7 +127,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
         type="button"
         disabled={disabled}
         onClick={handleToggle}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span className={PROVIDER_COLORS[selected.provider]}>
           {PROVIDER_ICONS[selected.provider]}
@@ -143,7 +143,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
         >
           {grouped.map((group) => (
             <div key={group.provider}>
-              <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 bg-zinc-900 sticky top-0">
+              <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500 bg-zinc-900 sticky top-0">
                 {group.label}
               </div>
               {group.models.map((m) => {
@@ -162,7 +162,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
                       setOpen(false);
                     }}
                     title={locked ? "Disponible solo en Premium — haz clic para mejorar tu plan" : undefined}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-800 ${m.id === value ? "bg-zinc-800 text-white" : "text-zinc-300"} ${locked ? "opacity-60" : ""}`}
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-zinc-800 ${m.id === value ? "bg-zinc-800 text-white" : "text-zinc-300"} ${locked ? "opacity-60" : ""}`}
                   >
                     <span className={PROVIDER_COLORS[m.provider]}>
                       {PROVIDER_ICONS[m.provider]}
@@ -171,7 +171,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
                       {m.displayName}
                       {locked && <Lock className="w-3 h-3 text-amber-400" />}
                     </span>
-                    <span className="text-[10px] text-zinc-500 shrink-0">
+                    <span className="text-xs text-zinc-500 shrink-0">
                       ${m.inputPerMillion}/{m.outputPerMillion}
                     </span>
                   </button>
@@ -179,7 +179,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
               })}
             </div>
           ))}
-          <div className="px-3 py-1.5 border-t border-zinc-800 text-[10px] text-zinc-600">
+          <div className="px-3 py-1.5 border-t border-zinc-800 text-xs text-zinc-600">
             Pricing per 1M tokens (in/out)
           </div>
         </div>

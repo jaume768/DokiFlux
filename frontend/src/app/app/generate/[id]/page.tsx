@@ -1052,7 +1052,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
                   if (e.key === "Enter") handleTitleSave();
                   if (e.key === "Escape") setIsEditingTitle(false);
                 }}
-                className="flex-1 min-w-0 text-sm md:text-lg font-bold bg-transparent border-b border-primary outline-none px-1"
+                className="flex-1 min-w-0 text-base md:text-xl font-bold bg-transparent border-b border-primary outline-none px-1"
                 autoFocus
               />
               <Button variant="ghost" size="icon-xs" onClick={handleTitleSave}>
@@ -1070,7 +1070,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
               }}
               className="hidden md:flex items-center gap-1.5 group flex-1 min-w-0"
             >
-              <h1 className="text-sm md:text-lg font-bold truncate">
+              <h1 className="text-base md:text-xl font-bold truncate">
                 {projectName}
               </h1>
               <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
@@ -1083,7 +1083,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           <button
             onClick={() => setPublishModal({ open: true, variant: "manual" })}
             title="Publicar en internet con dominio propio"
-            className="group relative inline-flex items-center gap-1.5 rounded-full px-2.5 md:px-4 h-8 md:h-9 text-xs md:text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+            className="group relative inline-flex items-center gap-1.5 rounded-full px-2.5 md:px-4 h-9 md:h-10 text-sm md:text-base font-semibold text-white shadow-sm transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
             style={{
               background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
             }}
@@ -1114,7 +1114,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             />
           </div>
           {balance !== null && (
-            <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+            <div className="hidden md:flex items-center gap-1 text-sm text-muted-foreground bg-muted px-2.5 py-1.5 rounded-full">
               <Coins className="w-3 h-3" />
               <span>${parseFloat(balance).toFixed(2)}</span>
             </div>
@@ -1127,7 +1127,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
         <div className="flex border-b bg-background shrink-0">
           <button
             onClick={() => setMobileView("chat")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors border-b-2 ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-[15px] font-medium transition-colors border-b-2 ${
               mobileView === "chat"
                 ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground"
@@ -1141,7 +1141,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
               setMobileView("preview");
               setHasNewPreview(false);
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors border-b-2 relative ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-[15px] font-medium transition-colors border-b-2 relative ${
               mobileView === "preview"
                 ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground"

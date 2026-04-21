@@ -58,7 +58,7 @@ export function LandingNavbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="px-3.5 py-2 text-[13px] font-medium text-white/70 rounded-lg transition-all duration-200 hover:text-white hover:bg-white/[0.05]"
+                className="px-3.5 py-2 text-[15px] font-medium text-white/70 rounded-lg transition-all duration-200 hover:text-white hover:bg-white/[0.05]"
               >
                 {link.label}
               </Link>
@@ -70,7 +70,7 @@ export function LandingNavbar() {
             {isAuthenticated ? (
               <Link
                 href="/app"
-                className="btn-primary relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white"
+                className="btn-primary relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[15px] font-semibold text-white"
               >
                 <span className="relative z-10">Ir a la app</span>
               </Link>
@@ -78,14 +78,14 @@ export function LandingNavbar() {
               <>
                 <Link
                   href="/login"
-                  className="text-[13px] font-medium text-white/70 transition-colors duration-200 hover:text-white"
+                  className="text-[15px] font-medium text-white/70 transition-colors duration-200 hover:text-white"
                 >
                   Iniciar sesión
                 </Link>
                 {/* Hard <a> — /demo needs full page load to get COOP/COEP headers */}
                 <a
                   href="/demo"
-                  className="btn-primary relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white"
+                  className="btn-primary relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[15px] font-semibold text-white"
                 >
                   <span className="relative z-10">Probar demo</span>
                 </a>
@@ -178,7 +178,7 @@ export function LandingNavbar() {
             <Link
               href="/app"
               onClick={() => setMobileOpen(false)}
-              className="btn-primary relative flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-white"
+              className="btn-primary relative flex items-center justify-center rounded-xl px-5 py-3 text-[15px] font-semibold text-white"
             >
               <span className="relative z-10">Ir a la app</span>
             </Link>
@@ -187,14 +187,14 @@ export function LandingNavbar() {
               <Link
                 href="/login"
                 onClick={() => setMobileOpen(false)}
-                className="btn-secondary flex items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-white/80"
+                className="btn-secondary flex items-center justify-center rounded-xl px-5 py-3 text-[15px] font-medium text-white/80"
               >
                 Iniciar sesión
               </Link>
               <a
                 href="/demo"
                 onClick={() => setMobileOpen(false)}
-                className="btn-primary relative flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-white"
+                className="btn-primary relative flex items-center justify-center rounded-xl px-5 py-3 text-[15px] font-semibold text-white"
               >
                 <span className="relative z-10">Empieza gratis</span>
               </a>

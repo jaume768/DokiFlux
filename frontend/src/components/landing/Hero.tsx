@@ -168,15 +168,15 @@ export function Hero() {
                 transition: "opacity 0.65s ease 0.3s, transform 0.65s ease 0.3s",
               }}
             >
-              <Link
-                href="/register"
+              <a
+                href="/demo"
                 className="btn-primary relative group inline-flex items-center gap-2.5 text-[15px] font-bold text-white px-7 py-4 rounded-xl"
                 style={{ boxShadow: "0 0 32px rgba(139,92,246,0.30)" }}
               >
                 <Zap size={16} className="relative z-10 fill-white" />
                 <span className="relative z-10">Empieza gratis</span>
                 <ArrowRight size={16} className="relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
+              </a>
               <Link
                 href="#como-funciona"
                 className="btn-secondary inline-flex items-center gap-2 text-[14px] font-medium text-white/85 px-6 py-4 rounded-xl"

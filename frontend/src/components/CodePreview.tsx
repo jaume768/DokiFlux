@@ -734,7 +734,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
               variant={activeTab === "preview" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveTab("preview")}
-              className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3"
+              className="gap-1 sm:gap-1.5 text-sm px-2 sm:px-3"
             >
               <Eye className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Preview</span>
@@ -743,7 +743,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
               variant={activeTab === "code" ? "default" : "ghost"}
               size="sm"
               onClick={() => { if (onDemoGate) { onDemoGate(); return; } setActiveTab("code"); }}
-              className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3"
+              className="gap-1 sm:gap-1.5 text-sm px-2 sm:px-3"
             >
               <Code2 className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Code</span>
@@ -752,7 +752,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
               variant={activeTab === "logs" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveTab("logs")}
-              className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3"
+              className="gap-1 sm:gap-1.5 text-sm px-2 sm:px-3"
             >
               <Terminal className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Logs</span>
@@ -767,7 +767,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
           )}
 
           {/* Status indicator */}
-          <div className={`flex items-center gap-1 sm:gap-1.5 text-xs shrink-0 ${statusConfig.color}`}>
+          <div className={`flex items-center gap-1 sm:gap-1.5 text-sm shrink-0 ${statusConfig.color}`}>
             {statusConfig.icon}
             <span className="hidden sm:inline">{statusConfig.label}</span>
           </div>
@@ -775,12 +775,12 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
 
         <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
           {activeTab === "code" && (
-            <Button variant="ghost" size="sm" onClick={handleCopyAll} className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3">
+            <Button variant="ghost" size="sm" onClick={handleCopyAll} className="gap-1 sm:gap-1.5 text-sm px-2 sm:px-3">
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">{copied ? "Copied!" : "Copy all"}</span>
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={handleDownloadProject} className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3">
+          <Button variant="ghost" size="sm" onClick={handleDownloadProject} className="gap-1 sm:gap-1.5 text-sm px-2 sm:px-3">
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Download</span>
           </Button>
@@ -790,7 +790,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
               size="sm"
               onClick={handleRestartContainer}
               title="Restart WebContainer"
-              className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3"
+              className="gap-1 sm:gap-1.5 text-sm px-2 sm:px-3"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Restart</span>
