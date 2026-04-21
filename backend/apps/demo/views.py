@@ -388,26 +388,23 @@ class DemoMigrateView(APIView):
                     message_type="chat",
                 )
 
-        # Grant +3€ bonus (one-off, as CreditGrant with 180-day expiry).
-        bonus_granted = False
-        bonus = Decimal(str(DEMO_SIGNUP_BONUS_CREDITS))
-        remaining_bonus = apply_to_debt(user, bonus)
-        if remaining_bonus > 0:
-            grant = CreditGrant.objects.create(
-                user=user,
-                original_amount=remaining_bonus,
-                remaining=remaining_bonus,
-                source="purchase",  # reuse existing choice; description clarifies origin
-                expires_at=now() + timedelta(days=180),
+        # No bonus on signup. Instead, deduct whatever the user already spent
+        # during the anonymous demo so the final balance becomes:
+        #   (free monthly grant) − (demo usage)
+        # Users who signed up without using the demo are unaffected.
+        from apps.billing.services import consume_credits
+        from .utils import DEMO_INITIAL_CREDITS as _DEMO_INITIAL
+
+        spent = Decimal(str(_DEMO_INITIAL)) - (session.credits_remaining or Decimal("0"))
+        if spent < 0:
+            spent = Decimal("0")
+        bonus_granted = False  # no bonus anymore; kept in response shape for the FE
+        if spent > 0:
+            consume_credits(
+                user,
+                spent,
+                description=f"Demo usage deducted on signup (spent {spent})",
             )
-            CreditTransaction.objects.create(
-                user=user,
-                amount=remaining_bonus,
-                tx_type="purchase",
-                description="Demo signup bonus (+3€)",
-                grant=grant,
-            )
-            bonus_granted = True
 
         session.migrated_to_user = user
         session.migrated_project_id = project_id
