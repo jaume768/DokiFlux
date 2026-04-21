@@ -258,27 +258,37 @@ export function ChatPanel({ messages, isLoading, genProgress, onRestore, isResto
         )}
 
         {messages.map((msg) => (
-          <div key={msg.id} className="flex gap-3">
+          <div
+            key={msg.id}
+            className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+          >
+            {/* Avatar */}
             <div
-              className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${
+              className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center self-end mb-0.5 ${
                 msg.role === "user"
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground"
               }`}
             >
               {msg.role === "user" ? (
-                <User className="w-4 h-4" />
+                <User className="w-3.5 h-3.5" />
               ) : (
-                <Bot className="w-4 h-4" />
+                <Bot className="w-3.5 h-3.5" />
               )}
             </div>
-            <div className="flex-1 min-w-0">
+
+            {/* Bubble */}
+            <div className={`min-w-0 max-w-[82%] ${msg.role === "user" ? "flex flex-col items-end" : "flex flex-col items-start"}`}>
               {msg.role === "user" ? (
-                <p className="text-[17px] leading-[1.55] text-foreground whitespace-pre-wrap pt-1">
-                  {msg.content}
-                </p>
+                <div className="rounded-2xl rounded-br-sm px-4 py-2.5 bg-primary text-primary-foreground">
+                  <p className="text-[17px] leading-[1.55] whitespace-pre-wrap">
+                    {msg.content}
+                  </p>
+                </div>
               ) : (
-                <AssistantMessage msg={msg} onRestore={onRestore} isRestoring={isRestoring} />
+                <div className="rounded-2xl rounded-bl-sm px-4 py-2.5 bg-muted/70 w-full">
+                  <AssistantMessage msg={msg} onRestore={onRestore} isRestoring={isRestoring} />
+                </div>
               )}
             </div>
           </div>
