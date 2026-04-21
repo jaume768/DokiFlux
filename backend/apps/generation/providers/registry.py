@@ -150,7 +150,7 @@ MODEL_REGISTRY = {
 VALID_MODEL_IDS = frozenset(MODEL_REGISTRY.keys())
 
 # Default model
-DEFAULT_MODEL = "claude-opus-4.7-low"
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
 
 
 def get_model_config(model_id: str) -> dict:
