@@ -79,6 +79,9 @@ export default function ProfilePage() {
       try {
         const data = await apiGet<ProfileStats>("/auth/profile-stats/");
         setStats(data);
+        // Refresh balance AFTER profile-stats completes so planType reflects
+        // the Stripe-synced status (avoids race condition with stale DB values).
+        await refreshBalance();
       } catch {
         setError("No se pudieron cargar las estadísticas.");
       } finally {
@@ -86,7 +89,6 @@ export default function ProfilePage() {
       }
     }
     load();
-    refreshBalance();
   }, [refreshBalance]);
 
   async function handleManageSubscription() {

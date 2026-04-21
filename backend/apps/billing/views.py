@@ -27,8 +27,29 @@ class BalanceView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        balance = get_balance(request.user)
         plan = getattr(request.user, "plan", None)
+
+        # Live-sync Stripe subscription status for premium users so that
+        # cancellations and expirations are reflected without waiting for webhooks.
+        if plan and plan.plan_type == "premium" and plan.stripe_subscription_id and settings.STRIPE_SECRET_KEY:
+            try:
+                stripe.api_key = settings.STRIPE_SECRET_KEY
+                sub = stripe.Subscription.retrieve(plan.stripe_subscription_id)
+                sub_status = sub.get("status", "")
+                cape = sub.get("cancel_at_period_end", False)
+                cancel_at_ts = sub.get("cancel_at")
+                if sub_status in ("canceled", "unpaid", "past_due"):
+                    downgrade_to_free(request.user)
+                    plan.refresh_from_db()
+                elif sub_status == "active":
+                    from django.utils.timezone import datetime as tz_datetime, timezone as tz
+                    cancel_at_dt = tz_datetime.fromtimestamp(cancel_at_ts, tz=tz.utc) if cancel_at_ts else None
+                    set_subscription_cancellation(request.user, cancel_at_period_end=cape, cancel_at=cancel_at_dt)
+                    plan.refresh_from_db()
+            except Exception:
+                pass  # Stripe unavailable — use cached DB values
+
+        balance = get_balance(request.user)
         return Response(
             {
                 "balance": str(balance),

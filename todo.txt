@@ -20,6 +20,8 @@
         - ¿Qué tipo de negocio es y qué objetivo principal debe cumplir la web: captar clientes, vender, mostrar servicios o reservar citas?
         - ¿Qué secciones quieres incluir: inicio, servicios, sobre nosotros, testimonios, contacto, tienda, blog?
         - ¿Tienes preferencias de estilo: colores de marca, tono visual, ejemplos de webs que te gusten?
+45- Cobrar la suscripción nada al principio?
+46- Que el usuario pueda subir imagenes en las generaciones y la ia las pueda utilizar        
 
 Usar DokiFlux como motor interno + demo para vender una productized service premium:
 “Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.
@@ -59,9 +61,14 @@ Marketing:
 
 - Falta de "Aha! Moment" rápido: El usuario debe experimentar el valor en menos de 10 segundos.
 
-- Solución Arquitectónica/CRO: Implementa un entorno Playground en la página principal. Que puedan usar la herramienta sin login, usando localStorage para guardar su estado. Solo cuando quieran "Exportar", "Guardar en la nube" o "Compartir", les saltas el paywall/login wall.
+- Solución Arquitectónica/CRO: Implementa un entorno Demo en la página principal. 
+  - Que puedan usar la herramienta sin login, usando localStorage para guardar su estado. 
+  - como mucho 2€ en creditos (al hacer login se suman 3€) y bloqueado por ip o lo máximo posible para evitar abusos.
+  - Solo poder utilizar claude-haiku-4.5 lo demás pedir login.
 
-- Añade el botón para agendar una consultoría contigo en el footer o en la sección de "Pricing" bajo el plan "Enterprise/Custom".
+- Añade el botón para agendar una consultoría contigo en el footer o en la sección de "Pricing" bajo los planes.
+
+- Incluir un chat "input" en la página principal con call to action y al momento de hacerlo se utilize el modo demo. Poner despues del "De prompt a producto en 4 pasos".
 
 Para la empresa:
 
