@@ -149,7 +149,7 @@ export function DemoChatInput() {
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
               <div className="flex items-center gap-2 text-xs text-white/40">
                 <Lock className="w-3 h-3" />
-                <span>Gemini 3.1 Flash · React</span>
+                <span>Gemini 3.1 Flash</span>
               </div>
               <button
                 type="submit"

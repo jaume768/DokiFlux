@@ -87,7 +87,7 @@ export function LandingNavbar() {
                   href="/demo"
                   className="btn-primary relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white"
                 >
-                  <span className="relative z-10">Empieza gratis</span>
+                  <span className="relative z-10">Probar demo</span>
                 </a>
               </>
             )}
