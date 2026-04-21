@@ -205,8 +205,8 @@ export default function OnboardingPage() {
           </div>
 
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-white">¿Con qué quieres empezar?</h2>
-            <p className="mt-2 text-white/50 text-sm">Elige un template para tu primer proyecto o empieza desde cero</p>
+            <h2 className="text-3xl font-bold text-white">¿Con qué quieres empezar?</h2>
+            <p className="mt-2 text-white/50 text-base">Elige un template para tu primer proyecto o empieza desde cero</p>
           </div>
 
           {error && (
@@ -245,13 +245,13 @@ export default function OnboardingPage() {
                 </div>
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-md" style={{ background: "rgba(139,92,246,0.15)", color: "#c084fc", border: "1px solid rgba(139,92,246,0.2)" }}>
+                    <span className="text-xs font-bold tracking-widest uppercase px-2 py-0.5 rounded-md" style={{ background: "rgba(139,92,246,0.15)", color: "#c084fc", border: "1px solid rgba(139,92,246,0.2)" }}>
                       {template.category}
                     </span>
                     <ArrowRight className="h-4 w-4 text-white/20 transition-all duration-200 group-hover:text-violet-400 group-hover:translate-x-0.5" />
                   </div>
-                  <p className="text-white font-semibold text-sm mb-1">{template.name}</p>
-                  <p className="text-white/45 text-xs leading-relaxed line-clamp-2">{template.description}</p>
+                  <p className="text-white font-semibold text-base mb-1">{template.name}</p>
+                  <p className="text-white/45 text-sm leading-relaxed line-clamp-2">{template.description}</p>
                 </div>
               </div>
             ))}
@@ -260,7 +260,8 @@ export default function OnboardingPage() {
           <div className="text-center">
             <button
               onClick={handleSkip}
-              className="text-white/40 hover:text-white/70 text-sm font-medium transition-colors flex items-center gap-1.5 mx-auto"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-base font-semibold text-white/70 hover:text-white transition-all duration-200 hover:border-white/20"
+              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
             >
               Empezar desde cero
               <ArrowRight className="w-4 h-4" />
