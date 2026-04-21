@@ -15,6 +15,16 @@ COST_MARKUP = Decimal("3.5")
 
 MODEL_REGISTRY = {
     # ── Google Gemini ─────────────────────────────────────────
+
+    "gemini-3.1-flash-lite": {
+        "provider": "gemini",
+        "api_model": "gemini-3.1-flash-lite-preview",
+        "input_per_million": Decimal("0.25"),
+        "output_per_million": Decimal("1.50"),
+        "max_output_tokens": 65536,
+        "display_name": "Gemini 3.1 Flash-Lite",
+        "category": "gemini",
+    },
     "gemini-3.1-pro": {
         "provider": "gemini",
         "api_model": "gemini-3.1-pro-preview",
@@ -25,27 +35,9 @@ MODEL_REGISTRY = {
         "category": "gemini",
         "premium_only": True,
     },
-    "gemini-3.1-flash-lite": {
-        "provider": "gemini",
-        "api_model": "gemini-3.1-flash-lite-preview",
-        "input_per_million": Decimal("0.25"),
-        "output_per_million": Decimal("1.50"),
-        "max_output_tokens": 65536,
-        "display_name": "Gemini 3.1 Flash-Lite",
-        "category": "gemini",
-    },
 
     # ── Anthropic ─────────────────────────────────────────────
 
-    "claude-haiku-4.5": {
-        "provider": "anthropic",
-        "api_model": "claude-haiku-4-5",
-        "input_per_million": Decimal("1.00"),
-        "output_per_million": Decimal("5.00"),
-        "max_output_tokens": 8192,
-        "display_name": "Claude Haiku 4.5",
-        "category": "anthropic",
-    },
     "claude-sonnet-4.6": {
         "provider": "anthropic",
         "api_model": "claude-sonnet-4-6",
@@ -158,7 +150,7 @@ MODEL_REGISTRY = {
 VALID_MODEL_IDS = frozenset(MODEL_REGISTRY.keys())
 
 # Default model
-DEFAULT_MODEL = "gemini-3.1-flash-lite"
+DEFAULT_MODEL = "claude-opus-4.7-low"
 
 
 def get_model_config(model_id: str) -> dict:
