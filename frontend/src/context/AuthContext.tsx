@@ -58,6 +58,10 @@ const PUBLIC_PATHS = [
   "/password-reset-confirm",
   "/auth/google/callback",
   "/demo",
+  "/privacidad",
+  "/terminos",
+  "/cookies",
+  "/rgpd",
 ];
 
 function isPublicPath(pathname: string): boolean {

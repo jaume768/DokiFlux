@@ -123,7 +123,7 @@ export function Hero() {
                 <Star size={12} className="fill-amber-400" />
                 <Star size={12} className="fill-amber-400" />
               </span>
-              <span className="text-white/85 text-xs">Más de 500 prototipos creados</span>
+              <span className="text-white/90 text-sm font-medium">Más de 500 prototipos creados</span>
             </div>
 
             {/* H1 */}

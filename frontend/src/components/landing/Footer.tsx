@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Twitter, Github, Linkedin, ArrowUpRight, Calendar } from "lucide-react";
+import { Twitter, Instagram, Linkedin, ArrowUpRight, Calendar } from "lucide-react";
 import { ConsultationModal } from "./ConsultationModal";
 
 const FOOTER_LINKS = {
@@ -14,20 +14,19 @@ const FOOTER_LINKS = {
   ],
   Empresa: [
     { label: "Sobre nosotros", href: "#" },
-    { label: "Blog", href: "#" },
     { label: "Contacto", href: "mailto:hola@dokiflux.app" },
   ],
   Legal: [
-    { label: "Privacidad", href: "#" },
-    { label: "Términos de uso", href: "#" },
-    { label: "Cookies", href: "#" },
-    { label: "RGPD", href: "#" },
+    { label: "Privacidad", href: "/privacidad" },
+    { label: "Términos de uso", href: "/terminos" },
+    { label: "Cookies", href: "/cookies" },
+    { label: "RGPD", href: "/rgpd" },
   ],
 };
 
 const SOCIAL_LINKS = [
   { label: "Twitter / X", href: "#", icon: Twitter, color: "#1d9bf0" },
-  { label: "GitHub", href: "#", icon: Github, color: "#e2e8f0" },
+  { label: "Instagram", href: "https://instagram.com/dokiflux", icon: Instagram, color: "#e1306c" },
   { label: "LinkedIn", href: "#", icon: Linkedin, color: "#0a66c2" },
 ];
 
@@ -160,25 +159,6 @@ export function Footer() {
               ))}
             </ul>
 
-            {/* Newsletter micro CTA */}
-            <div className="mt-2 flex flex-col gap-2">
-              <p className="text-white/25 text-[11px] leading-relaxed">
-                Novedades y tutoriales en tu email.
-              </p>
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="email"
-                  placeholder="tu@email.com"
-                  className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-[12px] text-white/70 placeholder-white/20 outline-none focus:border-violet-500/40 focus:bg-white/[0.06] transition-all duration-200"
-                />
-                <button
-                  className="shrink-0 px-3 py-2 rounded-lg text-[11px] font-bold text-white transition-all duration-200 hover:shadow-[0_0_14px_rgba(139,92,246,0.35)]"
-                  style={{ background: "linear-gradient(135deg, #8b5cf6, #6366f1)" }}
-                >
-                  →
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -195,10 +175,14 @@ export function Footer() {
           </p>
 
           <div className="flex items-center gap-5 flex-wrap justify-center">
-            {["Privacidad", "Términos", "Cookies"].map((label) => (
-              <a key={label} href="#" className="text-white/22 hover:text-white/55 text-[12px] transition-colors duration-200">
+            {[
+              { label: "Privacidad", href: "/privacidad" },
+              { label: "Términos", href: "/terminos" },
+              { label: "Cookies", href: "/cookies" },
+            ].map(({ label, href }) => (
+              <Link key={label} href={href} className="text-white/22 hover:text-white/55 text-[12px] transition-colors duration-200">
                 {label}
-              </a>
+              </Link>
             ))}
             <span
               className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet } from "@/lib/api";
 import {
   ArrowLeft,
   FolderOpen,
@@ -11,7 +11,6 @@ import {
   Cpu,
   Crown,
   CreditCard,
-  ExternalLink,
   LogOut,
   Calendar,
   Activity,
@@ -19,7 +18,6 @@ import {
   Mail,
   Chrome,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 interface ProfileStats {
@@ -69,7 +67,6 @@ export default function ProfilePage() {
   const { user, balance, planType, logout, refreshBalance } = useAuth();
   const [stats, setStats] = useState<ProfileStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState("");
 
   const isPremium = planType === "premium";
@@ -90,20 +87,6 @@ export default function ProfilePage() {
     }
     load();
   }, [refreshBalance]);
-
-  async function handleManageSubscription() {
-    setPortalLoading(true);
-    try {
-      const data = await apiPost<{ portal_url: string }>(
-        "/billing/create-portal-session/",
-        {}
-      );
-      window.location.href = data.portal_url;
-    } catch {
-      setError("Error al abrir el portal de Stripe.");
-      setPortalLoading(false);
-    }
-  }
 
   const statCards = stats
     ? [
@@ -263,10 +246,10 @@ export default function ProfilePage() {
             )}
           </div>
           {isPremium ? (
-            <Button variant="outline" size="sm" className="w-full gap-2" onClick={handleManageSubscription} disabled={portalLoading}>
-              {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-              Gestionar suscripción en Stripe
-            </Button>
+            <Link href="/app/billing" className="btn-primary flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white">
+              <CreditCard className="h-4 w-4" />
+              Gestiona tu suscripción
+            </Link>
           ) : (
             <Link href="/app/billing" className="btn-primary flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white">
               <CreditCard className="h-4 w-4" />
