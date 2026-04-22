@@ -225,7 +225,7 @@ function BillingPageInner() {
                 className="btn-primary flex items-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isUpgrading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-                Actualizar a Premium — $20/mes
+                Actualizar a Premium
               </button>
               <p className="mt-3 text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>
                 Pagos procesados de forma segura por Stripe. Cancela cuando quieras.

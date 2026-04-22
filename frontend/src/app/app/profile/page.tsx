@@ -270,7 +270,7 @@ export default function ProfilePage() {
           ) : (
             <Link href="/app/billing" className="btn-primary flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white">
               <CreditCard className="h-4 w-4" />
-              Actualizar a Premium — $20/mes
+              Actualizar a Premium
             </Link>
           )}
         </div>
