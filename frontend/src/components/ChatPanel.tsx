@@ -141,6 +141,12 @@ const PHASE_CONFIG = {
     color: "text-violet-500",
     barColor: "bg-violet-500",
   },
+  fixing: {
+    label: "Revisando y corrigiendo errores...",
+    icon: Wrench,
+    color: "text-amber-400",
+    barColor: "bg-amber-400",
+  },
   mounting: {
     label: "Configurando vista previa...",
     icon: Package,
@@ -177,11 +183,19 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
   const Icon = config.icon;
 
   const ESTIMATED_CHARS = 15000;
+  const FIX_ESTIMATED_CHARS = 4000;
   let percent = 0;
   if (phase === "analyzing" || phase === "planning") {
     percent = 5;
   } else if (phase === "writing" || phase === "writing-files") {
     percent = Math.min(90, 10 + (progress.charsReceived / ESTIMATED_CHARS) * 80);
+  } else if (phase === "reviewing") {
+    // Review is a single LLM call with no per-chunk signal — use a gentle
+    // indeterminate baseline so the bar isn't stuck at 0.
+    percent = 85;
+  } else if (phase === "fixing") {
+    // Live bar fed by backend `fix_progress` heartbeats.
+    percent = Math.min(94, 82 + (progress.charsReceived / FIX_ESTIMATED_CHARS) * 12);
   } else if (phase === "mounting") {
     percent = 95;
   }
@@ -209,9 +223,20 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
             style={{ width: `${percent}%` }}
           />
         </div>
-        {progress.charsReceived > 0 && (
+        {progress.charsReceived > 0 && phase !== "reviewing" && phase !== "fixing" && (
           <p className="text-xs text-muted-foreground">
             {(progress.charsReceived / 1000).toFixed(1)}k caracteres recibidos
+          </p>
+        )}
+        {phase === "reviewing" && (
+          <p className="text-xs text-muted-foreground">
+            Comprobando imports, exports y dependencias entre archivos…
+          </p>
+        )}
+        {phase === "fixing" && (
+          <p className="text-xs text-muted-foreground">
+            Buscando archivos truncados, bugs de tipos y errores de sintaxis
+            {progress.charsReceived > 0 ? ` · ${(progress.charsReceived / 1000).toFixed(1)}k caracteres` : ""}…
           </p>
         )}
       </div>

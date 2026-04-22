@@ -23,27 +23,6 @@
 45- Cobrar la suscripción nada al principio?
 46- Que el usuario pueda subir imagenes en las generaciones y la ia las pueda utilizar        
 
-Usar DokiFlux como motor interno + demo para vender una productized service premium:
-“Prototipo (semana 1) → Producción (semanas 2–6) → Mantenimiento”.
-
-Prepara un “demo flow” impecable: plantilla/prompts → generación → preview → export → propuesta de producción.
-
-Ofrecer a los usuarios diferentes servicios después de generar los proyectos, hosting, dominio, base de datos, etc. :
-    - "De prototipo a producción" (paquete fijo)
-    - “¿Quieres que lo dejemos listo para producción (deploy, auth, roles, DB, logs)? Paquete fijo en 10 días.”
-    - Revisión de arquitectura y seguridad de tu proyecto generado
-    - "Del prototipo generado a producción en X días, con garantías (seguridad, despliegue, mantenimiento)"
-    - De vista a MVP en 10 días
-    - CTA contextual, no pop‑up genérico: en momentos de “handoff” (Export ZIP, Push a repo, Deploy) ofreces:
-    “¿Quieres que lo dejemos listo para producción (seguridad, deploy, dominio, analítica, RGPD) en X días? Ver pack.”
-    - Transparencia: “esto es un prototipador; para producción hay trabajo”
-    - Integraciones y automatización B2B (donde vive el ROI):
-        - CRM/ERP, pasarelas de pago, facturación, SSO, webhooks, data pipelines, etc. 
-        - Aquí el valor es “hago que tu negocio funcione”, no “te hago una web”.
-    - Product discovery y prototyping workshops (pagados)
-        - Taller de 1–2 sesiones: se crea prototipo con DokiFlux + backlog + estimación. Alta conversión a delivery.    
-    - "Convertimos prototipos generados con IA en software B2B listo para producción en 2–6 semanas (con seguridad, despliegue, RGPD y mantenimiento)."    
-
 Incluir Observabilidad: métricas de coste por usuario, latencia, tasa de fallo de generación, logs con trazabilidad.
 
 Riesgos legales a tener en cuenta:
@@ -60,7 +39,3 @@ Marketing:
 - Si permites exportar todo el código gratis o muy barato, el cliente se irá a Fiverr a buscar a alguien que lo termine. 
 El código debe estar "secuestrado" o limitado, a menos que pasen por caja o hablen contigo.
 
-Para la empresa:
-
-Productized service + retainer
-Oferta ejemplo (España/UE, rangos realistas):

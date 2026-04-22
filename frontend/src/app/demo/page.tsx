@@ -387,6 +387,38 @@ export default function DemoPage() {
             }));
           }
 
+          if (chunk.type === "fix_iteration_start") {
+            setGenProgress((prev) => ({
+              ...prev,
+              phase: "fixing" as const,
+              streamingCode: "",
+              charsReceived: 0,
+            }));
+          }
+
+          if (chunk.type === "fix_progress") {
+            setGenProgress((prev) => ({
+              ...prev,
+              charsReceived: chunk.chars_received ?? prev.charsReceived,
+            }));
+          }
+
+          if (chunk.type === "fix_iteration_done") {
+            const patched = chunk.patched_files ?? [];
+            const patchedCount = patched.length;
+            const fixMessage: Message = {
+              id: crypto.randomUUID(),
+              role: "assistant" as const,
+              content:
+                patchedCount > 0
+                  ? `🔧 Revisión automática completada — se corrigieron ${patchedCount} archivo${patchedCount !== 1 ? "s" : ""}: ${patched.join(", ")}`
+                  : "✅ Revisión automática completada — sin errores encontrados.",
+              timestamp: Date.now(),
+              type: "chat" as const,
+            };
+            setMessages((prev) => [...prev, fixMessage]);
+          }
+
           if (chunk.type === "text" && chunk.content) {
             switchToPreviewOnce();
             hasCode = true;

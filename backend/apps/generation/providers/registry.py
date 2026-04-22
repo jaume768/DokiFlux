@@ -9,8 +9,8 @@ To change the margin, only COST_MARKUP needs to be updated.
 from decimal import Decimal
 
 # Multiplier applied on top of raw API cost when charging users.
-# 3.5 means the user is charged 3.5× the actual API price.
-COST_MARKUP = Decimal("3.5")
+# 3 means the user is charged 3× the actual API price.
+COST_MARKUP = Decimal("3")
 
 
 MODEL_REGISTRY = {

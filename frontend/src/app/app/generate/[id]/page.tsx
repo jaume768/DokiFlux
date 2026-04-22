@@ -484,6 +484,40 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             // switch back to writing-files here to avoid flicker.
           }
 
+          if (chunk.type === "fix_iteration_start") {
+            setGenProgress((prev) => ({
+              ...prev,
+              phase: "fixing" as const,
+              streamingCode: "",
+              charsReceived: 0,
+            }));
+          }
+
+          if (chunk.type === "fix_progress") {
+            setGenProgress((prev) => ({
+              ...prev,
+              charsReceived: chunk.chars_received ?? prev.charsReceived,
+            }));
+          }
+
+          if (chunk.type === "fix_iteration_done") {
+            // Persist an assistant message so the user SEES in chat history
+            // that a bug-hunt pass ran — even after a page refresh.
+            const patched = chunk.patched_files ?? [];
+            const patchedCount = patched.length;
+            const fixMessage: Message = {
+              id: crypto.randomUUID(),
+              role: "assistant" as const,
+              content:
+                patchedCount > 0
+                  ? `🔧 Revisión automática completada — se corrigieron ${patchedCount} archivo${patchedCount !== 1 ? "s" : ""}: ${patched.join(", ")}`
+                  : "✅ Revisión automática completada — sin errores encontrados.",
+              timestamp: Date.now(),
+              type: "chat" as const,
+            };
+            setMessages((prev) => [...prev, fixMessage]);
+          }
+
           if (chunk.type === "text" && chunk.content) {
             switchToPreviewOnce();
             hasCode = true;
@@ -586,13 +620,26 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             setHasNewPreview(true);
           }
 
-          try {
-            await apiPatch(`/projects/${projectId}/`, {
-              file_map: finalFiles,
-              ...(streamingGenerationId ? { generation_id: streamingGenerationId } : {}),
-            });
-          } catch {
-            console.error("Failed to save file_map");
+          // Only patch if we actually have files — never send an empty
+          // file_map (that would wipe what the backend just persisted).
+          if (Object.keys(finalFiles).length > 0) {
+            try {
+              await apiPatch(`/projects/${projectId}/`, {
+                file_map: finalFiles,
+                ...(streamingGenerationId ? { generation_id: streamingGenerationId } : {}),
+              });
+            } catch {
+              console.error("Failed to save file_map");
+            }
+          } else if (streamingGenerationId) {
+            // Still link the generation to the project record without touching file_map
+            try {
+              await apiPatch(`/projects/${projectId}/`, {
+                generation_id: streamingGenerationId,
+              });
+            } catch {
+              console.error("Failed to link generation to project");
+            }
           }
 
           const fileCount = getFileCount(finalFiles);
@@ -686,10 +733,13 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           setSessionStats((prev) => ({
             totalInputTokens: prev.totalInputTokens + receivedUsage!.inputTokens,
             totalOutputTokens: prev.totalOutputTokens + receivedUsage!.outputTokens,
-            totalCost: prev.totalCost + receivedUsage!.cost,
+            // Auto-fix generations are NOT billed on the backend (consume_credits
+            // is skipped when is_autofix=true). Don't surface their cost in the
+            // session total either — the user shouldn't see a phantom charge.
+            totalCost: prev.totalCost + (isAutofix ? 0 : receivedUsage!.cost),
             generationCount: prev.generationCount + 1,
           }));
-          // Refresh balance after generation
+          // Refresh balance after generation (authoritative server number)
           refreshBalance();
         }
       } catch (err) {

@@ -421,6 +421,100 @@ def build_reviewer_messages(
     ]
 
 
+# ---------- Aggressive bug-hunter used ONLY on the first generation of a project ----------
+
+FIX_ITERATION_SYSTEM_PROMPT = """You are a senior bug hunter doing a FINAL pre-flight pass on freshly generated code before it is mounted in a browser sandbox.
+
+You will receive the user's original request and ALL files just generated. Your job: find EVERY real bug that would prevent the project from running cleanly, and emit corrected full-file patches only for the files that need changes.
+
+Hunt aggressively for:
+
+0. TRUNCATED / INCOMPLETE FILES (critical — check this FIRST for every file)
+   A file is truncated if it ends mid-construct — common signs:
+     - Ends inside a string literal (e.g. last line is `<h1 className="text-3xl` with no closing `"`)
+     - Ends inside a JSX opening tag (no matching `>` or `/>`)
+     - Ends inside a template literal with an open backtick
+     - The top-level function/component/export is not closed (missing `}` / `);`)
+     - The file has zero `export` statements even though it's clearly meant to be a module
+     - Imports appear but there is no component body afterwards
+   When you detect truncation, regenerate the ENTIRE file from scratch, completing all
+   sections the user asked for. Keep the same component name, same imports, same overall
+   structure — just finish the work the previous generation left unfinished.
+
+1. Import/Export bugs (highest priority)
+   - Import paths referencing files that do not exist, wrong casing, wrong extension (e.g. importing ".tsx" when the file is ".vue")
+   - Default vs named import mismatch (`import Foo from …` when the file uses named export, or vice versa)
+   - Missing `export default` / `export const` / `export function` statements
+   - Importing symbols that were never exported from the target file
+
+2. Type & signature bugs
+   - Props interfaces that don't match between a component's definition and its consumer
+   - Optional vs required props flagged incorrectly
+   - Functions called with wrong argument count or types
+   - `any` casts hiding a real type mismatch
+
+3. Framework conventions
+   - React: missing `key` on list items, hooks used conditionally, stale closures in useEffect dependencies, SSR-unsafe access to `window`/`document` without guards
+   - React Router / Next.js: wrong router API for the setup, `<Link>` misuse
+   - Vue: missing `:key` on v-for, wrong Composition API usage, reactivity lost from destructuring `props`
+   - Tailwind: class names that don't exist (typos like `grid-col-3` instead of `grid-cols-3`)
+
+4. Runtime errors waiting to happen
+   - Reading `.map` / `.length` on something that could be undefined without a guard
+   - Accessing nested object properties without optional chaining where data may be async
+   - Using browser-only APIs at module top level
+   - Infinite render loops (state setter called unconditionally in render)
+
+5. Obvious syntactic issues
+   - Unclosed JSX tags, missing fragments, stray braces
+   - Import statements not at top of file
+   - Duplicate identifiers in the same scope
+
+Rules for your output:
+- Output ONLY files that need a real fix, each in multi-file format:
+  // --- FILE: /path/to/file.tsx ---
+  <complete corrected file content>
+- Separate multiple patched files with a blank line.
+- Output the FULL corrected content of each patched file — never a diff, never a partial fix.
+- If a file is fine, DO NOT include it in your output.
+- If the whole project is already correct, output absolutely nothing (empty response).
+- Do NOT introduce new files. Do NOT redesign or restyle. Do NOT rewrite working code for "cleanliness" — fix only real defects.
+- Keep the user's original intent, styling choices and file structure intact.
+- No markdown fences, no explanations, no commentary — only the `// --- FILE:` blocks (or an empty response)."""
+
+
+def build_fix_iteration_messages(
+    user_prompt: str,
+    all_files: dict[str, str],
+    framework: str = "react",
+) -> list[dict]:
+    """
+    Build messages for the free, first-generation-only bug-fix pass.
+    More aggressive than build_reviewer_messages: hunts for framework-specific
+    runtime errors and syntax issues in addition to cross-file consistency.
+    """
+    files_ctx = "\n\n".join(
+        f"// --- FILE: {path} ---\n{content}"
+        for path, content in all_files.items()
+    )
+    override = get_framework_override(framework)
+    system_content = (
+        f"{FIX_ITERATION_SYSTEM_PROMPT}\n\n{override}"
+        if override else FIX_ITERATION_SYSTEM_PROMPT
+    )
+    user_msg = (
+        f"Original user request:\n{user_prompt}\n\n"
+        f"All files generated in this session:\n\n{files_ctx}\n\n"
+        "This is the FINAL pass before the preview is built. "
+        "Emit full-file patches ONLY for files that have real defects from the list above. "
+        "If every file is ready to run, output nothing at all."
+    )
+    return [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content": user_msg},
+    ]
+
+
 # ---------- Planner tool per provider ----------
 
 OPENAI_PLANNER_TOOL = {

@@ -131,17 +131,24 @@ function buildFileTree(
 // for Vite, Next.js and generally for node-based build errors).
 const BUILD_ERROR_PATTERNS = [
   /\[plugin:vite:/,
+  /\bPlugin:\s*vite:/,            // same error but printed without brackets
+  /Pre-transform error:/,          // Vite babel/parse errors on truncated files
+  /Internal server error:/,        // Vite runtime error response
   /SyntaxError:/,
   /TypeError:/,
   /ReferenceError:/,
   /error TS\d+/,
   /✘ \[ERROR\]/,
+  /#\s*\[ERROR\]/,                 // vite optimizer error format
   /Transform failed/,
   /Build failed/,
   /Could not resolve/,
   /Module not found/,
   /Failed to resolve import/,
+  /Failed to scan for dependencies/,
   /Failed to compile/,
+  /Unterminated (string|template|comment|regular expression)/, // truncation tells
+  /Unexpected (token|end of file)/,
 ];
 
 function isBuildErrorLine(line: string): boolean {

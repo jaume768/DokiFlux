@@ -40,14 +40,23 @@ class GeminiProvider(BaseProvider):
         config = get_model_config(model)
         api_model = config["api_model"]
 
-        # Extract project context from "developer" role messages and append to system instruction
+        # If caller passed an explicit `system` role message, it REPLACES the
+        # default TEXT_GENERATION_SYSTEM_PROMPT (used by reviewer & fix_iteration
+        # phases that need a domain-specific persona). Otherwise we fall back
+        # to the code-generation prompt.
+        explicit_system = "\n\n".join(
+            msg["content"] for msg in messages if msg.get("role") == "system"
+        )
+        base_system = explicit_system or TEXT_GENERATION_SYSTEM_PROMPT
+
+        # Developer-role messages always append (framework override + project context)
         project_context = "\n\n".join(
             msg["content"] for msg in messages if msg.get("role") == "developer"
         )
         system_text = (
-            f"{TEXT_GENERATION_SYSTEM_PROMPT}\n\n{project_context}"
+            f"{base_system}\n\n{project_context}"
             if project_context
-            else TEXT_GENERATION_SYSTEM_PROMPT
+            else base_system
         )
 
         # Convert messages from OpenAI/internal format to Gemini format

@@ -553,6 +553,10 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
     prevGenKeyRef.current = generationKey;
     prevRestartKeyRef.current = restartKey;
 
+    // Fresh generation → forget the last reported error so autofix
+    // fires even if the new build produces a similar error message.
+    reportedErrorRef.current = null;
+
     // A full restart is required when:
     //  - This is our first action and the parent signalled end-of-stream (restartKey > 0), OR
     //  - restartKey advanced after a previous action.

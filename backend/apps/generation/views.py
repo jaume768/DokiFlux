@@ -92,21 +92,22 @@ async def generate_view(request):
             content_type="text/event-stream",
         )
 
-    # --- Concurrent generation limit ---
-    active_count = await sync_to_async(
-        lambda: Generation.objects.filter(
-            project__user=user, status__in=["pending", "streaming"]
-        ).count()
-    )()
-    if active_count >= MAX_CONCURRENT_GENERATIONS:
-        return StreamingHttpResponse(
-            _sse_error(
-                f"Ya tienes {MAX_CONCURRENT_GENERATIONS} generaciones en curso. "
-                "Espera a que terminen antes de iniciar otra."
-            ),
-            status=429,
-            content_type="text/event-stream",
-        )
+    # --- Concurrent generation limit (autofix exempt) ---
+    if not is_autofix:
+        active_count = await sync_to_async(
+            lambda: Generation.objects.filter(
+                project__user=user, status__in=["pending", "streaming"]
+            ).count()
+        )()
+        if active_count >= MAX_CONCURRENT_GENERATIONS:
+            return StreamingHttpResponse(
+                _sse_error(
+                    f"Ya tienes {MAX_CONCURRENT_GENERATIONS} generaciones en curso. "
+                    "Espera a que terminen antes de iniciar otra."
+                ),
+                status=429,
+                content_type="text/event-stream",
+            )
 
     # --- Check plan limits (file size + daily message throttle) ---
     plan = await sync_to_async(lambda: getattr(user, "plan", None))()
@@ -143,19 +144,20 @@ async def generate_view(request):
             content_type="text/event-stream",
         )
 
-    file_map_size = await sync_to_async(lambda: project.file_map_size_kb)()
-    if file_map_size > max_kb:
-        return StreamingHttpResponse(
-            _sse_error(
-                f"Project file_map ({file_map_size:.0f} KB) exceeds your "
-                f"plan limit ({max_kb} KB). Please reduce project size or upgrade."
-            ),
-            status=400,
-            content_type="text/event-stream",
-        )
+    if not is_autofix:
+        file_map_size = await sync_to_async(lambda: project.file_map_size_kb)()
+        if file_map_size > max_kb:
+            return StreamingHttpResponse(
+                _sse_error(
+                    f"Project file_map ({file_map_size:.0f} KB) exceeds your "
+                    f"plan limit ({max_kb} KB). Please reduce project size or upgrade."
+                ),
+                status=400,
+                content_type="text/event-stream",
+            )
 
-    # --- Daily generation throttle ---
-    if await check_daily_generate_limit(user.id, daily_limit):
+    # --- Daily generation throttle (autofix exempt — never bills, always allowed) ---
+    if not is_autofix and await check_daily_generate_limit(user.id, daily_limit):
         return StreamingHttpResponse(
             _sse_error(
                 f"Daily generation limit reached ({daily_limit} messages/day on your plan). "

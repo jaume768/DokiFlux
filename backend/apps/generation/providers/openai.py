@@ -42,10 +42,19 @@ class OpenAIProvider(BaseProvider):
         api_model = config["api_model"]
         reasoning_effort = config.get("reasoning_effort")
 
+        # If caller passed an explicit `system` role message, it REPLACES the
+        # default SYSTEM_PROMPT (reviewer / fix_iteration phases). Remove the
+        # system message from `input` to avoid duplication.
+        explicit_system = "\n\n".join(
+            msg["content"] for msg in messages if msg.get("role") == "system"
+        )
+        instructions = explicit_system or SYSTEM_PROMPT
+        filtered_input = [m for m in messages if m.get("role") != "system"]
+
         payload = {
             "model": api_model,
-            "instructions": SYSTEM_PROMPT,
-            "input": messages,
+            "instructions": instructions,
+            "input": filtered_input,
             "tools": tools,
             "max_output_tokens": max_tokens,
             "stream": True,

@@ -18,6 +18,7 @@ from apps.generation.services import (
     _build_file_messages,
     _extract_file_content,
     _get_file_from_code,
+    _parse_review_patches,
     _sort_files_for_generation,
     build_messages,
     get_provider,
@@ -234,7 +235,73 @@ async def stream_demo_generation(
             else:
                 yield {"type": "task_done", "file_path": file_path, "content": ""}
 
-        # 5. Final usage event
+        # 4b. Free aggressive fix iteration — ONLY on the FIRST user message of the chat
+        #     (no previous assistant replies in chat_history). Tokens are absorbed by us,
+        #     NOT deducted from the demo session's credits.
+        has_prior_assistant = any(
+            (m.get("role") == "assistant") for m in (chat_history or [])
+        )
+        is_first_gen = not has_prior_assistant and bool(accumulated_files)
+        if is_first_gen:
+            from apps.generation.providers.prompts import build_fix_iteration_messages
+
+            yield {"type": "fix_iteration_start", "total_files": len(accumulated_files)}
+
+            fix_messages = build_fix_iteration_messages(
+                user_prompt=prompt,
+                all_files=accumulated_files,
+                framework=framework,
+            )
+            fix_raw = ""
+            fix_input_tokens = 0
+            fix_output_tokens = 0
+            last_progress_emit = 0
+            try:
+                async for chunk in provider.stream_generate(
+                    fix_messages, model=DEMO_MODEL, max_tokens=DEMO_MAX_FILE_TOKENS
+                ):
+                    if chunk["type"] == "text":
+                        fix_raw += chunk.get("content", "")
+                        if len(fix_raw) - last_progress_emit >= 400:
+                            last_progress_emit = len(fix_raw)
+                            yield {
+                                "type": "fix_progress",
+                                "chars_received": len(fix_raw),
+                            }
+                    elif chunk["type"] == "usage":
+                        u = chunk.get("usage", {}) or {}
+                        fix_input_tokens += u.get("inputTokens", 0)
+                        fix_output_tokens += u.get("outputTokens", 0)
+                    elif chunk["type"] == "error":
+                        logger.warning(
+                            "Demo fix iteration error (non-fatal): %s", chunk.get("error")
+                        )
+                        break
+            except Exception as exc:
+                logger.warning("Demo fix iteration failed (non-fatal): %s", exc)
+
+            fix_text = _extract_file_content(fix_raw) if fix_raw else ""
+            fix_patches = _parse_review_patches(fix_text, accumulated_files)
+            for patched_path, new_content in fix_patches.items():
+                accumulated_files[patched_path] = new_content
+                yield {
+                    "type": "task_done",
+                    "file_path": patched_path,
+                    "content": new_content,
+                }
+
+            yield {
+                "type": "fix_iteration_done",
+                "patched_files": list(fix_patches.keys()),
+            }
+
+            absorbed_cost = calculate_cost(fix_input_tokens, fix_output_tokens, DEMO_MODEL)
+            logger.info(
+                "[demo fix_iteration] session=%s absorbed tokens in=%s out=%s cost=%s",
+                session.session_id, fix_input_tokens, fix_output_tokens, absorbed_cost,
+            )
+
+        # 5. Final usage event (billable tokens only — fix iteration excluded)
         cost = calculate_cost(total_input_tokens, total_output_tokens, DEMO_MODEL)
         yield {
             "type": "usage",

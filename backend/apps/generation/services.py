@@ -220,11 +220,15 @@ async def stream_generation(
     4. On completion: deduct credits, save messages, update project
     5. Yield SSE chunks throughout
     """
-    # 1. Pre-check credits
-    balance = await sync_to_async(get_balance)(user)
-    if balance <= 0:
-        yield {"type": "error", "error": "Saldo agotado o en negativo. Recarga créditos para continuar."}
-        return
+    # 1. Pre-check credits — skipped for autofix because autofix is always free
+    # (consume_credits is gated by `not is_autofix` in _finalize_generation).
+    # Blocking autofix when the user is in negative balance would leave them
+    # stuck with a broken preview they can't repair.
+    if not is_autofix:
+        balance = await sync_to_async(get_balance)(user)
+        if balance <= 0:
+            yield {"type": "error", "error": "Saldo agotado o en negativo. Recarga créditos para continuar."}
+            return
 
     # 2. Serialize current project state
     file_map = await sync_to_async(lambda: project.file_map or {})()
@@ -448,11 +452,12 @@ async def stream_phased_generation(
     1. Planning call → AI returns list of files to create/modify
     2. Per-file streaming → one stream_generate call per file with progress events
     """
-    # 1. Pre-check credits
-    balance = await sync_to_async(get_balance)(user)
-    if balance <= 0:
-        yield {"type": "error", "error": "Saldo agotado o en negativo. Recarga créditos para continuar."}
-        return
+    # 1. Pre-check credits — skipped for autofix (autofix never bills).
+    if not is_autofix:
+        balance = await sync_to_async(get_balance)(user)
+        if balance <= 0:
+            yield {"type": "error", "error": "Saldo agotado o en negativo. Recarga créditos para continuar."}
+            return
 
     # 2. Serialize current project state
     file_map = await sync_to_async(lambda: project.file_map or {})()
@@ -480,7 +485,10 @@ async def stream_phased_generation(
     provider = get_provider(model)
     model_config = get_model_config(model)
     max_tokens = model_config["max_output_tokens"]
-    file_max_tokens = min(max_tokens, 12000)
+    # Raised from 12000 → 24000: single files (App.tsx with many sections, big
+    # marketplace layouts, etc.) were getting truncated mid-string / mid-JSX.
+    # Modern models support ≥16k output natively; 24k gives ample headroom.
+    file_max_tokens = min(max_tokens, 44000)
 
     total_input_tokens = 0
     total_output_tokens = 0
@@ -669,7 +677,178 @@ async def stream_phased_generation(
                 "patched_files": list(patches.keys()),
             }
 
-        # 9. Emit total accumulated usage
+        # 8b. Free aggressive fix iteration — ONLY on the FIRST user message of the chat
+        #     (no previous assistant replies in chat_history) and when it's not an auto-fix retry.
+        #     NOTE: we can't use `not file_map` because template-backed projects come
+        #     pre-populated with scaffold files, so file_map is rarely empty.
+        #     Tokens consumed here are absorbed by us, NOT billed to the user.
+        has_prior_assistant = any(
+            (m.get("role") == "assistant") for m in (chat_history or [])
+        )
+        is_first_gen = (
+            not is_autofix
+            and not has_prior_assistant
+            and bool(accumulated_files)
+        )
+        logger.info(
+            "[fix_iteration] generation=%s decision is_autofix=%s has_prior_assistant=%s "
+            "accumulated_files=%s chat_history_len=%s -> is_first_gen=%s",
+            generation.id, is_autofix, has_prior_assistant,
+            len(accumulated_files), len(chat_history or []), is_first_gen,
+        )
+        fix_input_tokens = 0
+        fix_output_tokens = 0
+        if is_first_gen:
+            from .providers.prompts import build_fix_iteration_messages
+
+            logger.info(
+                "[fix_iteration] generation=%s starting fix pass over %s files with model=%s",
+                generation.id, len(accumulated_files), model,
+            )
+            yield {"type": "fix_iteration_start", "total_files": len(accumulated_files)}
+
+            fix_messages = build_fix_iteration_messages(
+                user_prompt=prompt,
+                all_files=accumulated_files,
+                framework=framework,
+            )
+            fix_raw = ""
+            last_progress_emit = 0
+            try:
+                async for chunk in provider.stream_generate(
+                    fix_messages, model=model, max_tokens=file_max_tokens
+                ):
+                    if chunk["type"] == "text":
+                        fix_raw += chunk.get("content", "")
+                        # Emit a progress heartbeat every ~400 chars so the UI
+                        # can show live "hunting bugs" activity instead of a
+                        # silent wait. Cheap: just a char counter, no code.
+                        if len(fix_raw) - last_progress_emit >= 400:
+                            last_progress_emit = len(fix_raw)
+                            yield {
+                                "type": "fix_progress",
+                                "chars_received": len(fix_raw),
+                            }
+                    elif chunk["type"] == "usage":
+                        u = chunk.get("usage", {})
+                        fix_input_tokens += u.get("inputTokens", 0)
+                        fix_output_tokens += u.get("outputTokens", 0)
+                    elif chunk["type"] == "error":
+                        logger.warning(
+                            "Fix iteration error (non-fatal): %s", chunk.get("error")
+                        )
+                        break
+            except Exception as exc:
+                logger.warning("Fix iteration failed (non-fatal): %s", exc)
+
+            fix_text = _extract_file_content(fix_raw) if fix_raw else ""
+            fix_patches = _parse_review_patches(fix_text, accumulated_files)
+
+            # Safety: if the fix-iteration response itself got truncated (hit
+            # max_tokens), applying its patches can REPLACE a complete working
+            # file with an incomplete one. We detect truncation two ways:
+            #   (a) the raw response doesn't end with a plausible closing char
+            #   (b) a patch is dramatically shorter than the file it replaces
+            fix_raw_stripped = (fix_raw or "").rstrip()
+            raw_looks_truncated = bool(fix_raw_stripped) and not fix_raw_stripped.endswith(
+                (")", "}", ">", ";", "`", "\"", "'", "]")
+            )
+            for patched_path, new_content in list(fix_patches.items()):
+                original = accumulated_files.get(patched_path, "")
+                # A well-formed replacement for a large file should be at least
+                # 70% of its size. Allow tiny files (<500 chars) to pass freely.
+                size_suspicious = (
+                    len(original) >= 500
+                    and len(new_content) < int(len(original) * 0.7)
+                )
+                content_looks_truncated = not new_content.rstrip().endswith(
+                    (")", "}", ">", ";", "`", "\"", "'", "]")
+                )
+                if raw_looks_truncated and (size_suspicious or content_looks_truncated):
+                    logger.warning(
+                        "[fix_iteration] skipping patch for %s — looks truncated "
+                        "(raw_trunc=%s, size_susp=%s, content_trunc=%s, old=%s, new=%s)",
+                        patched_path, raw_looks_truncated, size_suspicious,
+                        content_looks_truncated, len(original), len(new_content),
+                    )
+                    fix_patches.pop(patched_path, None)
+                    continue
+                accumulated_files[patched_path] = new_content
+                yield {
+                    "type": "task_done",
+                    "file_path": patched_path,
+                    "content": new_content,
+                }
+
+            yield {
+                "type": "fix_iteration_done",
+                "patched_files": list(fix_patches.keys()),
+            }
+
+            # Persistent chat message so the user sees in their history that a
+            # bug-hunt pass ran, even after a refresh. The content mirrors the
+            # ephemeral message the frontend shows.
+            patched_paths = list(fix_patches.keys())
+            if patched_paths:
+                fix_msg_text = (
+                    f"🔧 Revisión automática completada — se corrigieron "
+                    f"{len(patched_paths)} archivo"
+                    f"{'s' if len(patched_paths) != 1 else ''}: "
+                    f"{', '.join(patched_paths)}"
+                )
+            else:
+                fix_msg_text = (
+                    "✅ Revisión automática completada — sin errores encontrados."
+                )
+            try:
+                await _create_message(
+                    project=project,
+                    role="assistant",
+                    content=fix_msg_text,
+                    message_type="chat",
+                    generation_id=generation.id,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "[fix_iteration] failed to persist review chat message: %s", exc
+                )
+
+            absorbed_cost = calculate_cost(fix_input_tokens, fix_output_tokens, model)
+            logger.info(
+                "[fix_iteration] generation=%s absorbed tokens in=%s out=%s cost=%s",
+                generation.id, fix_input_tokens, fix_output_tokens, absorbed_cost,
+            )
+
+        # Rebuild full_code so the finalizer persists the patched versions
+        if accumulated_files:
+            full_code = "\n\n".join(
+                f"// --- FILE: {path} ---\n{content}"
+                for path, content in accumulated_files.items()
+            )
+
+        # 8c. Persist project.file_map HERE on the server so the preview can
+        # always restore from the database, even if the frontend's follow-up
+        # apiPatch call fails (network blip, tab close, etc.).
+        # We merge with the previous file_map so files the user already had
+        # but the model didn't regenerate are preserved.
+        if accumulated_files:
+            try:
+                merged_file_map = {**file_map, **accumulated_files}
+                project.file_map = merged_file_map
+                await sync_to_async(project.save)(update_fields=["file_map", "updated_at"])
+                generation.result_file_map = merged_file_map
+                await _save_generation(generation)
+                logger.info(
+                    "[persist] saved file_map for project=%s generation=%s files=%s",
+                    project.id, generation.id, len(merged_file_map),
+                )
+            except Exception as exc:
+                logger.warning(
+                    "[persist] failed to save file_map on server side "
+                    "(frontend apiPatch will retry): %s", exc,
+                )
+
+        # 9. Emit total accumulated usage (billable tokens only — fix iteration excluded)
         cost = calculate_cost(total_input_tokens, total_output_tokens, model)
         yield {
             "type": "usage",

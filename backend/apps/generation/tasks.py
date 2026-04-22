@@ -78,7 +78,8 @@ def run_background_generation(self, generation_id: int):
     messages = build_messages(prompt, current_project, chat_history, framework=framework)
     provider = get_provider(model)
     model_config = get_model_config(model)
-    file_max_tokens = min(model_config["max_output_tokens"], 12000)
+    # Mirror of services.py: 24k cap to avoid mid-file truncation.
+    file_max_tokens = min(model_config["max_output_tokens"], 44000)
 
     total_input_tokens = 0
     total_output_tokens = 0
@@ -235,6 +236,94 @@ def run_background_generation(self, generation_id: int):
                 )
             for patched_path, new_content in patches.items():
                 accumulated_files[patched_path] = new_content
+
+        # 2c. Free aggressive fix iteration — mirrors stream_phased_generation.
+        #     First generation of the chat (no prior assistant in chat_history)
+        #     and not an auto-fix retry. Tokens absorbed, NOT billed.
+        has_prior_assistant = any(
+            (m.get("role") == "assistant") for m in (chat_history or [])
+        )
+        bg_is_first_gen = (
+            not is_autofix
+            and not has_prior_assistant
+            and bool(accumulated_files)
+        )
+        logger.info(
+            "[bg fix_iteration] generation=%s decision is_autofix=%s has_prior_assistant=%s "
+            "files=%s -> is_first_gen=%s",
+            generation_id, is_autofix, has_prior_assistant,
+            len(accumulated_files), bg_is_first_gen,
+        )
+        if bg_is_first_gen:
+            from .providers.prompts import build_fix_iteration_messages
+            from .services import _parse_review_patches
+
+            fix_messages = build_fix_iteration_messages(
+                user_prompt=prompt,
+                all_files=accumulated_files,
+                framework=framework,
+            )
+            fix_raw = ""
+            fix_input_tokens = 0
+            fix_output_tokens = 0
+
+            async def collect_fix():
+                nonlocal fix_raw, fix_input_tokens, fix_output_tokens
+                async for chunk in provider.stream_generate(
+                    fix_messages, model=model, max_tokens=file_max_tokens
+                ):
+                    if chunk.get("type") == "text":
+                        fix_raw += chunk.get("content", "")
+                    elif chunk.get("type") == "usage":
+                        u = chunk.get("usage", {})
+                        fix_input_tokens += u.get("inputTokens", 0)
+                        fix_output_tokens += u.get("outputTokens", 0)
+
+            try:
+                run(collect_fix())
+            except Exception as exc:
+                logger.warning("Background fix iteration failed (non-fatal): %s", exc)
+                fix_raw = ""
+
+            fix_text = _extract_file_content(fix_raw) if fix_raw else ""
+            fix_patches = _parse_review_patches(fix_text, accumulated_files)
+
+            # Same truncation safety as foreground flow.
+            fix_raw_stripped = (fix_raw or "").rstrip()
+            raw_looks_truncated = bool(fix_raw_stripped) and not fix_raw_stripped.endswith(
+                (")", "}", ">", ";", "`", "\"", "'", "]")
+            )
+            safe_patches = {}
+            for patched_path, new_content in fix_patches.items():
+                original = accumulated_files.get(patched_path, "")
+                size_suspicious = (
+                    len(original) >= 500
+                    and len(new_content) < int(len(original) * 0.7)
+                )
+                content_looks_truncated = not new_content.rstrip().endswith(
+                    (")", "}", ">", ";", "`", "\"", "'", "]")
+                )
+                if raw_looks_truncated and (size_suspicious or content_looks_truncated):
+                    logger.warning(
+                        "[bg fix_iteration] skipping patch for %s — looks truncated",
+                        patched_path,
+                    )
+                    continue
+                safe_patches[patched_path] = new_content
+
+            if safe_patches:
+                logger.info(
+                    "Background fix iteration patched %s file(s) for gen %s: %s",
+                    len(safe_patches), generation_id, list(safe_patches.keys()),
+                )
+            for patched_path, new_content in safe_patches.items():
+                accumulated_files[patched_path] = new_content
+
+            absorbed_cost = calculate_cost(fix_input_tokens, fix_output_tokens, model)
+            logger.info(
+                "[bg fix_iteration] generation=%s absorbed tokens in=%s out=%s cost=%s",
+                generation_id, fix_input_tokens, fix_output_tokens, absorbed_cost,
+            )
 
         # 3. Merge and save project
         merged_file_map = {**file_map, **accumulated_files}
