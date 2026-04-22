@@ -34,4 +34,3 @@ class PlanDefinitionSerializer(serializers.Serializer):
     monthly_credits = serializers.DecimalField(max_digits=10, decimal_places=2)
     messages_per_day = serializers.IntegerField()
     show_badge = serializers.BooleanField()
-    max_file_map_kb = serializers.IntegerField()

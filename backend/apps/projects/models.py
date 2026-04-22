@@ -80,6 +80,34 @@ class ChatMessage(models.Model):
         return f"[{self.role}] {self.content[:50]}..."
 
 
+class ProjectExportLog(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="export_logs",
+    )
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="export_logs",
+    )
+    file_count = models.PositiveIntegerField(default=0)
+    exported_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-exported_at"]
+        db_table = "project_export_logs"
+
+    def __str__(self):
+        user_str = self.user.email if self.user else "anon"
+        project_str = self.project.name if self.project else "deleted"
+        return f"{user_str} — {project_str} @ {self.exported_at:%Y-%m-%d %H:%M}"
+
+
 class ContactRequest(models.Model):
     """A 'take this project to production' lead captured from the UI."""
 

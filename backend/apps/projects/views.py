@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.generation.models import Generation
-from .models import ChatMessage, ContactRequest, Project
+from .models import ChatMessage, ContactRequest, Project, ProjectExportLog
 from .permissions import IsProjectOwner
 from .serializers import (
     ChatMessageSerializer,
@@ -243,3 +243,23 @@ class ContactRequestView(APIView):
         return Response(
             ContactRequestSerializer(contact).data, status=status.HTTP_201_CREATED
         )
+
+
+class ProjectExportLogView(APIView):
+    """POST /api/projects/<pk>/export/ — log a ZIP export event."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            project = Project.objects.get(pk=pk, user=request.user)
+        except Project.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        file_count = request.data.get("file_count", 0)
+        log = ProjectExportLog.objects.create(
+            user=request.user,
+            project=project,
+            file_count=file_count,
+        )
+        return Response({"id": log.id, "exported_at": log.exported_at}, status=status.HTTP_201_CREATED)

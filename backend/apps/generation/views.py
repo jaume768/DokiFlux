@@ -113,7 +113,6 @@ async def generate_view(request):
     plan = await sync_to_async(lambda: getattr(user, "plan", None))()
     plan_type = plan.plan_type if plan else "free"
     plan_def = PLAN_DEFINITIONS.get(plan_type, {})
-    max_kb = plan_def.get("max_file_map_kb", 500)
     daily_limit = plan_def.get("messages_per_day", 7)
 
     # --- Premium-only model gating ---
@@ -143,18 +142,6 @@ async def generate_view(request):
             status=402,
             content_type="text/event-stream",
         )
-
-    if not is_autofix:
-        file_map_size = await sync_to_async(lambda: project.file_map_size_kb)()
-        if file_map_size > max_kb:
-            return StreamingHttpResponse(
-                _sse_error(
-                    f"Project file_map ({file_map_size:.0f} KB) exceeds your "
-                    f"plan limit ({max_kb} KB). Please reduce project size or upgrade."
-                ),
-                status=400,
-                content_type="text/event-stream",
-            )
 
     # --- Daily generation throttle (autofix exempt — never bills, always allowed) ---
     if not is_autofix and await check_daily_generate_limit(user.id, daily_limit):

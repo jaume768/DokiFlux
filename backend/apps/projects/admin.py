@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ChatMessage, ContactRequest, Project
+from .models import ChatMessage, ContactRequest, Project, ProjectExportLog
 
 
 @admin.register(Project)
@@ -19,6 +19,16 @@ class ChatMessageAdmin(admin.ModelAdmin):
     search_fields = ["content"]
     readonly_fields = ["created_at"]
     raw_id_fields = ["project"]
+
+
+@admin.register(ProjectExportLog)
+class ProjectExportLogAdmin(admin.ModelAdmin):
+    list_display = ["id", "user", "project", "file_count", "exported_at"]
+    list_filter = ["exported_at"]
+    search_fields = ["user__email", "project__name"]
+    readonly_fields = ["exported_at"]
+    raw_id_fields = ["user", "project"]
+    date_hierarchy = "exported_at"
 
 
 @admin.register(ContactRequest)

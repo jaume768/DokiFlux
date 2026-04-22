@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from .views import ProjectExportLogView
 
 app_name = "projects"
 
@@ -24,5 +25,10 @@ urlpatterns = [
         "<int:pk>/restore/<int:generation_id>/",
         views.ProjectRestoreView.as_view(),
         name="restore",
+    ),
+    path(
+        "<int:pk>/export/",
+        ProjectExportLogView.as_view(),
+        name="export-log",
     ),
 ]

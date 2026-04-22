@@ -35,6 +35,8 @@ import type { FileMap } from "@/lib/parser";
 import { useWebContainer, type ContainerStatus } from "@/hooks/useWebContainer";
 import type { GenerationProgress } from "@/types";
 import { StreamingFileView } from "@/components/StreamingFileView";
+import { ExportModal } from "@/components/ExportModal";
+import { apiPost } from "@/lib/api";
 
 // ── Helpers for inline iteration streaming ──
 
@@ -89,6 +91,8 @@ interface CodePreviewProps {
   onReady?: () => void;
   onAfterDownload?: () => void;
   onDemoGate?: () => void;
+  onExportContact?: () => void;
+  projectId?: number;
   genProgress?: GenerationProgress;
   isAutoFixing?: boolean;
 }
@@ -289,7 +293,7 @@ function IterationDiffView({ content, oldContent, isStreaming, codeEndRef }: Ite
   );
 }
 
-export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, framework = "react", onBuildError, onRuntimeError, onRestart, onReady, onAfterDownload, onDemoGate, genProgress, isAutoFixing = false }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, framework = "react", onBuildError, onRuntimeError, onRestart, onReady, onAfterDownload, onDemoGate, onExportContact, projectId, genProgress, isAutoFixing = false }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>(() => {
@@ -672,8 +676,15 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
     }, 65000);
   }, []);
 
-  async function handleDownloadProject() {
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+
+  function handleDownloadProject() {
     if (onDemoGate) { onDemoGate(); return; }
+    setExportModalOpen(true);
+  }
+
+  async function performDownload() {
+    setExportModalOpen(false);
     const { default: JSZip } = await import("jszip");
     const zip = new JSZip();
 
@@ -722,6 +733,9 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
     a.download = "dokiflux-project.zip";
     a.click();
     URL.revokeObjectURL(url);
+    if (projectId) {
+      apiPost(`/projects/${projectId}/export/`, { file_count: Object.keys(displayFiles).length }).catch(() => {});
+    }
     onAfterDownload?.();
   }
 
@@ -732,6 +746,15 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
 
   return (
     <div className="flex flex-col h-full">
+      <ExportModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onDownloadZip={performDownload}
+        onContactEngineer={() => {
+          setExportModalOpen(false);
+          onExportContact?.();
+        }}
+      />
       {/* Auto-fix banner — visible across all tabs so the user knows a
           recovery is in progress even while staring at the preview */}
       {isAutoFixing && (

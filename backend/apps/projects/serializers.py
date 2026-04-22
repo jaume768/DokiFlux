@@ -1,5 +1,3 @@
-import json
-
 from rest_framework import serializers
 
 from .models import ChatMessage, ContactRequest, Project
@@ -55,26 +53,6 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         ]
 
     def validate_file_map(self, value):
-        """Validate file_map size against the user's plan limit."""
-        serialized = json.dumps(value)
-        size_kb = len(serialized.encode("utf-8")) / 1024
-
-        # Import here to avoid circular imports at module level
-        from apps.billing.plans import PLAN_DEFINITIONS
-
-        request = self.context.get("request")
-        max_kb = 500  # default
-        if request and hasattr(request.user, "plan"):
-            plan_type = request.user.plan.plan_type
-            max_kb = PLAN_DEFINITIONS.get(plan_type, {}).get(
-                "max_file_map_kb", 500
-            )
-
-        if size_kb > max_kb:
-            raise serializers.ValidationError(
-                f"file_map size ({size_kb:.0f} KB) exceeds the limit "
-                f"for your plan ({max_kb} KB)."
-            )
         return value
 
 

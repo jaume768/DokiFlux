@@ -1279,6 +1279,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             }}
             onReady={() => setPreviewReady(true)}
             onAfterDownload={() => setPublishModal({ open: true, variant: "manual" })}
+            onExportContact={() => setContactModalOpen(true)}
             genProgress={genProgress}
             isAutoFixing={isAutoFixing}
           />

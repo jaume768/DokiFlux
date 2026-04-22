@@ -11,14 +11,12 @@ PLAN_DEFINITIONS = {
         "monthly_credits": Decimal("5.00"),
         "messages_per_day": 5,
         "show_badge": True,
-        "max_file_map_kb": 200,
     },
     "premium": {
         "price_monthly": Decimal("20"),
         "monthly_credits": Decimal("20.00"),
         "messages_per_day": 100,
         "show_badge": False,
-        "max_file_map_kb": 500,
     },
 }
 
