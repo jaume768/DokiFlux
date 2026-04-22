@@ -259,6 +259,7 @@ async def demo_generate_view(request):
         )
 
     prompt = serializer.validated_data["prompt"]
+    is_autofix = serializer.validated_data.get("is_autofix", False)
 
     try:
         session = await sync_to_async(DemoSession.objects.get)(session_id=cookie_id)
@@ -279,7 +280,10 @@ async def demo_generate_view(request):
             content_type="text/event-stream",
         )
 
-    if not session.has_credits:
+    # Autofix is a silent recovery pass — never billed, never counted against
+    # the demo session's interaction/credit caps. The user should always be
+    # able to recover from a broken preview even if they're out of credits.
+    if not is_autofix and not session.has_credits:
         return StreamingHttpResponse(
             _sse_error(
                 "Se te acabaron los créditos demo. Regístrate gratis y consigue +3€.",
@@ -290,8 +294,13 @@ async def demo_generate_view(request):
         )
 
     # Basic per-session rate-limit: no more than 7 generations total (cheap guard).
+    # Autofix exempt (it's a system-initiated recovery, not a user interaction).
     # Bypassed in dev mode so you can iterate freely on /demo while developing.
-    if session.generation_count >= 7 and not is_dev_mode():
+    if (
+        not is_autofix
+        and session.generation_count >= 7
+        and not is_dev_mode()
+    ):
         return StreamingHttpResponse(
             _sse_error("Demo cap reached.", code="demo_cap_reached"),
             status=429,
@@ -299,7 +308,9 @@ async def demo_generate_view(request):
         )
 
     async def event_stream():
-        async for chunk in stream_demo_generation(session=session, prompt=prompt):
+        async for chunk in stream_demo_generation(
+            session=session, prompt=prompt, is_autofix=is_autofix,
+        ):
             data_str = json.dumps(chunk)
             yield f"data: {data_str}\n\n"
 

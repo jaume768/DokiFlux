@@ -15,6 +15,7 @@ class DemoStartSerializer(serializers.Serializer):
 
 class DemoGenerateSerializer(serializers.Serializer):
     prompt = serializers.CharField(max_length=10000)
+    is_autofix = serializers.BooleanField(default=False, required=False)
 
 
 class DemoSessionStateSerializer(serializers.Serializer):

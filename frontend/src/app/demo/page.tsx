@@ -74,6 +74,10 @@ export default function DemoPage() {
   const [signupReason, setSignupReason] = useState<"credits" | "cap" | "feature">("credits");
   const [mobileView, setMobileView] = useState<MobileView>("chat");
   const [hasNewPreview, setHasNewPreview] = useState(false);
+  const [isAutoFixing, setIsAutoFixing] = useState(false);
+  const autoFixCountRef = useRef(0);
+  const isLoadingRef = useRef(false);
+  const MAX_AUTO_FIX_RETRIES = 3;
 
   const [genProgress, setGenProgress] = useState<GenerationProgress>({
     phase: null,
@@ -90,6 +94,7 @@ export default function DemoPage() {
 
   currentFilesRef.current = currentFiles;
   messagesRef.current = messages;
+  isLoadingRef.current = isLoading;
 
   // Already logged-in → off to the real app.
   useEffect(() => {
@@ -234,10 +239,12 @@ export default function DemoPage() {
   }, [fingerprint]);
 
   const handleSubmit = useCallback(
-    async (prompt: string) => {
+    async (prompt: string, isAutofix = false) => {
       const s = await ensureSession();
       if (!s) return;
-      if (parseFloat(s.credits_remaining) <= 0) {
+      // Autofix is a silent recovery pass — bypass the credit gate so the
+      // user can always recover a broken preview, even if they're out of credits.
+      if (!isAutofix && parseFloat(s.credits_remaining) <= 0) {
         setSignupReason("credits");
         setShowSignupModal(true);
         return;
@@ -254,13 +261,17 @@ export default function DemoPage() {
       const controller = new AbortController();
       abortRef.current = controller;
 
-      const userMessage: Message = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content: prompt,
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
+      // Don't append the (internal) autofix prompt to the chat — the user
+      // should only see the autofix banner, not the recovery instructions.
+      if (!isAutofix) {
+        const userMessage: Message = {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: prompt,
+          timestamp: Date.now(),
+        };
+        setMessages((prev) => [...prev, userMessage]);
+      }
 
       const streamingMsgId = crypto.randomUUID();
       let receivedUsage:
@@ -272,7 +283,7 @@ export default function DemoPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({ prompt, is_autofix: isAutofix }),
           signal: controller.signal,
         });
 
@@ -521,17 +532,21 @@ export default function DemoPage() {
             setHasNewPreview(true);
           }
 
-          const fileCount = getFileCount(finalFiles);
-          const codeMessage: Message = {
-            id: crypto.randomUUID(),
-            role: "assistant" as const,
-            content: `Generado${fileCount !== 1 ? "s" : ""} ${fileCount} archivo${fileCount !== 1 ? "s" : ""} y renderizado en vista previa.`,
-            timestamp: Date.now(),
-            usage: receivedUsage ?? undefined,
-            rawCode: serializeFileMap(finalFiles),
-            type: "code" as const,
-          };
-          setMessages((prev) => [...prev, codeMessage]);
+          // Autofix is silent — no chat message, no cost badge.
+          if (!isAutofix) {
+            const fileCount = getFileCount(finalFiles);
+            const codeMessage: Message = {
+              id: crypto.randomUUID(),
+              role: "assistant" as const,
+              content: `Generado${fileCount !== 1 ? "s" : ""} ${fileCount} archivo${fileCount !== 1 ? "s" : ""} y renderizado en vista previa.`,
+              timestamp: Date.now(),
+              usage: receivedUsage ?? undefined,
+              rawCode: serializeFileMap(finalFiles),
+              type: "code" as const,
+            };
+            setMessages((prev) => [...prev, codeMessage]);
+          }
+          autoFixCountRef.current = 0;
         }
 
         // Finalize — single-shot fallback
@@ -556,17 +571,20 @@ export default function DemoPage() {
             setHasNewPreview(true);
           }
 
-          const fileCount = getFileCount(finalFiles);
-          const codeMessage: Message = {
-            id: crypto.randomUUID(),
-            role: "assistant" as const,
-            content: `Generado${fileCount !== 1 ? "s" : ""} ${fileCount} archivo${fileCount !== 1 ? "s" : ""}.`,
-            timestamp: Date.now(),
-            usage: receivedUsage ?? undefined,
-            rawCode: serializeFileMap(finalFiles),
-            type: "code" as const,
-          };
-          setMessages((prev) => [...prev, codeMessage]);
+          if (!isAutofix) {
+            const fileCount = getFileCount(finalFiles);
+            const codeMessage: Message = {
+              id: crypto.randomUUID(),
+              role: "assistant" as const,
+              content: `Generado${fileCount !== 1 ? "s" : ""} ${fileCount} archivo${fileCount !== 1 ? "s" : ""}.`,
+              timestamp: Date.now(),
+              usage: receivedUsage ?? undefined,
+              rawCode: serializeFileMap(finalFiles),
+              type: "code" as const,
+            };
+            setMessages((prev) => [...prev, codeMessage]);
+          }
+          autoFixCountRef.current = 0;
         }
 
         // Chat-only response — nothing to do, assistant bubble already appended.
@@ -602,6 +620,7 @@ export default function DemoPage() {
         codeRef.current = "";
         abortRef.current = null;
         setIsLoading(false);
+        setIsAutoFixing(false);
         setGenProgress({
           phase: null,
           filesDetected: 0,
@@ -619,6 +638,36 @@ export default function DemoPage() {
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [session, fingerprint]
+  );
+
+  const attemptAutoFix = useCallback(
+    (errorType: "build" | "runtime", errorMessage: string) => {
+      // Don't fire a new autofix while another generation is already in flight.
+      if (isLoadingRef.current) return;
+      if (autoFixCountRef.current >= MAX_AUTO_FIX_RETRIES) return;
+      if (Object.keys(currentFilesRef.current).length === 0) return;
+
+      const attempt = autoFixCountRef.current + 1;
+      autoFixCountRef.current = attempt;
+
+      const truncatedError = errorMessage.slice(0, 1000);
+      const fixPrompt = `The preview has a ${errorType} error (auto-fix attempt ${attempt}/${MAX_AUTO_FIX_RETRIES}):\n\n\`\`\`\n${truncatedError}\n\`\`\`\n\nFix this error. Only modify the files that need changes.`;
+
+      setIsAutoFixing(true);
+      setTimeout(() => {
+        handleSubmit(fixPrompt, true);
+      }, 500);
+    },
+    [handleSubmit]
+  );
+
+  const handleBuildError = useCallback(
+    (err: string) => attemptAutoFix("build", err),
+    [attemptAutoFix]
+  );
+  const handleRuntimeError = useCallback(
+    (err: string) => attemptAutoFix("runtime", err),
+    [attemptAutoFix]
   );
 
   // Early returns AFTER hooks — keeps hook order stable across renders.
@@ -786,6 +835,9 @@ export default function DemoPage() {
                 isMobile={isMobile}
                 isIOS={isIOS}
                 genProgress={genProgress}
+                isAutoFixing={isAutoFixing}
+                onBuildError={handleBuildError}
+                onRuntimeError={handleRuntimeError}
                 onDemoGate={() => {
                   setSignupReason("feature");
                   setShowSignupModal(true);

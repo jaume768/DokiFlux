@@ -85,17 +85,32 @@ def _persist_files_and_history(
     session.save(update_fields=["file_map", "chat_history", "last_active_at"])
 
 
+@sync_to_async
+def _persist_files_only(session: DemoSession, new_files: dict[str, str]):
+    """Merge recovered files into file_map without touching chat_history
+    or generation counters. Used by autofix so the recovery is invisible."""
+    fm = dict(session.file_map or {})
+    fm.update(new_files)
+    session.file_map = fm
+    session.save(update_fields=["file_map", "last_active_at"])
+
+
 async def stream_demo_generation(
     session: DemoSession,
     prompt: str,
+    is_autofix: bool = False,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """
     Phased generation for demo users. Streams the same SSE events as the
     production flow (plan, task_start, file_chunk, task_done, usage, done)
     but bound to a DemoSession's budget and file_map.
+
+    Autofix (is_autofix=True) is a silent recovery pass — tokens are absorbed
+    by us (not deducted from session.credits_remaining), generation_count is
+    not incremented, and the fix is not appended to chat_history.
     """
-    # 1. Pre-checks
-    if not session.has_credits:
+    # 1. Pre-checks — autofix bypasses credit check (recovery must always run)
+    if not is_autofix and not session.has_credits:
         yield {"type": "error", "error": "demo_credits_exhausted"}
         return
 
@@ -146,16 +161,17 @@ async def stream_demo_generation(
         if not files and chat_response:
             yield {"type": "chat", "content": chat_response}
             assistant_text_for_history = chat_response
-            # Charge + persist + done
+            # Charge + persist + done — skipped entirely for autofix.
             cost = calculate_cost(total_input_tokens, total_output_tokens, DEMO_MODEL)
-            await _apply_usage_and_save(session, total_input_tokens, total_output_tokens, cost)
-            await _persist_files_and_history(session, {}, prompt, assistant_text_for_history)
+            if not is_autofix:
+                await _apply_usage_and_save(session, total_input_tokens, total_output_tokens, cost)
+                await _persist_files_and_history(session, {}, prompt, assistant_text_for_history)
             yield {
                 "type": "usage",
                 "usage": {
                     "inputTokens": total_input_tokens,
                     "outputTokens": total_output_tokens,
-                    "cost": float(cost),
+                    "cost": float(cost) if not is_autofix else 0.0,
                     "creditsRemaining": float(session.credits_remaining),
                 },
             }
@@ -187,11 +203,14 @@ async def stream_demo_generation(
 
         # 4. Per-file generation
         for idx, file_path in enumerate(files):
-            # Check credits before each file — stop mid-gen if exhausted
-            current_cost = calculate_cost(total_input_tokens, total_output_tokens, DEMO_MODEL)
-            if current_cost >= session.credits_remaining:
-                yield {"type": "error", "error": "demo_credits_exhausted"}
-                break
+            # Check credits before each file — stop mid-gen if exhausted.
+            # Autofix bypasses this: recovery must complete even if the
+            # session has 0 credits left.
+            if not is_autofix:
+                current_cost = calculate_cost(total_input_tokens, total_output_tokens, DEMO_MODEL)
+                if current_cost >= session.credits_remaining:
+                    yield {"type": "error", "error": "demo_credits_exhausted"}
+                    break
 
             yield {"type": "task_start", "file_path": file_path, "index": idx, "total": len(files)}
 
@@ -241,7 +260,14 @@ async def stream_demo_generation(
         has_prior_assistant = any(
             (m.get("role") == "assistant") for m in (chat_history or [])
         )
-        is_first_gen = not has_prior_assistant and bool(accumulated_files)
+        # Skip fix_iteration on autofix passes — autofix IS the recovery,
+        # running another fix pass on top would double-spend tokens without
+        # any added signal.
+        is_first_gen = (
+            not is_autofix
+            and not has_prior_assistant
+            and bool(accumulated_files)
+        )
         if is_first_gen:
             from apps.generation.providers.prompts import build_fix_iteration_messages
 
@@ -319,19 +345,32 @@ async def stream_demo_generation(
         error_occurred = True
         yield {"type": "error", "error": f"Error interno: {exc}"}
     finally:
-        # Always bill for what was consumed, even on cancel/error.
-        cost = calculate_cost(total_input_tokens, total_output_tokens, DEMO_MODEL)
-        if total_input_tokens or total_output_tokens:
-            await _apply_usage_and_save(session, total_input_tokens, total_output_tokens, cost)
+        if is_autofix:
+            # Silent recovery: persist the recovered file_map but never charge
+            # the session and never pollute chat_history. Tokens consumed are
+            # absorbed by us (still logged for observability).
+            cost = calculate_cost(total_input_tokens, total_output_tokens, DEMO_MODEL)
+            if accumulated_files:
+                await _persist_files_only(session, accumulated_files)
+            logger.info(
+                "[demo autofix] session=%s absorbed tokens in=%s out=%s cost=%s files=%s",
+                session.session_id, total_input_tokens, total_output_tokens,
+                cost, len(accumulated_files),
+            )
+        else:
+            # Always bill for what was consumed, even on cancel/error.
+            cost = calculate_cost(total_input_tokens, total_output_tokens, DEMO_MODEL)
+            if total_input_tokens or total_output_tokens:
+                await _apply_usage_and_save(session, total_input_tokens, total_output_tokens, cost)
 
-        if accumulated_files:
-            assistant_text_for_history = (
-                f"(Demo) Generated {len(accumulated_files)} file(s): "
-                + ", ".join(accumulated_files.keys())
-            )
-            await _persist_files_and_history(
-                session, accumulated_files, prompt, assistant_text_for_history
-            )
-        elif completed_normally and assistant_text_for_history:
-            # chat-only path already persisted above
-            pass
+            if accumulated_files:
+                assistant_text_for_history = (
+                    f"(Demo) Generated {len(accumulated_files)} file(s): "
+                    + ", ".join(accumulated_files.keys())
+                )
+                await _persist_files_and_history(
+                    session, accumulated_files, prompt, assistant_text_for_history
+                )
+            elif completed_normally and assistant_text_for_history:
+                # chat-only path already persisted above
+                pass
