@@ -22,6 +22,7 @@
         - ¿Tienes preferencias de estilo: colores de marca, tono visual, ejemplos de webs que te gusten?
 45- Cobrar la suscripción nada al principio?
 46- Que el usuario pueda subir imagenes en las generaciones y la ia las pueda utilizar        
+47- Quitar el max_file_map_kb de los planes
 
 Incluir Observabilidad: métricas de coste por usuario, latencia, tasa de fallo de generación, logs con trazabilidad.
 

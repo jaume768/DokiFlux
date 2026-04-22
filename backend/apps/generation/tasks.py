@@ -350,21 +350,23 @@ def run_background_generation(self, generation_id: int):
                 generation_id=generation.id,
             )
 
-        # 6. Create assistant ChatMessage so it appears in chat history
+        # 6. Create assistant ChatMessage so it appears in chat history —
+        # except for autofix, which is a silent background recovery.
         usage_data = {
             "inputTokens": total_input_tokens,
             "outputTokens": total_output_tokens,
             "cost": float(cost),
         }
-        ChatMessage.objects.create(
-            project=project,
-            role="assistant",
-            content=f"Generated code ({total_input_tokens} input, {total_output_tokens} output tokens)",
-            message_type="code",
-            usage=usage_data,
-            raw_code="",
-            generation_id=generation.id,
-        )
+        if not is_autofix:
+            ChatMessage.objects.create(
+                project=project,
+                role="assistant",
+                content=f"Generated code ({total_input_tokens} input, {total_output_tokens} output tokens)",
+                message_type="code",
+                usage=usage_data,
+                raw_code="",
+                generation_id=generation.id,
+            )
 
         logger.info("Background generation %s completed (%s files)", generation_id, len(accumulated_files))
         completed_normally = True

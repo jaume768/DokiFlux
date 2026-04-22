@@ -26,6 +26,7 @@ import {
   Monitor,
   Smartphone,
   RotateCcw,
+  Wrench,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,7 @@ interface CodePreviewProps {
   onAfterDownload?: () => void;
   onDemoGate?: () => void;
   genProgress?: GenerationProgress;
+  isAutoFixing?: boolean;
 }
 
 const STATUS_CONFIG: Record<ContainerStatus, { label: string; icon: React.ReactNode; color: string }> = {
@@ -287,7 +289,7 @@ function IterationDiffView({ content, oldContent, isStreaming, codeEndRef }: Ite
   );
 }
 
-export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, framework = "react", onBuildError, onRuntimeError, onRestart, onReady, onAfterDownload, onDemoGate, genProgress }: CodePreviewProps) {
+export function CodePreview({ files, generationKey, restartKey = 0, isIOS = false, isMobile = false, framework = "react", onBuildError, onRuntimeError, onRestart, onReady, onAfterDownload, onDemoGate, genProgress, isAutoFixing = false }: CodePreviewProps) {
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "logs">("preview");
   const [copied, setCopied] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>(() => {
@@ -730,6 +732,23 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
 
   return (
     <div className="flex flex-col h-full">
+      {/* Auto-fix banner — visible across all tabs so the user knows a
+          recovery is in progress even while staring at the preview */}
+      {isAutoFixing && (
+        <div className="flex items-center gap-2 px-4 py-2 border-b bg-amber-500/10 border-amber-500/30 shrink-0">
+          <Wrench className="w-4 h-4 text-amber-500 animate-pulse shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-amber-500 truncate">
+              Corrigiendo error automáticamente…
+            </p>
+            <p className="text-xs text-amber-500/70 truncate">
+              Sin coste para ti — el asistente está regenerando los archivos afectados.
+            </p>
+          </div>
+          <Loader2 className="w-4 h-4 text-amber-500 animate-spin shrink-0" />
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="flex items-center justify-between px-2 sm:px-4 py-2 border-b bg-background gap-1 shrink-0">
         <div className="flex items-center gap-1 sm:gap-2 min-w-0 overflow-x-auto">

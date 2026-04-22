@@ -1049,15 +1049,19 @@ async def _finalize_generation(
         if model:
             await _update_project_model(project, model)
 
-        await _create_message(
-            project=project,
-            role="assistant",
-            content=f"Generated code ({generation.input_tokens} input, {generation.output_tokens} output tokens)",
-            message_type="code",
-            usage=usage_data,
-            raw_code=full_code,
-            generation_id=generation.id,
-        )
+        # Skip the persistent "Generated code" chat message for autofix — the
+        # recovery pass is a silent background fix-up; the user never pays for
+        # it and we don't want it cluttering the conversation history.
+        if not is_autofix:
+            await _create_message(
+                project=project,
+                role="assistant",
+                content=f"Generated code ({generation.input_tokens} input, {generation.output_tokens} output tokens)",
+                message_type="code",
+                usage=usage_data,
+                raw_code=full_code,
+                generation_id=generation.id,
+            )
 
     elif has_chat:
         generation.status = "completed"

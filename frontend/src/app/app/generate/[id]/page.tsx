@@ -642,18 +642,24 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             }
           }
 
-          const fileCount = getFileCount(finalFiles);
-          const codeMessage: Message = {
-            id: crypto.randomUUID(),
-            role: "assistant" as const,
-            content: `Generado${fileCount !== 1 ? "s" : ""} ${fileCount} archivo${fileCount !== 1 ? "s" : ""} y renderizado en vista previa.`,
-            timestamp: Date.now(),
-            usage: receivedUsage ?? undefined,
-            rawCode: serializeFileMap(finalFiles),
-            type: "code" as const,
-            generationId: streamingGenerationId ?? undefined,
-          };
-          setMessages((prev) => [...prev, codeMessage]);
+          // Autofix is a silent background recovery — don't pollute the chat
+          // history with a "Generated N files" message or the cost badge.
+          // The prominent preview-panel banner already tells the user what's
+          // happening, and the user never pays for autofix.
+          if (!isAutofix) {
+            const fileCount = getFileCount(finalFiles);
+            const codeMessage: Message = {
+              id: crypto.randomUUID(),
+              role: "assistant" as const,
+              content: `Generado${fileCount !== 1 ? "s" : ""} ${fileCount} archivo${fileCount !== 1 ? "s" : ""} y renderizado en vista previa.`,
+              timestamp: Date.now(),
+              usage: receivedUsage ?? undefined,
+              rawCode: serializeFileMap(finalFiles),
+              type: "code" as const,
+              generationId: streamingGenerationId ?? undefined,
+            };
+            setMessages((prev) => [...prev, codeMessage]);
+          }
           autoFixCountRef.current = 0;
         }
 
@@ -697,25 +703,27 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
           const changedCount = Object.keys(incomingFiles).length;
           const deletedCount = deletions.length;
 
-          let summary = `Proyecto generado con ${fileCount} archivo${fileCount !== 1 ? "s" : ""}`;
-          if (hasExisting) {
-            summary = `Actualizado${changedCount !== 1 ? "s" : ""} ${changedCount} archivo${changedCount !== 1 ? "s" : ""}`;
-            if (deletedCount > 0) summary += `, eliminado${deletedCount !== 1 ? "s" : ""} ${deletedCount}`;
-            summary += ` (${fileCount} en total)`;
-          }
-          summary += " y renderizado en vista previa.";
+          if (!isAutofix) {
+            let summary = `Proyecto generado con ${fileCount} archivo${fileCount !== 1 ? "s" : ""}`;
+            if (hasExisting) {
+              summary = `Actualizado${changedCount !== 1 ? "s" : ""} ${changedCount} archivo${changedCount !== 1 ? "s" : ""}`;
+              if (deletedCount > 0) summary += `, eliminado${deletedCount !== 1 ? "s" : ""} ${deletedCount}`;
+              summary += ` (${fileCount} en total)`;
+            }
+            summary += " y renderizado en vista previa.";
 
-          const codeMessage: Message = {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: summary,
-            timestamp: Date.now(),
-            usage: receivedUsage ?? undefined,
-            rawCode: serializeFileMap(finalFiles),
-            type: "code",
-            generationId: streamingGenerationId ?? undefined,
-          };
-          setMessages((prev) => [...prev, codeMessage]);
+            const codeMessage: Message = {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: summary,
+              timestamp: Date.now(),
+              usage: receivedUsage ?? undefined,
+              rawCode: serializeFileMap(finalFiles),
+              type: "code",
+              generationId: streamingGenerationId ?? undefined,
+            };
+            setMessages((prev) => [...prev, codeMessage]);
+          }
           autoFixCountRef.current = 0;
         }
 
@@ -1272,6 +1280,7 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             onReady={() => setPreviewReady(true)}
             onAfterDownload={() => setPublishModal({ open: true, variant: "manual" })}
             genProgress={genProgress}
+            isAutoFixing={isAutoFixing}
           />
         </div>
       </div>
