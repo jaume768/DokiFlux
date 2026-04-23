@@ -9,6 +9,7 @@ import type { ProjectListItem, PaginatedResponse } from "@/types/auth";
 import {
   Home,
   FolderOpen,
+  LayoutTemplate,
   LogOut,
   Coins,
   Loader2,
@@ -56,6 +57,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
   const navItems = [
     { icon: Home, label: "Inicio", path: "/app" },
+    { icon: LayoutTemplate, label: "Templates", path: "/app/templates" },
     { icon: FolderOpen, label: "Proyectos", path: "/app/dashboard" },
   ];
 

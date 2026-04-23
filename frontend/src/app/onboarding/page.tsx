@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { apiPost, apiGet, ApiError } from "@/lib/api";
 import Image from "next/image";
-import { Loader2, Check, X, ArrowRight } from "lucide-react";
+import { Loader2, Check, X, ArrowRight, Rocket, LayoutTemplate } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { User, ProjectListItem } from "@/types/auth";
-import { TEMPLATES } from "@/lib/templates";
+import type { User } from "@/types/auth";
 
 type Step = "username" | "templates";
 
@@ -21,7 +20,6 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [checkStatus, setCheckStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const checkUsername = useCallback(async (value: string) => {
@@ -82,29 +80,6 @@ export default function OnboardingPage() {
     }
   }
 
-  async function handleTemplateSelect(templateId: string) {
-    const template = TEMPLATES.find((t) => t.id === templateId);
-    if (!template) return;
-
-    setCreatingTemplate(templateId);
-    setError("");
-
-    try {
-      const project = await apiPost<ProjectListItem>("/projects/", {
-        name: template.name,
-        description: template.description,
-      });
-      sessionStorage.setItem(`initial_prompt_${project.id}`, template.prompt);
-      window.location.href = `/app/generate/${project.id}`;
-    } catch {
-      setError("Error al crear el proyecto. Inténtalo de nuevo.");
-      setCreatingTemplate(null);
-    }
-  }
-
-  function handleSkip() {
-    window.location.href = "/app";
-  }
 
   // If user already has username, go to step 2 or dashboard
   useEffect(() => {
@@ -194,7 +169,7 @@ export default function OnboardingPage() {
           </div>
         </div>
       ) : (
-        <div className="relative z-10 w-full max-w-4xl">
+        <div className="relative z-10 w-full max-w-2xl">
           <div className="flex items-center justify-center mb-6">
             <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={220} height={55} className="h-11 w-auto" />
           </div>
@@ -206,65 +181,78 @@ export default function OnboardingPage() {
 
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-white">¿Con qué quieres empezar?</h2>
-            <p className="mt-2 text-white/50 text-base">Elige un template para tu primer proyecto o empieza desde cero</p>
+            <p className="mt-2 text-white/50 text-base">Elige cómo quieres crear tu primer proyecto</p>
           </div>
 
           {error && (
             <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-xl mb-6 text-center">{error}</div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-            {TEMPLATES.map((template) => (
-              <div
-                key={template.id}
-                className="group cursor-pointer rounded-2xl overflow-hidden transition-all duration-300"
-                style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)" }}
-                onClick={() => handleTemplateSelect(template.id)}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.border = "1px solid rgba(139,92,246,0.35)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 24px rgba(139,92,246,0.12)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.border = "1px solid rgba(255,255,255,0.07)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; }}
-              >
-                <div className="relative h-36 overflow-hidden" style={{ background: "rgba(10,10,20,0.8)" }}>
-                  {creatingTemplate === template.id ? (
-                    <div className="flex h-full items-center justify-center">
-                      <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#8b5cf6" }} />
-                    </div>
-                  ) : (
-                    <img
-                      src={template.image}
-                      alt={template.name}
-                      className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        target.style.display = "none";
-                        const fallback = target.nextElementSibling as HTMLElement | null;
-                        if (fallback) fallback.style.display = "flex";
-                      }}
-                    />
-                  )}
-                  <div className="hidden h-full items-center justify-center text-4xl">{template.emoji}</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold tracking-widest uppercase px-2 py-0.5 rounded-md" style={{ background: "rgba(139,92,246,0.15)", color: "#c084fc", border: "1px solid rgba(139,92,246,0.2)" }}>
-                      {template.category}
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-white/20 transition-all duration-200 group-hover:text-violet-400 group-hover:translate-x-0.5" />
-                  </div>
-                  <p className="text-white font-semibold text-base mb-1">{template.name}</p>
-                  <p className="text-white/45 text-sm leading-relaxed line-clamp-2">{template.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center">
+          <div className="grid gap-4 sm:grid-cols-2 mb-8">
+            {/* ── Empezar de cero ── */}
             <button
-              onClick={handleSkip}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-base font-semibold text-white/70 hover:text-white transition-all duration-200 hover:border-white/20"
-              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
+              onClick={() => { window.location.href = "/app"; }}
+              className="group relative rounded-2xl p-7 text-left transition-all duration-300 cursor-pointer"
+              style={{
+                background: "rgba(255,255,255,0.025)",
+                border: "1px solid rgba(255,255,255,0.07)",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.border = "1px solid rgba(255,255,255,0.2)";
+                (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)";
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 24px rgba(255,255,255,0.06)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.border = "1px solid rgba(255,255,255,0.07)";
+                (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.025)";
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
+              }}
             >
-              Empezar desde cero
-              <ArrowRight className="w-4 h-4" />
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(139,92,246,0.12)" }}>
+                  <Rocket className="h-5 w-5 text-violet-400" />
+                </div>
+                <span className="text-lg font-bold text-white">Empezar de cero</span>
+              </div>
+              <p className="text-sm text-white/45 leading-relaxed mb-4">
+                Crea tu proyecto con tu propia descripción desde la pantalla principal.
+              </p>
+              <div className="flex items-center gap-1 text-sm font-medium text-violet-400 group-hover:text-violet-300 transition-colors">
+                Ir al generador <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </button>
+
+            {/* ── Usar template ── */}
+            <button
+              onClick={() => { router.push("/app/templates"); }}
+              className="group relative rounded-2xl p-7 text-left transition-all duration-300 cursor-pointer"
+              style={{
+                background: "rgba(255,255,255,0.025)",
+                border: "1px solid rgba(255,255,255,0.07)",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.border = "1px solid rgba(139,92,246,0.35)";
+                (e.currentTarget as HTMLButtonElement).style.background = "rgba(139,92,246,0.06)";
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 24px rgba(139,92,246,0.12)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.border = "1px solid rgba(255,255,255,0.07)";
+                (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.025)";
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
+              }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(139,92,246,0.12)" }}>
+                  <LayoutTemplate className="h-5 w-5 text-violet-400" />
+                </div>
+                <span className="text-lg font-bold text-white">Usar un template</span>
+              </div>
+              <p className="text-sm text-white/45 leading-relaxed mb-4">
+                Elige entre proyectos predefinidos: landing, e-commerce, portfolio…
+              </p>
+              <div className="flex items-center gap-1 text-sm font-medium text-violet-400 group-hover:text-violet-300 transition-colors">
+                Ver templates <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </div>
             </button>
           </div>
         </div>

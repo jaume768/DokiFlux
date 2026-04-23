@@ -31,6 +31,19 @@ export default function HomePage() {
     el.style.height = `${Math.min(Math.max(el.scrollHeight, 120), 300)}px`;
   }, []);
 
+  // Check sessionStorage for template prompt pre-fill
+  useEffect(() => {
+    const stored = sessionStorage.getItem("template_prompt");
+    if (stored) {
+      setPrompt(stored);
+      sessionStorage.removeItem("template_prompt");
+      setTimeout(() => {
+        textareaRef.current?.focus();
+        autoResize();
+      }, 0);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     autoResize();
   }, [prompt, autoResize]);
