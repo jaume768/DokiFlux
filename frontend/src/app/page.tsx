@@ -3,7 +3,6 @@
 import {
   LandingNavbar,
   Hero,
-  LogoBar,
   HowItWorks,
   Comparison,
   Testimonials,
@@ -17,7 +16,7 @@ import {
 export default function LandingPage() {
   return (
     <div
-      className="landing bg-[#0a0a0f] text-white min-h-screen antialiased"
+      className="landing bg-[#0a0a0f] text-white min-h-screen antialiased overflow-x-hidden"
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
       <LandingNavbar />

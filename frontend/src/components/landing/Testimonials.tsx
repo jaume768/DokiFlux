@@ -33,13 +33,6 @@ const TESTIMONIALS = [
   },
 ];
 
-const STATS = [
-  { value: "500+", label: "Prototipos creados" },
-  { value: "98%", label: "Satisfacción" },
-  { value: "< 30s", label: "Tiempo medio" },
-  { value: "12 días", label: "Media a producción" },
-];
-
 export function Testimonials() {
   const [visible, setVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -135,23 +128,6 @@ export function Testimonials() {
           ))}
         </div>
 
-        {/* Stats strip */}
-        <div
-          className="rounded-2xl p-6 grid grid-cols-2 md:grid-cols-4 gap-6"
-          style={{
-            background: "rgba(255,255,255,0.025)",
-            border: "1px solid rgba(255,255,255,0.06)",
-            opacity: visible ? 1 : 0,
-            transition: "opacity 0.6s ease 0.4s",
-          }}
-        >
-          {STATS.map((stat, i) => (
-            <div key={i} className="text-center">
-              <div className="text-2xl md:text-3xl font-black gradient-text mb-1">{stat.value}</div>
-              <div className="text-white/75 text-[14px] font-medium">{stat.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
     </section>
   );
