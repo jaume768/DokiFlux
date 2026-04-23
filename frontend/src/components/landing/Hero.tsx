@@ -10,8 +10,12 @@ import {
   Zap,
   Check,
   ChevronDown,
+  ChevronRight,
   Cpu,
   Users,
+  Lock,
+  Folder,
+  FileCode2,
 } from "lucide-react";
 import { useFingerprint } from "@/hooks/useFingerprint";
 import { demoStart, writeDemoState } from "@/lib/demo";
@@ -27,6 +31,40 @@ const GENERATED_FILES = ["App.tsx", "Hero.tsx", "Pricing.tsx", "FAQ.tsx"];
 
 const PLACEHOLDER =
   "Crea una landing SaaS para un software de gestión de reservas con hero, pricing, testimonios y FAQ…";
+
+type TreeRowProps = {
+  icon: "folder-chevron" | "file";
+  label: string;
+  indent?: number;
+  active?: boolean;
+  muted?: boolean;
+};
+
+function TreeRow({ icon, label, indent = 0, active, muted }: TreeRowProps) {
+  return (
+    <div
+      className="flex items-center gap-1.5 px-2 py-1 rounded-md"
+      style={{
+        paddingLeft: `${6 + indent * 14}px`,
+        background: active ? "rgba(139,92,246,0.15)" : "transparent",
+        color: active ? "#c4b5fd" : muted ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.75)",
+      }}
+    >
+      {icon === "folder-chevron" ? (
+        <>
+          <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />
+          <Folder className="w-3.5 h-3.5 shrink-0 text-white/55" />
+        </>
+      ) : (
+        <>
+          <span className="w-3" />
+          <FileCode2 className="w-3.5 h-3.5 shrink-0 text-violet-300/70" />
+        </>
+      )}
+      <span className="truncate">{label}</span>
+    </div>
+  );
+}
 
 export function Hero() {
   const [visible, setVisible] = useState(false);
@@ -97,10 +135,10 @@ export function Hero() {
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-sky-500/8 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-5 md:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] gap-10 lg:gap-14 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-8 lg:gap-12 items-start">
 
           {/* ─────────── LEFT — message & CTAs ─────────── */}
-          <div className="min-w-0 w-full max-w-xl lg:pt-6">
+          <div className="min-w-0 w-full lg:pt-4">
             {/* Micro-proof */}
             <div
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium mb-7"
@@ -120,10 +158,10 @@ export function Hero() {
 
             {/* H1 */}
             <h1
-              className="text-[30px] sm:text-5xl lg:text-[58px] font-black tracking-tight leading-[1.1] text-white mb-6 break-words"
+              className="text-[36px] sm:text-5xl lg:text-[56px] font-black tracking-tight leading-[1.1] text-white mb-5 break-words"
               style={fadeIn(0.08)}
             >
-              Genera prototipos frontend{" "}
+              Genera prototipos {" "}
               <span className="gradient-text">con IA.</span>
               <br />
               Lánzalos <span className="gradient-text">cuando validen.</span>
@@ -189,25 +227,31 @@ export function Hero() {
               className="relative rounded-2xl overflow-hidden scroll-mt-20"
               style={{
                 background:
-                  "linear-gradient(180deg, rgba(22,18,38,0.92) 0%, rgba(12,12,22,0.95) 100%)",
-                border: "1px solid rgba(139,92,246,0.28)",
+                  "linear-gradient(180deg, rgba(22,18,38,0.95) 0%, rgba(12,12,22,0.97) 100%)",
+                border: "1px solid rgba(139,92,246,0.45)",
                 boxShadow:
-                  "0 32px 80px -20px rgba(0,0,0,0.6), 0 0 80px -20px rgba(139,92,246,0.25)",
+                  "0 32px 80px -20px rgba(0,0,0,0.65), 0 0 80px -20px rgba(139,92,246,0.32)",
               }}
             >
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-violet-300">
+              {/* ── Header ── */}
+              <div
+                className="flex items-center justify-between gap-3 px-5 py-3.5"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-violet-300">
                   <Sparkles className="w-3.5 h-3.5" />
                   Pruébalo ahora
                 </div>
-                <div className="hidden sm:block text-[11px] font-medium text-emerald-300/80">
+                <div className="hidden sm:block text-[11px] font-semibold text-emerald-300">
                   Sin registro. Sin tarjeta. En 10 segundos.
                 </div>
               </div>
 
-              {/* Prompt area */}
-              <div className="p-4 sm:p-5 space-y-3.5">
+              {/* ── Prompt + controls (single section) ── */}
+              <div
+                className="p-4 sm:p-5"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+              >
                 <textarea
                   ref={textareaRef}
                   value={prompt}
@@ -216,41 +260,47 @@ export function Hero() {
                   placeholder={PLACEHOLDER}
                   disabled={isStarting}
                   rows={2}
-                  className="w-full resize-none bg-transparent text-[14px] leading-relaxed text-white placeholder:text-white/35 outline-none min-h-[56px] max-h-[160px] rounded-xl px-4 py-3"
+                  className="w-full resize-none bg-transparent text-[14px] leading-relaxed text-white placeholder:text-white/80 outline-none min-h-[56px] max-h-[160px] rounded-xl px-4 py-3 mb-3.5"
                   style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
                 />
 
-                {/* Chips + model + CTA */}
+                {/* Single row: chips · model · CTA */}
                 <div className="flex flex-wrap items-center gap-2">
                   {CHIPS.map((c) => (
                     <button
                       key={c}
                       type="button"
-                      onClick={() => { setPrompt(c === "Landing SaaS" ? PLACEHOLDER : `Crea un ${c.toLowerCase()} moderno y limpio con secciones completas.`); setTimeout(() => { textareaRef.current?.focus(); autoGrow(); }, 0); }}
+                      onClick={() => {
+                        setPrompt(
+                          c === "Landing SaaS"
+                            ? PLACEHOLDER
+                            : `Crea un ${c.toLowerCase()} moderno y limpio con secciones completas.`
+                        );
+                        setTimeout(() => { textareaRef.current?.focus(); autoGrow(); }, 0);
+                      }}
                       disabled={isStarting}
-                      className="text-xs px-3 py-1.5 rounded-lg text-white/65 hover:text-white transition-colors cursor-pointer disabled:opacity-40"
-                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      className="text-xs px-3 py-1.5 rounded-lg text-white/75 hover:text-white transition-colors cursor-pointer disabled:opacity-40"
+                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}
                     >
                       {c}
                     </button>
                   ))}
-                </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex-1 min-w-0 hidden sm:block" />
+
                   <div
-                    className="inline-flex items-center gap-1.5 text-[11px] text-white/50 px-2.5 py-1.5 rounded-lg"
-                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+                    className="inline-flex items-center gap-1.5 text-[11px] text-white/60 px-2.5 py-1.5 rounded-lg cursor-pointer"
+                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
                   >
-                    <Cpu className="w-3 h-3" />
+                    <Lock className="w-3 h-3" />
                     Gemini 3.1 Flash
                     <ChevronDown className="w-3 h-3 opacity-60" />
                   </div>
-                  <div className="flex-1 min-w-0" />
                   <button
                     type="submit"
-                    disabled={!prompt.trim() || isStarting}
+                    disabled={isStarting}
                     className="btn-primary inline-flex items-center gap-1.5 text-sm font-semibold text-white px-4 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{ boxShadow: "0 4px 14px -2px rgba(139,92,246,0.45)" }}
+                    style={{ boxShadow: "0 4px 14px -2px rgba(139,92,246,0.5)" }}
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     {isStarting ? "Iniciando…" : "Generar demo"}
@@ -258,94 +308,120 @@ export function Hero() {
                 </div>
 
                 {error && (
-                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                  <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
                     {error}
                   </div>
                 )}
               </div>
 
-              {/* "Generando archivos" strip */}
+              {/* ── Generando archivos strip ── */}
               <div
-                className="flex items-center gap-2 px-5 py-2.5 overflow-x-auto"
-                style={{ borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.015)", scrollbarWidth: "none" }}
+                className="flex items-center justify-between gap-3 px-5 py-3"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
               >
-                <span className="inline-flex items-center gap-1.5 text-[11px] text-white/50 shrink-0">
-                  <div className="w-3 h-3 rounded-full border-2 border-violet-400/40 border-t-violet-400 animate-spin" />
-                  Generando archivos…
+                <span className="inline-flex items-center gap-2 text-[12px] text-white/55 shrink-0">
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-violet-400/40 border-t-violet-400 animate-spin" />
+                  <span className="hidden sm:inline">Generando archivos…</span>
                 </span>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
                   {GENERATED_FILES.map((f) => (
                     <span
                       key={f}
                       className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-300 px-2 py-1 rounded-md"
-                      style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.18)" }}
+                      style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.22)" }}
                     >
                       <Check className="w-3 h-3" />
                       {f}
+                      <Check className="w-2.5 h-2.5 opacity-70" />
                     </span>
                   ))}
                 </div>
               </div>
 
-              {/* Preview tabs */}
-              <div className="flex items-center gap-1 px-3 pt-2" style={{ background: "rgba(255,255,255,0.015)" }}>
-                {(["preview", "code"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setActiveTab(tab)}
-                    className="text-[11px] font-medium px-3 py-1.5 rounded-t-md transition-colors cursor-pointer"
-                    style={
-                      activeTab === tab
-                        ? { background: "rgba(139,92,246,0.12)", color: "#c4b5fd", border: "1px solid rgba(139,92,246,0.22)", borderBottom: "none" }
-                        : { color: "rgba(255,255,255,0.45)" }
-                    }
-                  >
-                    {tab === "preview" ? "Vista previa" : "Código"}
-                  </button>
-                ))}
-              </div>
-
-              {/* Preview frame */}
-              <div
-                className="relative mx-3 mb-3 rounded-lg overflow-hidden"
-                style={{ background: "#0c0c14", border: "1px solid rgba(255,255,255,0.06)", aspectRatio: "16 / 10" }}
-              >
-                {activeTab === "preview" ? (
-                  <>
-                    <Image
-                      src="/landing/demo-review.png"
-                      alt="Demo preview"
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      className="object-cover object-top"
-                      onError={(e) => {
-                        const img = e.currentTarget as HTMLImageElement;
-                        img.style.display = "none";
-                      }}
-                    />
-                    {/* Fallback content shown under the image (visible if image fails to load transparently) */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 pointer-events-none" style={{ zIndex: -1 }}>
-                      <Sparkles className="w-10 h-10 text-violet-400 mb-3" />
-                      <p className="text-sm text-white/60 font-medium">Preview en directo</p>
-                      <p className="text-xs text-white/30 mt-1">Coloca tu imagen en /public/landing/demo-review.png</p>
+              {/* ── File tree + Preview (2-col) ── */}
+              <div className="grid md:grid-cols-[30%_1fr]">
+                {/* Left: file tree */}
+                <div
+                  className="hidden md:flex flex-col"
+                  style={{ borderRight: "1px solid rgba(255,255,255,0.07)" }}
+                >
+                  {/* Tabs */}
+                  <div className="flex items-center gap-4 px-4 pt-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                    <div className="text-[12px] font-semibold text-white pb-2" style={{ borderBottom: "2px solid #8b5cf6" }}>
+                      Archivos
                     </div>
-                  </>
-                ) : (
-                  <div className="h-full p-4 font-mono text-[11px] leading-relaxed overflow-hidden">
-                    <div className="text-violet-400">import <span className="text-white">React</span> from <span className="text-emerald-400">&apos;react&apos;</span></div>
-                    <div className="text-violet-400">import <span className="text-sky-400">{"{ motion }"}</span> from <span className="text-emerald-400">&apos;framer-motion&apos;</span></div>
-                    <div className="h-3" />
-                    <div className="text-violet-400">export default <span className="text-sky-400">function</span> <span className="text-amber-400">App</span><span className="text-white/60">() {"{"}</span></div>
-                    <div className="text-white/60 pl-4">return (</div>
-                    <div className="text-emerald-400/70 pl-8">&lt;motion.div className=<span className="text-emerald-400">&quot;p-8 rounded-2xl&quot;</span>&gt;</div>
-                    <div className="text-emerald-400/70 pl-12">&lt;Hero /&gt;</div>
-                    <div className="text-emerald-400/70 pl-12">&lt;Pricing /&gt;</div>
-                    <div className="text-emerald-400/70 pl-8">&lt;/motion.div&gt;</div>
-                    <div className="text-white/60 pl-4">)</div>
-                    <div className="text-white/60">{"}"}</div>
+                    <div className="text-[12px] font-medium text-white/40 pb-2">Chat</div>
                   </div>
-                )}
+                  {/* Tree */}
+                  <div className="px-3 py-3 text-[12px] font-medium space-y-0.5">
+                    <TreeRow icon="folder-chevron" label="src" />
+                    <TreeRow icon="file" label="App.tsx" active indent={1} />
+                    <TreeRow icon="folder-chevron" label="components" indent={1} />
+                    <TreeRow icon="file" label="Hero.tsx" indent={2} muted />
+                    <TreeRow icon="file" label="Features.tsx" indent={2} muted />
+                    <TreeRow icon="file" label="Pricing.tsx" indent={2} muted />
+                    <TreeRow icon="file" label="Testimonials.tsx" indent={2} muted />
+                    <TreeRow icon="file" label="FAQ.tsx" indent={2} muted />
+                    <TreeRow icon="folder-chevron" label="styles" indent={1} />
+                    <TreeRow icon="file" label="package.json" indent={1} muted />
+                  </div>
+                </div>
+
+                {/* Right: preview */}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-4 px-4 pt-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("preview")}
+                      className="text-[12px] font-semibold pb-2 cursor-pointer"
+                      style={
+                        activeTab === "preview"
+                          ? { color: "#fff", borderBottom: "2px solid #8b5cf6" }
+                          : { color: "rgba(255,255,255,0.4)", borderBottom: "2px solid transparent" }
+                      }
+                    >
+                      Vista previa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("code")}
+                      className="text-[12px] font-medium pb-2 cursor-pointer"
+                      style={
+                        activeTab === "code"
+                          ? { color: "#fff", borderBottom: "2px solid #8b5cf6" }
+                          : { color: "rgba(255,255,255,0.4)", borderBottom: "2px solid transparent" }
+                      }
+                    >
+                      Código
+                    </button>
+                  </div>
+
+                  <div className="relative flex-1 min-h-[280px]" style={{ background: "#0c0c14" }}>
+                    {activeTab === "preview" ? (
+                      <Image
+                        src="/landing/demo-review.png"
+                        alt="Demo preview"
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="object-contain"
+                      />
+                    ) : (
+                      <div className="h-full p-4 font-mono text-[11px] leading-relaxed overflow-hidden">
+                        <div className="text-violet-400">import <span className="text-white">React</span> from <span className="text-emerald-400">&apos;react&apos;</span></div>
+                        <div className="text-violet-400">import <span className="text-sky-400">{"{ motion }"}</span> from <span className="text-emerald-400">&apos;framer-motion&apos;</span></div>
+                        <div className="h-3" />
+                        <div className="text-violet-400">export default <span className="text-sky-400">function</span> <span className="text-amber-400">App</span><span className="text-white/60">() {"{"}</span></div>
+                        <div className="text-white/60 pl-4">return (</div>
+                        <div className="text-emerald-400/70 pl-8">&lt;motion.div className=<span className="text-emerald-400">&quot;p-8 rounded-2xl&quot;</span>&gt;</div>
+                        <div className="text-emerald-400/70 pl-12">&lt;Hero /&gt;</div>
+                        <div className="text-emerald-400/70 pl-12">&lt;Pricing /&gt;</div>
+                        <div className="text-emerald-400/70 pl-8">&lt;/motion.div&gt;</div>
+                        <div className="text-white/60 pl-4">)</div>
+                        <div className="text-white/60">{"}"}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </form>
           </div>
