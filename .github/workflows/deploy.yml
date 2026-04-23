@@ -57,21 +57,7 @@ jobs:
             fi
 
             $DC up -d
-            # The backend entrypoint already runs migrate, but we re-run it
-            # explicitly here to catch any edge cases. If it fails because a
-            # table already exists but the migration isn't recorded (common after
-            # manual DB fixes), fake the specific migration and retry.
-            if ! $DC exec -T backend python manage.py migrate --noinput 2>/tmp/migrate_err; then
-              ERR=$(cat /tmp/migrate_err)
-              if echo "$ERR" | grep -q "already exists" && echo "$ERR" | grep -q "project_export_logs"; then
-                echo "Table project_export_logs exists but migration not recorded. Faking projects.0007..."
-                $DC exec -T backend python manage.py migrate projects 0007 --fake || true
-                $DC exec -T backend python manage.py migrate --noinput
-              else
-                echo "$ERR" >&2
-                exit 1
-              fi
-            fi
+            $DC exec -T backend python manage.py migrate --noinput
             $DC exec -T backend python manage.py collectstatic --noinput
             docker image prune -f
             echo "Deploy completed at $(date)"
