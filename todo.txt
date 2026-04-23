@@ -9,11 +9,9 @@
     
 23- Añadir templates y poder hacer proyectos "Del staff" como templates con los prompts
 24- Enseñar anuncios si se genera con ia gratis?
-28- Añadir que la gente pueda hacer tickets
 40- Multiidioma a Español y el Ingles
 41- logs de auditoria (tabla donde guardar todos los logs para auditoria)
 42- integrar facturación, pagos, etc.
-43- Una UX/UI a prueba de usuarios no técnicos.
 44- formulario de "No sabes como empezar? pulsa aqui para que te ayudemos en 3 pasos" 
     - (Abrir modal simple de preguntas para montar prompt por detras)
     ejemplo: 

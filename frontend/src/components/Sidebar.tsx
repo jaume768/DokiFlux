@@ -78,7 +78,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       <div className="shrink-0 p-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
         <button
           onClick={() => handleNav("/app")}
-          className="flex items-center rounded-lg -mx-1 px-1 py-1 transition-colors hover:bg-white/[0.04]"
+          className="flex items-center rounded-lg -mx-1 px-1 py-1 transition-colors hover:bg-white/[0.04] cursor-pointer"
           aria-label="Ir a inicio"
         >
           <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={160} height={40} className="h-8 w-auto" />
@@ -94,7 +94,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             <button
               key={item.path}
               onClick={() => handleNav(item.path)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer"
               style={isActive
                 ? { background: "rgba(139,92,246,0.15)", color: "#c084fc" }
                 : { color: "rgba(255,255,255,0.82)" }}
@@ -133,7 +133,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 <button
                   key={project.id}
                   onClick={() => handleNav(`/app/generate/${project.id}`)}
-                  className="w-full text-left px-3 py-2 rounded-xl transition-all duration-150 flex items-center gap-1.5 min-w-0"
+                  className="w-full text-left px-3 py-2 rounded-xl transition-all duration-150 flex items-center gap-1.5 min-w-0 cursor-pointer"
                   style={isActive
                     ? { background: "rgba(255,255,255,0.08)", color: "#fff" }
                     : { color: "rgba(255,255,255,0.72)" }}
@@ -154,8 +154,21 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       {/* ── Footer — always pinned at bottom (shrink-0) ── */}
       <div className="shrink-0 p-3 space-y-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
         {balance !== null && (
-          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs"
-            style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)" }}
+          <button
+            onClick={() => handleNav("/app/billing")}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs text-left transition-all duration-200 cursor-pointer"
+            style={{
+              background: "rgba(139,92,246,0.1)",
+              border: "1px solid rgba(139,92,246,0.2)",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = "rgba(139,92,246,0.18)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(139,92,246,0.35)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = "rgba(139,92,246,0.1)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(139,92,246,0.2)";
+            }}
           >
             <Coins className="w-3.5 h-3.5 shrink-0" style={{ color: "#a78bfa" }} />
             <div className="flex-1 min-w-0">
@@ -164,7 +177,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 {planType}
               </div>
             </div>
-          </div>
+          </button>
         )}
         <div
           className="flex items-center gap-1 rounded-xl"
@@ -174,7 +187,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         >
           <button
             onClick={() => handleNav("/app/profile")}
-            className="flex items-center gap-2 px-3 py-2 flex-1 min-w-0 text-left"
+            className="flex items-center gap-2 px-3 py-2 flex-1 min-w-0 text-left cursor-pointer"
           >
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"

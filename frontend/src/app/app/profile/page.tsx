@@ -128,7 +128,7 @@ export default function ProfilePage() {
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
         {/* Back */}
         <div className="mb-8 flex items-center gap-3">
-          <Link href="/app" className="transition-colors" style={{ color: "rgba(255,255,255,0.4)" }}
+          <Link href="/app" className="transition-colors cursor-pointer" style={{ color: "rgba(255,255,255,0.4)" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.9)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.4)"; }}
           >
@@ -246,12 +246,12 @@ export default function ProfilePage() {
             )}
           </div>
           {isPremium ? (
-            <Link href="/app/billing" className="btn-primary flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white">
+            <Link href="/app/billing" className="btn-primary flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white cursor-pointer">
               <CreditCard className="h-4 w-4" />
               Gestiona tu suscripción
             </Link>
           ) : (
-            <Link href="/app/billing" className="btn-primary flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white">
+            <Link href="/app/billing" className="btn-primary flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white cursor-pointer">
               <CreditCard className="h-4 w-4" />
               Actualizar a Premium
             </Link>
@@ -263,7 +263,7 @@ export default function ProfilePage() {
           <p className="text-sm font-semibold mb-3" style={{ color: "rgba(255,255,255,0.7)" }}>Cuenta</p>
           <div className="space-y-2">
             <Link href="/app/billing"
-              className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-white/70 hover:text-white"
+              className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-white/70 hover:text-white cursor-pointer"
               style={{ border: "1px solid rgba(255,255,255,0.09)" }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
@@ -272,7 +272,7 @@ export default function ProfilePage() {
               Ver historial de transacciones
             </Link>
             <button onClick={logout}
-              className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-red-400 hover:bg-red-500/10"
+              className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-red-400 hover:bg-red-500/10 cursor-pointer"
             >
               <LogOut className="h-4 w-4" />
               Cerrar sesión
