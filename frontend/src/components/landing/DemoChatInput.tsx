@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, SendHorizonal, Loader2, Lock } from "lucide-react";
+import {
+  Sparkles,
+  Loader2,
+  Lock,
+  Coffee,
+  BarChart3,
+  CheckSquare,
+  Palette,
+} from "lucide-react";
 import { useFingerprint } from "@/hooks/useFingerprint";
 import { demoStart, writeDemoState } from "@/lib/demo";
 
 const SUGGESTIONS = [
-  "Una landing page para una cafetería con menú y reservas",
-  "Dashboard de analytics con gráficas y KPIs",
-  "App de lista de tareas con drag & drop",
-  "Portfolio personal para un diseñador gráfico",
+  { text: "Landing page para cafetería", icon: Coffee },
+  { text: "Dashboard con KPIs", icon: BarChart3 },
+  { text: "App de tareas con drag & drop", icon: CheckSquare },
+  { text: "Portfolio para diseñador", icon: Palette },
 ];
 
 export function DemoChatInput() {
@@ -100,9 +108,12 @@ export function DemoChatInput() {
             transition: "opacity 0.6s ease, transform 0.6s ease",
           }}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-400/25 bg-violet-400/5 text-xs font-medium text-violet-300 uppercase tracking-widest mb-4">
-            <Sparkles className="w-3 h-3" />
-            Pruébalo ahora
+          <div
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-violet-400/30 bg-violet-400/10 text-xs font-semibold text-violet-200 uppercase tracking-widest mb-5"
+            style={{ boxShadow: "0 0 20px rgba(139,92,246,0.15)" }}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            PRUÉBALO AHORA
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">
             Sin registro.
@@ -110,8 +121,10 @@ export function DemoChatInput() {
             <span className="gradient-text">En 10 segundos.</span>
           </h2>
           <p className="text-white/70 text-lg max-w-xl mx-auto">
-            Escribe lo que quieres construir y la IA genera el código en directo.
-            <span className="text-white/90 font-semibold"> para que pruebes sin dar tu email.</span> 
+            Describe lo que quieres construir y la IA genera el código en directo.
+          </p>
+          <p className="text-white font-semibold text-base mt-1">
+            Pruébalo <span className="gradient-text font-bold">sin dar tu email</span>.
           </p>
         </div>
 
@@ -125,29 +138,34 @@ export function DemoChatInput() {
           }}
         >
           <div
-            className="rounded-2xl p-4 backdrop-blur-sm"
+            className="rounded-2xl p-5 backdrop-blur-md"
             style={{
-              background: "rgba(15,15,25,0.7)",
-              border: "1px solid rgba(139,92,246,0.28)",
-              boxShadow: "0 10px 40px -10px rgba(139,92,246,0.25)",
+              background:
+                "linear-gradient(180deg, rgba(20,18,35,0.85) 0%, rgba(12,12,22,0.9) 100%)",
+              border: "1px solid rgba(139,92,246,0.35)",
+              boxShadow:
+                "0 0 0 1px rgba(139,92,246,0.1), 0 10px 40px -10px rgba(139,92,246,0.3), inset 0 1px 0 rgba(255,255,255,0.04)",
             }}
           >
-            <textarea
-              ref={textareaRef}
-              value={prompt}
-              onChange={(e) => {
-                setPrompt(e.target.value);
-                autoGrow();
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder="Ej: Una landing page para una cafetería con menú, reservas y testimonios..."
-              disabled={isStarting}
-              rows={2}
-              className="w-full bg-transparent text-white placeholder:text-white/30 text-base outline-none resize-none min-h-[56px] max-h-[200px]"
-            />
+            <div className="relative flex items-start gap-3">
+              <Sparkles className="mt-2.5 w-4 h-4 text-violet-400/40 shrink-0 pointer-events-none" />
+              <textarea
+                ref={textareaRef}
+                value={prompt}
+                onChange={(e) => {
+                  setPrompt(e.target.value);
+                  autoGrow();
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder="Ej: Una landing page para una cafetería con menú, reservas y testimonios..."
+                disabled={isStarting}
+                rows={2}
+                className="w-full bg-transparent text-white placeholder:text-white/35 text-[15px] leading-relaxed outline-none resize-none min-h-[56px] max-h-[200px]"
+              />
+            </div>
 
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
-              <div className="flex items-center gap-2 text-xs text-white/40">
+            <div className="flex items-center justify-between mt-4 pt-3.5 border-t border-white/[0.08]">
+              <div className="flex items-center gap-2 text-xs text-white/30">
                 <Lock className="w-3 h-3" />
                 <span>Gemini 3.1 Flash</span>
               </div>
@@ -168,8 +186,9 @@ export function DemoChatInput() {
                   </>
                 ) : (
                   <>
+                    <Sparkles className="w-4 h-4" />
                     Generar ahora
-                    <SendHorizonal className="w-4 h-4" />
+                    <Sparkles className="w-4 h-4" />
                   </>
                 )}
               </button>
@@ -183,24 +202,28 @@ export function DemoChatInput() {
           )}
 
           {/* Suggestions */}
-          <div className="mt-5 flex flex-wrap justify-center gap-2">
-            {SUGGESTIONS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => {
-                  setPrompt(s);
-                  setTimeout(() => {
-                    textareaRef.current?.focus();
-                    autoGrow();
-                  }, 0);
-                }}
-                disabled={isStarting}
-                className="text-xs px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-white/60 hover:text-white hover:border-white/20 hover:bg-white/[0.06] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {s}
-              </button>
-            ))}
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            {SUGGESTIONS.map((s) => {
+              const Icon = s.icon;
+              return (
+                <button
+                  key={s.text}
+                  type="button"
+                  onClick={() => {
+                    setPrompt(s.text);
+                    setTimeout(() => {
+                      textareaRef.current?.focus();
+                      autoGrow();
+                    }, 0);
+                  }}
+                  disabled={isStarting}
+                  className="flex items-center gap-2 text-sm px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.03] text-white/70 hover:text-white hover:border-white/20 hover:bg-white/[0.06] transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-left"
+                >
+                  <Icon className="w-4 h-4 shrink-0 text-white/50" />
+                  {s.text}
+                </button>
+              );
+            })}
           </div>
         </form>
       </div>
