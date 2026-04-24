@@ -444,7 +444,7 @@ export function Hero() {
             { value: "500+", label: "Prototipos creados" },
             { value: "< 30s", label: "Primer resultado" },
             { value: "11+", label: "Modelos de IA" },
-            { value: "98%", label: "Satisfacción" },
+            { value: "100%", label: "Satisfacción" },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
               <div className="text-2xl md:text-3xl font-black gradient-text mb-1">{stat.value}</div>
