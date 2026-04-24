@@ -171,7 +171,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-white/25 text-[13px] text-center sm:text-left leading-relaxed">
-            © {currentYear} DokiFlux · Hecho con <span className="text-red-400/70">❤️</span> en España
+            © {currentYear} DokiFlux
           </p>
 
           <div className="flex items-center gap-5 flex-wrap justify-center">

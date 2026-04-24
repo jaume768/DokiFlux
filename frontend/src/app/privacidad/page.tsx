@@ -24,15 +24,15 @@ export default function PrivacidadPage() {
         <div className="mb-12">
           <span className="inline-block text-xs font-bold tracking-widest uppercase text-violet-400 mb-4">Legal</span>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">Política de Privacidad</h1>
-          <p className="text-white/40 text-sm">Última actualización: <strong className="text-white/60">[FECHA_EFECTIVA]</strong></p>
+          <p className="text-white/40 text-sm">Última actualización: <strong className="text-white/60">24 de abril de 2026</strong></p>
         </div>
 
         <div className="prose-legal">
           <Section title="1. Responsable del tratamiento">
             <p>
-              El responsable del tratamiento de sus datos personales es <strong>[EMPRESA]</strong>, con NIF <strong>[NIF]</strong>,
-              domicilio en <strong>[DIRECCIÓN]</strong>, y dirección de correo electrónico de contacto:{" "}
-              <a href="mailto:[EMAIL_LEGAL]" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">[EMAIL_LEGAL]</a>.
+              El responsable del tratamiento de sus datos personales es <strong>Jaime Fernández Suñer</strong>, con NIF <strong>41621021Z</strong>,
+              domicilio en <strong>Calle Mallorca, 50, Manacor, Islas Baleares, 07500</strong>, y dirección de correo electrónico de contacto:{" "}
+              <a href="mailto:info@dokiflux.com" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">info@dokiflux.com</a>.
             </p>
           </Section>
 
@@ -108,7 +108,7 @@ export default function PrivacidadPage() {
             </ul>
             <p>
               Para ejercer sus derechos, envíe un correo a{" "}
-              <a href="mailto:[EMAIL_LEGAL]" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">[EMAIL_LEGAL]</a>{" "}
+              <a href="mailto:info@dokiflux.com" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">info@dokiflux.com</a>{" "}
               adjuntando una copia de su DNI u otro documento de identidad. Responderemos en el plazo de 30 días.
             </p>
             <p>
@@ -144,7 +144,7 @@ export default function PrivacidadPage() {
           <Section title="10. Contacto">
             <p>
               Para cualquier consulta sobre esta política o el tratamiento de sus datos, contacte con nosotros en:{" "}
-              <a href="mailto:[EMAIL_LEGAL]" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">[EMAIL_LEGAL]</a>
+              <a href="mailto:info@dokiflux.com" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">info@dokiflux.com</a>
             </p>
           </Section>
         </div>

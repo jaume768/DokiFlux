@@ -32,7 +32,7 @@ const PERSONAS = [
       "Prototipado rápido para validar con stakeholders",
       "Comparte prototipos con un enlace",
       "Servicio de producción profesional",
-      "Entrega media en 12 días laborables",
+      "Entrega en 2–6 semanas",
       "Soporte técnico continuo post-lanzamiento",
     ],
     cta: "Hablar con el equipo",

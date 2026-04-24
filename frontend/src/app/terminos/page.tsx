@@ -24,13 +24,13 @@ export default function TerminosPage() {
         <div className="mb-12">
           <span className="inline-block text-xs font-bold tracking-widest uppercase text-violet-400 mb-4">Legal</span>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">Términos de Uso</h1>
-          <p className="text-white/40 text-sm">Última actualización: <strong className="text-white/60">[FECHA_EFECTIVA]</strong></p>
+          <p className="text-white/40 text-sm">Última actualización: <strong className="text-white/60">24 de abril de 2026</strong></p>
         </div>
 
         <div className="prose-legal">
           <Section title="1. Aceptación de los términos">
             <p>
-              Al acceder o utilizar DokiFlux (el «Servicio»), operado por <strong>[EMPRESA]</strong> («nosotros»), usted acepta quedar
+              Al acceder o utilizar DokiFlux (el «Servicio»), operado por <strong>Jaime Fernández Suñer</strong> («nosotros»), usted acepta quedar
               vinculado por estos Términos de Uso. Si no está de acuerdo con alguno de ellos, le rogamos que no utilice el Servicio.
             </p>
           </Section>
@@ -75,7 +75,7 @@ export default function TerminosPage() {
           <Section title="6. Propiedad intelectual">
             <p>
               <strong>Nuestro contenido:</strong> DokiFlux y todos sus componentes (diseño, logotipos, código fuente de la plataforma)
-              son propiedad exclusiva de <strong>[EMPRESA]</strong> o sus licenciantes y están protegidos por la legislación sobre
+              son propiedad exclusiva de <strong>Jaime Fernández Suñer</strong> o sus licenciantes y están protegidos por la legislación sobre
               propiedad intelectual.
             </p>
             <p>
@@ -95,7 +95,7 @@ export default function TerminosPage() {
 
           <Section title="8. Limitación de responsabilidad">
             <p>
-              En la máxima medida permitida por la ley aplicable, <strong>[EMPRESA]</strong> no será responsable de daños indirectos,
+              En la máxima medida permitida por la ley aplicable, <strong>Jaime Fernández Suñer</strong> no será responsable de daños indirectos,
               incidentales, especiales, consecuentes o punitivos, ni de pérdidas de beneficios o datos, derivados del uso o la
               imposibilidad de uso del Servicio. Nuestra responsabilidad total no superará el importe abonado por el usuario en los
               12 meses anteriores al hecho que origine la reclamación.
@@ -104,7 +104,7 @@ export default function TerminosPage() {
 
           <Section title="9. Indemnización">
             <p>
-              Usted se compromete a indemnizar y mantener indemne a <strong>[EMPRESA]</strong>, sus directivos, empleados y agentes,
+              Usted se compromete a indemnizar y mantener indemne a <strong>Jaime Fernández Suñer</strong>, sus directivos, empleados y agentes,
               frente a cualquier reclamación, daño o gasto (incluidos honorarios de abogados) derivados de su incumplimiento de estos
               Términos o del uso indebido del Servicio.
             </p>
@@ -128,7 +128,7 @@ export default function TerminosPage() {
           <Section title="12. Ley aplicable y jurisdicción">
             <p>
               Estos Términos se rigen por la legislación española. Para cualquier controversia, las partes se someten a la
-              jurisdicción de los juzgados y tribunales de <strong>[CIUDAD]</strong>, renunciando expresamente a cualquier otro
+              jurisdicción de los juzgados y tribunales de <strong>Manacor</strong>, renunciando expresamente a cualquier otro
               fuero que pudiera corresponderles.
             </p>
           </Section>
@@ -136,7 +136,7 @@ export default function TerminosPage() {
           <Section title="13. Contacto">
             <p>
               Para cualquier consulta relacionada con estos Términos, contacte con nosotros en:{" "}
-              <a href="mailto:[EMAIL_LEGAL]" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">[EMAIL_LEGAL]</a>
+              <a href="mailto:info@dokiflux.com" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">info@dokiflux.com</a>
             </p>
           </Section>
         </div>

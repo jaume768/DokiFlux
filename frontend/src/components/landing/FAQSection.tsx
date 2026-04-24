@@ -18,7 +18,7 @@ const FAQ_ITEMS = [
   },
   {
     question: "¿El servicio de producción está incluido en el plan?",
-    answer: "El servicio de producción es un servicio separado gestionado por nuestro equipo de ingeniería. No está incluido en los planes de suscripción. Una vez que tengas tu prototipo validado, puedes contactar con nosotros para obtener un presupuesto personalizado. El tiempo medio de entrega a producción es de 12 días.",
+    answer: "El servicio de producción es un servicio separado gestionado por nuestro equipo de ingeniería. No está incluido en los planes de suscripción. Una vez que tengas tu prototipo validado, puedes contactar con nosotros para obtener un presupuesto personalizado. El tiempo de entrega a producción es de 2–6 semanas.",
   },
   {
     question: "¿Los créditos caducan?",

@@ -24,9 +24,9 @@ export default function LandingPage() {
         <Hero />
         <DemoChatInput />
         <HowItWorks />
+        <DualPersona />
         <Comparison />
         <TemplatesShowcase />
-        <DualPersona />
         <Testimonials />
         <FinalCTA />
       </main>

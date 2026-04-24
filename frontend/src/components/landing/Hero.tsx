@@ -181,9 +181,11 @@ export function Hero() {
                 className="btn-primary group inline-flex items-center justify-center gap-2 text-[15px] font-bold text-white px-6 py-3.5 rounded-xl cursor-pointer"
                 style={{ boxShadow: "0 0 32px rgba(139,92,246,0.30)" }}
               >
-                <Zap size={15} className="fill-white" />
-                Probar demo sin registro
-                <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                <span className="relative z-10 inline-flex items-center gap-2">
+                  <Zap size={15} className="fill-white" />
+                  Probar demo sin registro
+                  <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                </span>
               </Link>
               <Link
                 href="#contacto"
@@ -220,7 +222,7 @@ export function Hero() {
           </div>
 
           {/* ─────────── RIGHT — embedded demo ─────────── */}
-          <div className="min-w-0 w-full" style={fadeIn(0.2)}>
+          <div className="min-w-0 w-full hidden lg:block" style={fadeIn(0.2)}>
             <form
               id="pruebalo"
               onSubmit={handleSubmit}
@@ -299,11 +301,13 @@ export function Hero() {
                   <button
                     type="submit"
                     disabled={isStarting}
-                    className="btn-primary inline-flex items-center gap-1.5 text-sm font-semibold text-white px-4 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="btn-primary inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-white px-4 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{ boxShadow: "0 4px 14px -2px rgba(139,92,246,0.5)" }}
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    {isStarting ? "Iniciando…" : "Generar demo"}
+                    <span className="relative z-10 inline-flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {isStarting ? "Iniciando…" : "Generar demo"}
+                    </span>
                   </button>
                 </div>
 
