@@ -6,24 +6,6 @@ import { Check, ArrowRight } from "lucide-react";
 
 const PERSONAS = [
   {
-    image: "/templates/tarjeta-programadores.png",
-    title: "Desarrolladores & Freelance",
-    subtitle: "Prototipa más rápido, cobra más",
-    desc: "Genera MVPs funcionales en minutos para tus clientes. Valida ideas sin escribir código boilerplate. Multiplica tu productividad.",
-    benefits: [
-      "Genera prototipos en segundos, no días",
-      "Exporta código limpio y reutilizable",
-      "11+ modelos IA para elegir",
-      "Chat iterativo para refinar resultados",
-      "Auto-fix de errores integrado",
-    ],
-    cta: "Empieza gratis",
-    ctaHref: "/register",
-    color: "#8b5cf6",
-    colorBg: "rgba(139,92,246,0.10)",
-    colorBorder: "rgba(139,92,246,0.22)",
-  },
-  {
     image: "/templates/tarjeta-empresa.png",
     title: "Empresas & Startups",
     subtitle: "De idea a producción con garantías",
@@ -40,6 +22,24 @@ const PERSONAS = [
     color: "#38bdf8",
     colorBg: "rgba(56,189,248,0.10)",
     colorBorder: "rgba(56,189,248,0.22)",
+  },
+  {
+    image: "/templates/tarjeta-programadores.png",
+    title: "Desarrolladores & Freelance",
+    subtitle: "Prototipa más rápido, cobra más",
+    desc: "Genera MVPs funcionales en minutos para tus clientes. Valida ideas sin escribir código boilerplate. Multiplica tu productividad.",
+    benefits: [
+      "Genera prototipos en segundos, no días",
+      "Exporta código limpio y reutilizable",
+      "11+ modelos IA para elegir",
+      "Chat iterativo para refinar resultados",
+      "Auto-fix de errores integrado",
+    ],
+    cta: "Empieza gratis",
+    ctaHref: "/register",
+    color: "#8b5cf6",
+    colorBg: "rgba(139,92,246,0.10)",
+    colorBorder: "rgba(139,92,246,0.22)",
   },
 ];
 
@@ -72,7 +72,6 @@ export function DualPersona() {
       <div className="absolute top-1/2 right-1/4 w-80 h-80 bg-sky-500/5 rounded-full blur-[130px] pointer-events-none" />
 
       <div className="relative z-10 max-w-6xl mx-auto">
-        {/* Header */}
         <div
           className="text-center mb-10"
           style={{
@@ -92,7 +91,6 @@ export function DualPersona() {
           </h2>
         </div>
 
-        {/* Cards */}
         <div className="grid gap-5 md:grid-cols-2">
           {PERSONAS.map((persona, i) => {
             const ctaContent = (
