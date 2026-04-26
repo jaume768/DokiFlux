@@ -117,7 +117,7 @@ async def generate_ai_title(prompt: str) -> str:
     return " ".join(prompt.split()[:5])
 
 
-def get_provider(model: str = "gpt-5.4"):
+def get_provider(model: str = "gpt-5.5"):
     """Factory: return the appropriate provider for the model."""
     config = get_model_config(model)
     provider_name = config["provider"]
@@ -209,7 +209,7 @@ async def stream_generation(
     project: Project,
     prompt: str,
     chat_history: list[dict],
-    model: str = "gpt-5.4",
+    model: str = "gpt-5.5",
     is_autofix: bool = False,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """
@@ -444,7 +444,7 @@ async def stream_phased_generation(
     project: Project,
     prompt: str,
     chat_history: list[dict],
-    model: str = "gpt-5.4",
+    model: str = "gpt-5.5",
     is_autofix: bool = False,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """

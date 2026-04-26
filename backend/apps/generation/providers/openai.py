@@ -22,7 +22,7 @@ class OpenAIProvider(BaseProvider):
         self,
         messages: list[dict],
         tools: list[dict] | None = None,
-        model: str = "gpt-5.4",
+        model: str = "gpt-5.5",
         max_tokens: int = 31000,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """

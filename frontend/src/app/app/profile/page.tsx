@@ -51,8 +51,8 @@ function formatDate(iso: string): string {
 function formatModel(model: string): string {
   if (!model) return "—";
   const map: Record<string, string> = {
-    "gpt-5.4": "GPT-5.4",
-    "gpt-5.4-mini": "GPT-5.4 Mini",
+    "gpt-5.5": "GPT-5.5",
+    "gpt-5.5-mini": "GPT-5.5 Mini",
     "claude-sonnet-4-6": "Claude Sonnet 4.6",
     "claude-opus-4-6": "Claude Opus 4.6",
     "claude-haiku-4-5": "Claude Haiku 4.5",

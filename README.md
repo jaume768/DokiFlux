@@ -88,7 +88,7 @@ El objetivo es convertirlo en un SaaS con autenticación, persistencia de proyec
 | **Base de datos** | PostgreSQL 16 |
 | **Cache / Rate Limiting** | Redis 7 |
 | **Email transaccional** | Brevo (Sendinblue) |
-| **IA** | Multi-proveedor: OpenAI GPT-5.4, Claude (Sonnet/Opus 4.6, Haiku 4.5), Gemini (3.1 Pro, 3 Flash, 3.1 Flash-Lite) |
+| **IA** | Multi-proveedor: OpenAI GPT-5.5, Claude (Sonnet/Opus 4.6, Haiku 4.5), Gemini (3.1 Pro, 3 Flash, 3.1 Flash-Lite) |
 | **Auth** | JWT (access 30min / refresh 7d), Google OAuth (`google-auth`) |
 | **Infraestructura** | Docker Compose (dev), Dockerfiles multietapa |
 
@@ -277,7 +277,7 @@ Se aplica solo al endpoint `/api/generate/`.
 **Por qué:** Para ser competitivo hay que ofrecer múltiples modelos (cada uno tiene sus fortalezas en coste, velocidad e inteligencia).
 
 **Qué se hizo:**
-- **11 modelos de IA** — GPT-5.4 (5 niveles de reasoning: none/low/medium/high/xhigh), Claude Sonnet 4.6, Claude Opus 4.6, Claude Haiku 4.5, Gemini 3.1 Pro, Gemini 3 Flash, Gemini 3.1 Flash-Lite
+- **11 modelos de IA** — GPT-5.5 (5 niveles de reasoning: none/low/medium/high/xhigh), Claude Sonnet 4.6, Claude Opus 4.6, Claude Haiku 4.5, Gemini 3.1 Pro, Gemini 3 Flash, Gemini 3.1 Flash-Lite
 - **3 providers** — `OpenAIProvider` (refactorizado), `AnthropicProvider` (nuevo), `GeminiProvider` (nuevo), todos sobre `BaseProvider`
 - **MODEL_REGISTRY centralizado** — Config, pricing y límites de cada modelo en `providers/registry.py`. Único punto de verdad.
 - **Multi API Key rotation** — `KeyPool` thread-safe con round-robin en `providers/key_pool.py`. Soporta múltiples keys por proveedor (comma-separated en `.env`).
@@ -289,7 +289,7 @@ Se aplica solo al endpoint `/api/generate/`.
 
 **Decisiones técnicas:**
 - **Prompts compartidos** — `SYSTEM_PROMPT` y `CODEGEN_RULES` en `providers/prompts.py`, con tool definitions en formato específico de cada proveedor (OpenAI function, Anthropic input_schema, Gemini function_declarations).
-- **Reasoning effort en GPT-5.4** — Parámetro `reasoning.effort` controla "thinking tokens". Se facturan como output tokens, así que xhigh es significativamente más caro.
+- **Reasoning effort en GPT-5.5** — Parámetro `reasoning.effort` controla "thinking tokens". Se facturan como output tokens, así que xhigh es significativamente más caro.
 - **Backward compatible** — Si solo `OPENAI_API_KEY` está definida (sin `OPENAI_API_KEYS`), se usa como fallback. Ídem para Anthropic y Gemini.
 - **Message format conversion** — Cada provider convierte mensajes internos a su formato nativo (OpenAI: `developer`/`user`/`assistant`, Anthropic: `system` param + `user`/`assistant`, Gemini: `system_instruction` + `user`/`model`).
 
@@ -470,7 +470,7 @@ Dokiflux/
 │   │   │   ├── page.tsx              # Landing page pública (hero, features, templates, pricing)
 │   │   │   ├── pricing/page.tsx      # Pricing page (3 planes, FAQ, tabla costes)
 │   │   │   ├── api/
-│   │   │   │   ├── generate/route.ts  # Streaming SSE → GPT-5.4 (legacy, sin usar)
+│   │   │   │   ├── generate/route.ts  # Streaming SSE → GPT-5.5 (legacy, sin usar)
 │   │   │   │   └── estimate/route.ts  # Estimación de coste (legacy, sin usar)
 │   │   │   ├── app/                   # Rutas autenticadas (con Sidebar)
 │   │   │   │   ├── layout.tsx        # Layout con Sidebar
@@ -612,7 +612,7 @@ Dokiflux/
 
 | Modelo | Input / 1M tokens | Output / 1M tokens | Max output |
 |--------|-------------------|--------------------|-----------|
-| GPT-5.4 (all reasoning levels) | $2.50 | $15.00 | 31,000 |
+| GPT-5.5 (all reasoning levels) | $2.50 | $15.00 | 31,000 |
 | Claude Sonnet 4.6 | $3.00 | $15.00 | 16,384 |
 | Claude Opus 4.6 | $5.00 | $25.00 | 16,384 |
 | Claude Haiku 4.5 | $1.00 | $5.00 | 8,192 |
@@ -620,7 +620,7 @@ Dokiflux/
 | Gemini 3 Flash | $0.50 | $3.00 | 65,536 |
 | Gemini 3.1 Flash-Lite | $0.25 | $1.50 | 65,536 |
 
-> **Nota:** En GPT-5.4 con reasoning effort (low/medium/high/xhigh), los "thinking tokens" se facturan como output. A mayor effort, más tokens de salida consumidos.
+> **Nota:** En GPT-5.5 con reasoning effort (low/medium/high/xhigh), los "thinking tokens" se facturan como output. A mayor effort, más tokens de salida consumidos.
 
 ---
 

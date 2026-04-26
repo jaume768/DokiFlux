@@ -91,56 +91,56 @@ MODEL_REGISTRY = {
     },
 
     # ── OpenAI ────────────────────────────────────────────────
-    "gpt-5.4": {
+    "gpt-5.5": {
         "provider": "openai",
-        "api_model": "gpt-5.4",
+        "api_model": "gpt-5.5",
         "reasoning_effort": None,
         "input_per_million": Decimal("2.50"),
         "output_per_million": Decimal("15.00"),
         "max_output_tokens": 31000,
-        "display_name": "GPT-5.4",
+        "display_name": "GPT-5.5",
         "category": "openai",
     },
-    "gpt-5.4-low": {
+    "gpt-5.5-low": {
         "provider": "openai",
-        "api_model": "gpt-5.4",
+        "api_model": "gpt-5.5",
         "reasoning_effort": "low",
         "input_per_million": Decimal("2.50"),
         "output_per_million": Decimal("15.00"),
         "max_output_tokens": 31000,
-        "display_name": "GPT-5.4 (Low)",
+        "display_name": "GPT-5.5 (Low)",
         "category": "openai",
     },
-    "gpt-5.4-medium": {
+    "gpt-5.5-medium": {
         "provider": "openai",
-        "api_model": "gpt-5.4",
+        "api_model": "gpt-5.5",
         "reasoning_effort": "medium",
         "input_per_million": Decimal("2.50"),
         "output_per_million": Decimal("15.00"),
         "max_output_tokens": 31000,
-        "display_name": "GPT-5.4 (Medium)",
+        "display_name": "GPT-5.5 (Medium)",
         "category": "openai",
         "premium_only": True,
     },
-    "gpt-5.4-high": {
+    "gpt-5.5-high": {
         "provider": "openai",
-        "api_model": "gpt-5.4",
+        "api_model": "gpt-5.5",
         "reasoning_effort": "high",
         "input_per_million": Decimal("2.50"),
         "output_per_million": Decimal("15.00"),
         "max_output_tokens": 31000,
-        "display_name": "GPT-5.4 (High)",
+        "display_name": "GPT-5.5 (High)",
         "category": "openai",
         "premium_only": True,
     },
-    "gpt-5.4-xhigh": {
+    "gpt-5.5-xhigh": {
         "provider": "openai",
-        "api_model": "gpt-5.4",
+        "api_model": "gpt-5.5",
         "reasoning_effort": "xhigh",
         "input_per_million": Decimal("2.50"),
         "output_per_million": Decimal("15.00"),
         "max_output_tokens": 31000,
-        "display_name": "GPT-5.4 (xHigh)",
+        "display_name": "GPT-5.5 (xHigh)",
         "category": "openai",
         "premium_only": True,
     },
@@ -150,7 +150,7 @@ MODEL_REGISTRY = {
 VALID_MODEL_IDS = frozenset(MODEL_REGISTRY.keys())
 
 # Default model
-DEFAULT_MODEL = "gemini-3.1-flash-lite"
+DEFAULT_MODEL = "gpt-5.5"
 
 
 def get_model_config(model_id: str) -> dict:
