@@ -464,16 +464,34 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
       setActiveTab("code");
     }
 
-    // Phase ended (went to null) and we were writing → switch to preview
-    if (
-      phase === null &&
-      (prevPhase === "writing" || prevPhase === "writing-files" || prevPhase === "mounting")
-    ) {
+    // Phase ended (went to null) after any generation/fix/review activity →
+    // switch to preview so the user sees the result, not the code panel.
+    if (phase === null && prevPhase && prevPhase !== null) {
       setActiveTab("preview");
     }
 
     prevPhaseRef.current = phase;
   }, [genProgress?.phase]);
+
+  // Auto-switch to preview when the container moves into install/start/ready
+  // phases. We only stay on Code while the assistant is actively *streaming*
+  // new code (writing / writing-files / fixing). Other transient phases
+  // (mounting, reviewing, planning, analyzing, null) are NOT considered code
+  // streaming, so the user sees the preview light up as soon as the container
+  // starts working — matching Bolt/v0 behaviour.
+  useEffect(() => {
+    const phase = genProgress?.phase ?? null;
+    const isStreamingCode =
+      phase === "writing" || phase === "writing-files" || phase === "fixing";
+    if (isStreamingCode) return;
+    if (
+      status === "installing" ||
+      status === "starting" ||
+      status === "ready"
+    ) {
+      setActiveTab((prev) => (prev === "code" ? "preview" : prev));
+    }
+  }, [status, previewUrl, genProgress?.phase, isAutoFixing]);
 
   // Fire onBuildError callback when a new build error is detected
   useEffect(() => {
