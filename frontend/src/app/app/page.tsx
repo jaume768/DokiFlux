@@ -120,11 +120,26 @@ export default function HomePage() {
           </div>
 
           {/* Input Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative rounded-2xl transition-all duration-300"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 0 0 0 rgba(139,92,246,0)" }}
-              onFocus={(e) => { (e.currentTarget as HTMLDivElement).style.border = "1px solid rgba(139,92,246,0.4)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 40px rgba(139,92,246,0.08)"; }}
-              onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) { (e.currentTarget as HTMLDivElement).style.border = "1px solid rgba(255,255,255,0.09)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; } }}
+          <form onSubmit={handleSubmit} className="relative space-y-4">
+            {/* Animated gradient halo behind the input */}
+            <div
+              aria-hidden
+              className="absolute -inset-1.5 rounded-[22px] opacity-70 blur-[20px] pointer-events-none"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(139,92,246,0.55) 0%, rgba(99,102,241,0.45) 50%, rgba(56,189,248,0.35) 100%)",
+                animation: "pulse-glow 3.5s ease-in-out infinite",
+              }}
+            />
+            <div
+              className="relative rounded-2xl transition-all duration-300 backdrop-blur-md"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(20,18,35,0.92) 0%, rgba(12,12,22,0.96) 100%)",
+                border: "2px solid rgba(139,92,246,0.55)",
+                boxShadow:
+                  "0 0 0 1px rgba(139,92,246,0.18), 0 24px 70px -15px rgba(139,92,246,0.5), 0 0 80px -20px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
+              }}
             >
               <textarea
                 ref={textareaRef}
