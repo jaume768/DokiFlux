@@ -24,7 +24,7 @@ export default function CookiesPage() {
         <div className="mb-12">
           <span className="inline-block text-xs font-bold tracking-widest uppercase text-violet-400 mb-4">Legal</span>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">Política de Cookies</h1>
-          <p className="text-white/40 text-sm">Última actualización: <strong className="text-white/60">[FECHA_EFECTIVA]</strong></p>
+          <p className="text-white/40 text-sm">Última actualización: <strong className="text-white/60">24 de abril de 2026</strong></p>
         </div>
 
         <div className="prose-legal">
@@ -147,7 +147,7 @@ export default function CookiesPage() {
           <Section title="6. Contacto">
             <p>
               Para cualquier consulta sobre el uso de cookies, contacte con nosotros en:{" "}
-              <a href="mailto:[EMAIL_LEGAL]" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">[EMAIL_LEGAL]</a>
+              <a href="mailto:info@dokiflux.com" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">info@dokiflux.com</a>
             </p>
             <p>
               Para más información sobre cómo tratamos sus datos, consulte nuestra{" "}

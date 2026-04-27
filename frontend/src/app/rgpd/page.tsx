@@ -26,7 +26,7 @@ export default function RgpdPage() {
           <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">Información RGPD</h1>
           <p className="text-white/40 text-sm">
             Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo —{" "}
-            Última actualización: <strong className="text-white/60">[FECHA_EFECTIVA]</strong>
+            Última actualización: <strong className="text-white/60">24 de abril de 2026</strong>
           </p>
         </div>
 
@@ -36,23 +36,23 @@ export default function RgpdPage() {
               <tbody>
                 <tr>
                   <td><strong>Nombre / Razón social</strong></td>
-                  <td>[EMPRESA]</td>
+                  <td>Jaime Fernández Suñer</td>
                 </tr>
                 <tr>
                   <td><strong>NIF / CIF</strong></td>
-                  <td>[NIF]</td>
+                  <td>41621021Z</td>
                 </tr>
                 <tr>
                   <td><strong>Domicilio</strong></td>
-                  <td>[DIRECCIÓN]</td>
+                  <td>Calle Mallorca, 50, Manacor, Islas Baleares, 07500</td>
                 </tr>
                 <tr>
                   <td><strong>Correo electrónico</strong></td>
-                  <td><a href="mailto:[EMAIL_LEGAL]" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">[EMAIL_LEGAL]</a></td>
+                  <td><a href="mailto:info@dokiflux.com" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">info@dokiflux.com</a></td>
                 </tr>
                 <tr>
                   <td><strong>Delegado de Protección de Datos (DPD)</strong></td>
-                  <td>[DPD_NOMBRE] — <a href="mailto:[DPD_EMAIL]" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">[DPD_EMAIL]</a></td>
+                  <td>No consta designado. Para ejercer sus derechos contacte directamente con el responsable.</td>
                 </tr>
               </tbody>
             </table>
@@ -105,7 +105,7 @@ export default function RgpdPage() {
           <Section title="3. Cómo ejercer sus derechos">
             <p>Para ejercer cualquiera de los derechos anteriores, envíe un correo a:</p>
             <p>
-              <a href="mailto:[EMAIL_LEGAL]" className="text-violet-400 hover:text-violet-300 underline underline-offset-2 font-semibold">[EMAIL_LEGAL]</a>
+              <a href="mailto:info@dokiflux.com" className="text-violet-400 hover:text-violet-300 underline underline-offset-2 font-semibold">info@dokiflux.com</a>
             </p>
             <p>Incluya en su solicitud:</p>
             <ul>
