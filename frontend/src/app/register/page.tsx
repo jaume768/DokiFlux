@@ -4,10 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, apiPost } from "@/lib/api";
-import Image from "next/image";
-import { Loader2, Eye, EyeOff, Mail, RotateCcw, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Loader2,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  ArrowRight,
+  RotateCcw,
+} from "lucide-react";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -30,19 +38,15 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
     if (password !== passwordConfirm) {
       setError("Las contraseñas no coinciden.");
       return;
     }
-
     if (password.length < 8) {
       setError("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
-
     setIsLoading(true);
-
     try {
       const res = await register({
         email,
@@ -50,26 +54,24 @@ export default function RegisterPage() {
         password_confirm: passwordConfirm,
         full_name: fullName,
       });
-
-      // If user is not auto-verified, show the "check your email" screen
       if (res.user && !res.user.is_email_verified) {
         setPendingEmail(res.user.email);
-        setEmailSent((res as unknown as Record<string, unknown>).email_sent !== false);
+        setEmailSent(
+          (res as unknown as Record<string, unknown>).email_sent !== false
+        );
       }
     } catch (err) {
       if (err instanceof ApiError) {
         const data = err.data as Record<string, unknown>;
-        if (data.email && Array.isArray(data.email)) {
+        if (data.email && Array.isArray(data.email))
           setError((data.email as string[])[0]);
-        } else if (data.password && Array.isArray(data.password)) {
+        else if (data.password && Array.isArray(data.password))
           setError((data.password as string[])[0]);
-        } else {
+        else {
           const firstField = Object.keys(data)[0];
-          if (firstField && Array.isArray(data[firstField])) {
+          if (firstField && Array.isArray(data[firstField]))
             setError((data[firstField] as string[])[0]);
-          } else {
-            setError("Error al crear la cuenta.");
-          }
+          else setError("Error al crear la cuenta.");
         }
       } else {
         setError("Error de conexión. Inténtalo de nuevo.");
@@ -84,7 +86,11 @@ export default function RegisterPage() {
     setResendLoading(true);
     setResendMessage("");
     try {
-      await apiPost("/auth/resend-verification/", { email: pendingEmail }, { auth: false });
+      await apiPost(
+        "/auth/resend-verification/",
+        { email: pendingEmail },
+        { auth: false }
+      );
       setResendMessage("Email reenviado. Revisa tu bandeja de entrada.");
       setEmailSent(true);
     } catch {
@@ -94,172 +100,257 @@ export default function RegisterPage() {
     }
   }
 
-  // --- Pending verification screen ---
+  // ── Pending verification screen ──
   if (pendingEmail) {
     return (
-      <div className="landing bg-[#0a0a0f] text-white min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-        <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.35 }} />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[350px] pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(56,189,248,0.15) 0%, transparent 70%)" }} />
-
-        <div className="relative z-10 w-full max-w-sm">
-          <div className="flex items-center justify-center mb-8">
-            <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={220} height={55} className="h-11 w-auto" />
+      <AuthShell
+        heading={
+          <>
+            Verifica tu <span className="gradient-text">email</span>
+          </>
+        }
+        subheading="Solo un paso más antes de empezar a crear."
+      >
+        <div className="flex justify-center mb-5">
+          <div
+            className="rounded-2xl p-5"
+            style={{
+              background: "rgba(56,189,248,0.12)",
+              border: "1px solid rgba(56,189,248,0.35)",
+              boxShadow: "0 0 30px rgba(56,189,248,0.25)",
+            }}
+          >
+            <Mail className="w-9 h-9" style={{ color: "#38bdf8" }} />
           </div>
+        </div>
+        <h2 className="text-3xl md:text-[34px] font-black text-white tracking-tight mb-3 text-center">
+          Revisa tu correo
+        </h2>
+        <p className="text-white/65 text-[15px] mb-7 text-center leading-relaxed">
+          {emailSent ? (
+            <>
+              Te hemos enviado un enlace de verificación a{" "}
+              <span className="text-white font-semibold">{pendingEmail}</span>.
+              Revisa tu bandeja de entrada (y spam).
+            </>
+          ) : (
+            <>
+              No se pudo enviar el email a{" "}
+              <span className="text-white font-semibold">{pendingEmail}</span>.
+              Pulsa el botón para reenviar.
+            </>
+          )}
+        </p>
 
-          <div className="rounded-2xl p-7 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
-            <div className="flex justify-center mb-4">
-              <div className="rounded-2xl p-4" style={{ background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)" }}>
-                <Mail className="w-7 h-7" style={{ color: "#38bdf8" }} />
-              </div>
-            </div>
-            <h1 className="text-xl font-bold text-white mb-2">Verifica tu email</h1>
-            <p className="text-white/50 text-sm mb-6">
-              {emailSent
-                ? <>Hemos enviado un enlace de verificación a <span className="text-white/80 font-medium">{pendingEmail}</span>. Revisa tu bandeja de entrada (y spam).</>
-                : <>No se pudo enviar el email a <span className="text-white/80 font-medium">{pendingEmail}</span>. Pulsa el botón para reenviar.</>
-              }
-            </p>
+        {resendMessage && (
+          <p className="text-sm text-white/60 mb-5 text-center">{resendMessage}</p>
+        )}
 
-            {resendMessage && (
-              <p className="text-sm text-white/50 mb-4">{resendMessage}</p>
+        <button
+          onClick={handleResend}
+          disabled={resendLoading}
+          className="btn-primary w-full inline-flex items-center justify-center gap-2 text-[15px] font-bold text-white py-4 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed mb-5"
+          style={{ boxShadow: "0 8px 30px -8px rgba(139,92,246,0.6)" }}
+        >
+          <span className="relative z-10 inline-flex items-center gap-2">
+            {resendLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Reenviando…
+              </>
+            ) : (
+              <>
+                <RotateCcw className="w-4 h-4" />
+                Reenviar verificación
+              </>
             )}
+          </span>
+        </button>
 
-            <button
-              onClick={handleResend}
-              disabled={resendLoading}
-              className="btn-primary w-full rounded-xl py-2.5 font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed mb-4"
-            >
-              {resendLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" />Reenviando...</>
-              ) : (
-                <><RotateCcw className="w-4 h-4" />Reenviar verificación</>
-              )}
-            </button>
-
-            <p className="text-sm text-white/40">
-              ¿Ya verificaste?{" "}
-              <Link href="/login" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
-                Iniciar sesión
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --- Registration form ---
-  return (
-    <div className="landing bg-[#0a0a0f] text-white min-h-screen flex items-center justify-center px-4 py-10 relative overflow-hidden">
-      <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.35 }} />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[350px] pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(139,92,246,0.18) 0%, transparent 70%)" }} />
-
-      <div className="relative z-10 w-full max-w-sm">
-        <div className="flex items-center justify-center mb-8">
-          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={220} height={55} className="h-11 w-auto" />
-        </div>
-
-        <div className="rounded-2xl p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
-          <h1 className="text-xl font-bold text-white mb-1">Crear cuenta</h1>
-          <p className="text-white/50 text-sm mb-6">Empieza a generar UI con IA</p>
-
-          <GoogleSignInButton onError={handleGoogleError} />
-
-          <div className="relative flex items-center gap-3 my-5">
-            <div className="h-px flex-1 bg-white/10" />
-            <span className="text-xs text-white/30">o</span>
-            <div className="h-px flex-1 bg-white/10" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-xl">
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <label htmlFor="fullName" className="text-sm font-medium text-white/70">Nombre completo</label>
-              <input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Tu nombre"
-                required
-                autoFocus
-                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium text-white/70">Email</label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@email.com"
-                required
-                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-medium text-white/70">Contraseña</label>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
-                  required
-                  className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 pr-10 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="passwordConfirm" className="text-sm font-medium text-white/70">Confirmar contraseña</label>
-              <input
-                id="passwordConfirm"
-                type={showPassword ? "text" : "password"}
-                value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value)}
-                placeholder="Repite la contraseña"
-                required
-                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isLoading || !email || !password || !fullName || !passwordConfirm}
-              className="btn-primary w-full rounded-xl py-2.5 font-semibold"
-              size="lg"
-            >
-              {isLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" />Creando cuenta...</>
-              ) : "Crear cuenta"}
-            </Button>
-          </form>
-        </div>
-
-        <p className="text-center text-sm text-white/40 mt-5">
-          ¿Ya tienes cuenta?{" "}
-          <Link href="/login" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
+        <p className="text-center text-sm text-white/55">
+          ¿Ya verificaste?{" "}
+          <Link
+            href="/login"
+            className="font-bold text-violet-300 hover:text-violet-200 transition-colors"
+          >
             Iniciar sesión
           </Link>
         </p>
+      </AuthShell>
+    );
+  }
+
+  // ── Registration form ──
+  return (
+    <AuthShell
+      heading={
+        <>
+          Empieza a <span className="gradient-text">construir</span> hoy
+        </>
+      }
+      subheading="Crea tu cuenta gratis y genera tu primer prototipo en segundos."
+    >
+      <h2 className="text-3xl md:text-[34px] font-black text-white tracking-tight mb-2">
+        Crear cuenta
+      </h2>
+      <p className="text-white/55 text-[15px] mb-7">
+        Sin tarjeta. Sin compromiso.
+      </p>
+
+      <GoogleSignInButton onError={handleGoogleError} />
+
+      <div className="relative flex items-center gap-3 my-6">
+        <div className="h-px flex-1 bg-white/10" />
+        <span className="text-[11px] uppercase tracking-widest text-white/35 font-semibold">
+          o con email
+        </span>
+        <div className="h-px flex-1 bg-white/10" />
       </div>
-    </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 px-4 py-2.5 rounded-xl">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <label
+            htmlFor="fullName"
+            className="text-[13px] font-bold text-white/85 uppercase tracking-wider"
+          >
+            Nombre completo
+          </label>
+          <div className="relative">
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
+            <input
+              id="fullName"
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Tu nombre"
+              required
+              autoFocus
+              className="w-full rounded-xl bg-white/[0.04] border border-white/10 pl-11 pr-4 py-3.5 text-[15px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/70 focus:ring-2 focus:ring-violet-500/30 focus:bg-white/[0.06] transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="email"
+            className="text-[13px] font-bold text-white/85 uppercase tracking-wider"
+          >
+            Email
+          </label>
+          <div className="relative">
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tu@email.com"
+              required
+              className="w-full rounded-xl bg-white/[0.04] border border-white/10 pl-11 pr-4 py-3.5 text-[15px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/70 focus:ring-2 focus:ring-violet-500/30 focus:bg-white/[0.06] transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="password"
+            className="text-[13px] font-bold text-white/85 uppercase tracking-wider"
+          >
+            Contraseña
+          </label>
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mínimo 8 caracteres"
+              required
+              className="w-full rounded-xl bg-white/[0.04] border border-white/10 pl-11 pr-11 py-3.5 text-[15px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/70 focus:ring-2 focus:ring-violet-500/30 focus:bg-white/[0.06] transition-all"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="passwordConfirm"
+            className="text-[13px] font-bold text-white/85 uppercase tracking-wider"
+          >
+            Confirmar contraseña
+          </label>
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
+            <input
+              id="passwordConfirm"
+              type={showPassword ? "text" : "password"}
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              placeholder="Repite la contraseña"
+              required
+              className="w-full rounded-xl bg-white/[0.04] border border-white/10 pl-11 pr-4 py-3.5 text-[15px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/70 focus:ring-2 focus:ring-violet-500/30 focus:bg-white/[0.06] transition-all"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={
+            isLoading || !email || !password || !fullName || !passwordConfirm
+          }
+          className="btn-primary group w-full inline-flex items-center justify-center gap-2 text-[15px] font-bold text-white py-4 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed mt-2"
+          style={{ boxShadow: "0 8px 30px -8px rgba(139,92,246,0.6)" }}
+        >
+          <span className="relative z-10 inline-flex items-center gap-2">
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Creando cuenta…
+              </>
+            ) : (
+              <>
+                Crear cuenta gratis
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </>
+            )}
+          </span>
+        </button>
+
+        <p className="text-[11px] text-white/40 text-center pt-1">
+          Al continuar aceptas nuestros{" "}
+          <Link href="/terminos" className="text-white/60 hover:text-white underline">
+            Términos
+          </Link>{" "}
+          y la{" "}
+          <Link href="/privacidad" className="text-white/60 hover:text-white underline">
+            Política de privacidad
+          </Link>
+          .
+        </p>
+      </form>
+
+      <p className="text-center text-sm text-white/55 mt-7">
+        ¿Ya tienes cuenta?{" "}
+        <Link
+          href="/login"
+          className="font-bold text-violet-300 hover:text-violet-200 transition-colors"
+        >
+          Iniciar sesión
+        </Link>
+      </p>
+    </AuthShell>
   );
 }
