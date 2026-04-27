@@ -439,12 +439,16 @@ export default function DemoPage() {
             const fileMatches = unescaped.match(/--- FILE: [^\n]+/g);
             const filesDetected = fileMatches?.length || 0;
             const phase = filesDetected > 0 ? ("writing-files" as const) : ("writing" as const);
-            setGenProgress({
+            // Spread prev to preserve `tasks`/`thinking`/`completedFiles` from
+            // earlier `plan`/`thinking` chunks (otherwise the file list in chat
+            // disappears when text chunks start arriving).
+            setGenProgress((prev) => ({
+              ...prev,
               phase,
               filesDetected,
               charsReceived: fullCode.length,
               streamingCode: unescaped,
-            });
+            }));
           }
 
           if (chunk.type === "chat" && chunk.content) {

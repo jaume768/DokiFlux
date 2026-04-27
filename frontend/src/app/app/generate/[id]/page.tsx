@@ -528,12 +528,16 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
             const fileMatches = unescaped.match(/--- FILE: [^\n]+/g);
             const filesDetected = fileMatches?.length || 0;
             const phase = filesDetected > 0 ? "writing-files" as const : "writing" as const;
-            setGenProgress({
+            // IMPORTANT: spread prev to preserve `tasks`/`thinking`/`completedFiles`
+            // that were set by earlier `plan`/`thinking` chunks. Replacing the
+            // whole object wiped the file list shown in the chat panel.
+            setGenProgress((prev) => ({
+              ...prev,
               phase,
               filesDetected,
               charsReceived: fullCode.length,
               streamingCode: unescaped,
-            });
+            }));
           }
 
           if (chunk.type === "chat" && chunk.content) {

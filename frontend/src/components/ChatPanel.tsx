@@ -155,6 +155,26 @@ const PHASE_CONFIG = {
   },
 } as const;
 
+/** Extract file paths from streamingCode markers (`// --- FILE: /path ---`).
+ *  Used as a fallback when the backend planner doesn't emit a `plan` event
+ *  (e.g. when it falls back to single-shot streaming) — we still show the
+ *  same task list UI by deriving it from the raw stream. */
+function extractStreamingTasks(streamingCode?: string): {
+  tasks: { file_path: string; action: "create" | "update"; label: string }[];
+  currentIndex: number;
+} {
+  if (!streamingCode) return { tasks: [], currentIndex: -1 };
+  const matches = Array.from(streamingCode.matchAll(/--- FILE: ([^\s]+)/g));
+  const tasks = matches.map((m) => ({
+    file_path: m[1],
+    action: "create" as const,
+    label: `Creating ${m[1]}`,
+  }));
+  // The last detected file is the one currently being written; everything
+  // before it is considered already complete.
+  return { tasks, currentIndex: tasks.length > 0 ? tasks.length - 1 : -1 };
+}
+
 function GenerationProgressIndicator({ progress }: { progress: GenerationProgress }) {
   const phase = progress.phase;
   if (!phase) return null;
@@ -173,6 +193,30 @@ function GenerationProgressIndicator({ progress }: { progress: GenerationProgres
             tasks={progress.tasks!}
             currentTaskIndex={progress.currentTaskIndex ?? -1}
             completedFiles={progress.completedFiles ?? []}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback: backend went through legacy single-shot streaming (no `plan`
+  // event). Derive a tasks list from the file markers in the raw stream so
+  // the user still sees what's being created in real time.
+  const synthesized = extractStreamingTasks(progress.streamingCode);
+  if ((phase === "writing-files" || phase === "writing") && synthesized.tasks.length > 0) {
+    return (
+      <div className="flex gap-3">
+        <div className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
+          <Bot className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <TaskProgress
+            thinking={progress.thinking}
+            tasks={synthesized.tasks}
+            currentTaskIndex={synthesized.currentIndex}
+            completedFiles={synthesized.tasks
+              .slice(0, Math.max(0, synthesized.currentIndex))
+              .map((t) => t.file_path)}
           />
         </div>
       </div>

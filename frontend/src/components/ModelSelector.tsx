@@ -59,6 +59,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
   const [open, setOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const { models, isLoaded } = useModels();
   const { planType } = useAuth();
   const router = useRouter();
@@ -106,7 +107,14 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // Dropdown is rendered via portal to document.body, so it's NOT inside
+      // `ref.current`. Check both the trigger wrapper AND the portal content;
+      // otherwise the outside-click fires before the option's onClick and
+      // closes the menu without committing the selection.
+      const insideTrigger = ref.current?.contains(target);
+      const insideDropdown = dropdownRef.current?.contains(target);
+      if (!insideTrigger && !insideDropdown) {
         setOpen(false);
       }
     }
@@ -139,6 +147,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
 
       {open && typeof document !== "undefined" && createPortal(
         <div
+          ref={dropdownRef}
           className="fixed z-[9999] overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl"
           style={dropdownStyle}
         >

@@ -2,11 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { TEMPLATES } from "@/lib/templates";
-import { ArrowLeft, ArrowRight, LayoutTemplate } from "lucide-react";
+import { ArrowRight, LayoutTemplate, Menu } from "lucide-react";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { useMobileSidebar } from "@/context/MobileSidebarContext";
 
 export default function TemplatesPage() {
   const router = useRouter();
+  const { toggle: toggleSidebar } = useMobileSidebar();
 
   function handleSelect(templateId: string) {
     const template = TEMPLATES.find((t) => t.id === templateId);
@@ -16,8 +19,20 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-y-auto" style={{ background: "#0a0a0f" }}>
-      <div className="mx-auto max-w-5xl w-full px-4 py-8 md:px-8 md:py-12">
+    <div className="flex-1 flex flex-col h-full overflow-hidden" style={{ background: "#0a0a0f" }}>
+      {/* Mobile topbar */}
+      <header className="md:hidden flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+        <Button variant="ghost" size="icon-sm" onClick={toggleSidebar} className="text-white/60 hover:text-white">
+          <Menu className="w-5 h-5" />
+        </Button>
+        <button onClick={() => router.push("/app")} aria-label="Ir a inicio" className="flex items-center">
+          <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={140} height={35} className="h-7 w-auto" />
+        </button>
+        <div className="w-8" />
+      </header>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-5xl w-full px-4 py-8 md:px-8 md:py-12">
 
         {/* Header */}
         <div className="mb-10 text-center">
@@ -93,6 +108,7 @@ export default function TemplatesPage() {
               </div>
             </button>
           ))}
+        </div>
         </div>
       </div>
     </div>

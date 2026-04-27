@@ -35,6 +35,7 @@ import type { FileMap } from "@/lib/parser";
 import { useWebContainer, type ContainerStatus } from "@/hooks/useWebContainer";
 import type { GenerationProgress } from "@/types";
 import { StreamingFileView } from "@/components/StreamingFileView";
+import { GeneratingCodeAnimation } from "@/components/GeneratingCodeAnimation";
 import { ExportModal } from "@/components/ExportModal";
 import { apiPost } from "@/lib/api";
 
@@ -385,10 +386,24 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
   const displayFiles = files;
 
   // ── Inline iteration streaming state ──
-  const isWritingCode = !!(genProgress?.phase && (genProgress.phase === "writing" || genProgress.phase === "writing-files") && genProgress.streamingCode);
+  const activePhase = genProgress?.phase;
+  const isActivelyGenerating = !!(
+    activePhase &&
+    (activePhase === "writing" ||
+      activePhase === "writing-files" ||
+      activePhase === "planning" ||
+      activePhase === "analyzing" ||
+      activePhase === "reviewing" ||
+      activePhase === "fixing")
+  );
+  const isWritingCode = !!(
+    activePhase &&
+    (activePhase === "writing" || activePhase === "writing-files") &&
+    genProgress?.streamingCode
+  );
   const hasExistingFiles = Object.keys(files).length > 0;
-  const isIterationStreaming = isWritingCode && hasExistingFiles;
-  const isFirstGenStreaming = isWritingCode && !hasExistingFiles;
+  const isIterationStreaming = isActivelyGenerating && hasExistingFiles;
+  const isFirstGenStreaming = isActivelyGenerating && !hasExistingFiles;
 
   // Parse streaming files for iteration mode
   const streamingFiles = useMemo(() => {
@@ -1057,45 +1072,19 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
             pointerEvents: activeTab === "code" ? "auto" : "none",
           }}
         >
-          {/* Iteration streaming status bar */}
-          {isIterationStreaming && (
-            <div className="flex items-center gap-2 px-3 py-1.5 border-b bg-muted/50 shrink-0">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
-              <span className="text-xs font-medium text-amber-500">
-                Updating · {streamingFiles.length} file{streamingFiles.length !== 1 ? "s" : ""}...
-              </span>
-              {streamingFiles.filter(f => !displayFiles[f.path]).length > 0 && (
-                <span className="flex items-center gap-0.5 text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">
-                  <Plus className="w-2.5 h-2.5" />
-                  {streamingFiles.filter(f => !displayFiles[f.path]).length} new
-                </span>
-              )}
-              {streamingFiles.filter(f => !!displayFiles[f.path]).length > 0 && (
-                <span className="flex items-center gap-0.5 text-[10px] font-medium text-sky-400 bg-sky-400/10 px-1.5 py-0.5 rounded-full">
-                  <Pencil className="w-2.5 h-2.5" />
-                  {streamingFiles.filter(f => !!displayFiles[f.path]).length} modified
-                </span>
-              )}
-              <span className="text-[11px] text-muted-foreground ml-auto">
-                {((genProgress?.charsReceived ?? 0) / 1000).toFixed(1)}k chars
-              </span>
-            </div>
-          )}
-
-          {/* Empty state — no files yet and not streaming */}
-          {!isFirstGenStreaming && !isIterationStreaming && Object.keys(displayFiles).length === 0 ? (
+          {(isFirstGenStreaming || isIterationStreaming) ? (
+            <GeneratingCodeAnimation
+              streamingCode={genProgress?.streamingCode}
+              existingFiles={displayFiles}
+              filesDetected={genProgress?.filesDetected ?? 0}
+              charsReceived={genProgress?.charsReceived ?? 0}
+              isIteration={isIterationStreaming}
+            />
+          ) : Object.keys(displayFiles).length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
               <Code2 className="w-10 h-10 opacity-30" />
               <p className="text-sm text-center px-4">Genera un componente para ver el código aquí</p>
             </div>
-          ) : isFirstGenStreaming && genProgress?.streamingCode ? (
-            <StreamingFileView
-              streamingCode={genProgress.streamingCode}
-              filesDetected={genProgress.filesDetected}
-              charsReceived={genProgress.charsReceived}
-              existingFiles={{}}
-              isMobile={isMobile}
-            />
           ) : (
             <div className="flex flex-1 min-h-0 overflow-hidden">
               {/* File tree sidebar – desktop: always visible, mobile: overlay */}
