@@ -158,13 +158,14 @@ export function Hero() {
 
             {/* H1 */}
             <h1
-              className="text-[36px] sm:text-5xl lg:text-[56px] font-black tracking-tight leading-[1.1] text-white mb-5 break-words"
+              className="text-[34px] xs:text-[38px] sm:text-5xl lg:text-[56px] font-black tracking-tight leading-[1.08] sm:leading-[1.1] text-white mb-5 text-balance"
               style={fadeIn(0.08)}
             >
-              Genera un prototipo funcional. {" "}
-              <span className="gradient-text">Valida la idea.</span>
-              <br />
-              Lánzala con <span className="gradient-text">ayuda experta.</span>
+              Genera un prototipo funcional.{" "}
+              <span className="gradient-text whitespace-nowrap">Valida la idea.</span>{" "}
+              <span className="block sm:inline">
+                Lánzala con <span className="gradient-text">ayuda experta.</span>
+              </span>
             </h1>
 
             {/* Subtitle */}
@@ -230,9 +231,9 @@ export function Hero() {
               style={{
                 background:
                   "linear-gradient(180deg, rgba(22,18,38,0.95) 0%, rgba(12,12,22,0.97) 100%)",
-                border: "1px solid rgba(139,92,246,0.45)",
+                border: "2px solid rgba(139,92,246,0.65)",
                 boxShadow:
-                  "0 32px 80px -20px rgba(0,0,0,0.65), 0 0 80px -20px rgba(139,92,246,0.32)",
+                  "0 40px 100px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(139,92,246,0.25), 0 0 120px -10px rgba(139,92,246,0.55), 0 0 60px -20px rgba(99,102,241,0.4)",
               }}
             >
               {/* ── Header ── */}
@@ -244,8 +245,15 @@ export function Hero() {
                   <Sparkles className="w-3.5 h-3.5" />
                   Pruébalo ahora
                 </div>
-                <div className="hidden sm:block text-[11px] font-semibold text-emerald-300">
-                  Sin registro. Sin tarjeta. En 10 segundos.
+                <div
+                  className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-300 px-2.5 py-1 rounded-full"
+                  style={{
+                    background: "rgba(16,185,129,0.10)",
+                    border: "1px solid rgba(16,185,129,0.35)",
+                  }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Sin registro · Sin tarjeta · En 10 segundos
                 </div>
               </div>
 

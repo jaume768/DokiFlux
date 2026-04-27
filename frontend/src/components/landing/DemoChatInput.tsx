@@ -89,15 +89,17 @@ export function DemoChatInput() {
     <section
       ref={sectionRef}
       id="pruebalo"
-      className="relative py-16 px-5 md:px-8 scroll-mt-20 overflow-hidden"
+      className="relative py-20 md:py-24 px-5 md:px-8 scroll-mt-20 overflow-hidden"
     >
       <div className="absolute inset-0 grid-pattern pointer-events-none" style={{ opacity: 0.4 }} />
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse at center top, rgba(139,92,246,0.12) 0%, transparent 60%)",
+          background:
+            "radial-gradient(ellipse at center, rgba(139,92,246,0.22) 0%, rgba(99,102,241,0.10) 35%, transparent 65%)",
         }}
       />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-violet-600/10 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="relative z-10 max-w-3xl mx-auto">
         <div
@@ -109,11 +111,15 @@ export function DemoChatInput() {
           }}
         >
           <div
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-violet-400/30 bg-violet-400/10 text-xs font-semibold text-violet-200 uppercase tracking-widest mb-5"
-            style={{ boxShadow: "0 0 20px rgba(139,92,246,0.15)" }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-violet-400/50 text-[12px] font-bold text-white uppercase tracking-widest mb-6"
+            style={{
+              background: "linear-gradient(135deg, rgba(139,92,246,0.30) 0%, rgba(99,102,241,0.20) 100%)",
+              boxShadow: "0 0 30px rgba(139,92,246,0.35), inset 0 1px 0 rgba(255,255,255,0.08)",
+            }}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            PRUÉBALO AHORA
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <Sparkles className="w-3.5 h-3.5 text-violet-200" />
+            PRUÉBALO AHORA · GRATIS
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">
             Sin registro.
@@ -137,14 +143,24 @@ export function DemoChatInput() {
             transition: "opacity 0.6s ease 0.15s, transform 0.6s ease 0.15s",
           }}
         >
+          {/* Animated gradient halo behind the input */}
           <div
-            className="rounded-2xl p-5 backdrop-blur-md"
+            aria-hidden
+            className="absolute -inset-1 rounded-[20px] opacity-80 blur-[18px] pointer-events-none"
             style={{
               background:
-                "linear-gradient(180deg, rgba(20,18,35,0.85) 0%, rgba(12,12,22,0.9) 100%)",
-              border: "1px solid rgba(139,92,246,0.35)",
+                "linear-gradient(135deg, rgba(139,92,246,0.55) 0%, rgba(99,102,241,0.45) 50%, rgba(56,189,248,0.35) 100%)",
+              animation: "pulse-glow 3.5s ease-in-out infinite",
+            }}
+          />
+          <div
+            className="relative rounded-2xl p-5 backdrop-blur-md"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(20,18,35,0.92) 0%, rgba(12,12,22,0.96) 100%)",
+              border: "2px solid rgba(139,92,246,0.55)",
               boxShadow:
-                "0 0 0 1px rgba(139,92,246,0.1), 0 10px 40px -10px rgba(139,92,246,0.3), inset 0 1px 0 rgba(255,255,255,0.04)",
+                "0 0 0 1px rgba(139,92,246,0.18), 0 24px 70px -15px rgba(139,92,246,0.5), 0 0 80px -20px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
             }}
           >
             <div className="relative flex items-start gap-3">
@@ -202,7 +218,7 @@ export function DemoChatInput() {
           )}
 
           {/* Suggestions */}
-          <div className="mt-5 grid grid-cols-2 gap-2">
+          <div className="relative mt-5 grid grid-cols-2 gap-2">
             {SUGGESTIONS.map((s) => {
               const Icon = s.icon;
               return (

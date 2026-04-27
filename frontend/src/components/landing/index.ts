@@ -8,6 +8,7 @@ export { Hero } from "./Hero";
 export { LogoBar } from "./LogoBar";
 export { HowItWorks } from "./HowItWorks";
 export { Comparison } from "./Comparison";
+export { ComparisonV2 } from "./ComparisonV2";
 export { Testimonials } from "./Testimonials";
 export { TemplatesShowcase } from "./TemplatesShowcase";
 export { DualPersona } from "./DualPersona";

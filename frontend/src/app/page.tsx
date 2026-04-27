@@ -4,7 +4,7 @@ import {
   LandingNavbar,
   Hero,
   HowItWorks,
-  Comparison,
+  ComparisonV2,
   Testimonials,
   TemplatesShowcase,
   DualPersona,
@@ -25,7 +25,7 @@ export default function LandingPage() {
         <DemoChatInput />
         <HowItWorks />
         <DualPersona />
-        <Comparison />
+        <ComparisonV2 />
         <TemplatesShowcase />
         <Testimonials />
         <FinalCTA />
