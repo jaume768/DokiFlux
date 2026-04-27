@@ -110,11 +110,11 @@ export default function HomePage() {
         <div className="relative z-10 w-full max-w-3xl space-y-7 md:space-y-9">
           {/* Header */}
           <div className="text-center space-y-3">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
+            <h1 className="text-4xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
               ¿Qué quieres{" "}
               <span className="gradient-text">crear hoy?</span>
             </h1>
-            <p className="text-lg sm:text-xl md:text-2xl max-w-xl mx-auto" style={{ color: "rgba(255,255,255,0.55)" }}>
+            <p className="text-xl sm:text-xl md:text-2xl max-w-xl mx-auto" style={{ color: "rgba(255,255,255,0.55)" }}>
               Describe tu proyecto y DokiFlux lo generará automáticamente
             </p>
           </div>
@@ -149,7 +149,7 @@ export default function HomePage() {
                 placeholder="Ej: Una landing page moderna para una startup de IA..."
                 disabled={isCreating}
                 rows={4}
-                className="w-full resize-none bg-transparent px-5 md:px-6 py-5 text-base md:text-lg outline-none disabled:cursor-not-allowed disabled:opacity-50 text-white"
+                className="w-full resize-none bg-transparent px-5 md:px-6 py-5 text-lg md:text-lg outline-none disabled:cursor-not-allowed disabled:opacity-50 text-white"
                 style={{ color: "rgba(255,255,255,0.9)", caretColor: "#8b5cf6", minHeight: "120px", maxHeight: "300px", overflowY: "auto" }}
               />
               <div className="flex items-center gap-2 px-4 pb-4">

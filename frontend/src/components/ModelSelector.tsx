@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Cpu, Brain, Sparkles, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type ModelId, type ModelConfig } from "@/lib/pricing";
@@ -136,7 +137,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
         <ChevronDown className={`w-3 h-3 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && (
+      {open && typeof document !== "undefined" && createPortal(
         <div
           className="fixed z-[9999] overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl"
           style={dropdownStyle}
@@ -182,7 +183,8 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
           <div className="px-3 py-1.5 border-t border-zinc-800 text-xs text-zinc-600">
             Pricing per 1M tokens (in/out)
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
