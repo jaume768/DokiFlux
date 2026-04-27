@@ -161,17 +161,17 @@ export function Hero() {
               className="text-[36px] sm:text-5xl lg:text-[56px] font-black tracking-tight leading-[1.1] text-white mb-5 break-words"
               style={fadeIn(0.08)}
             >
-              Genera prototipos {" "}
-              <span className="gradient-text">con IA.</span>
+              Genera un prototipo funcional. {" "}
+              <span className="gradient-text">Valida la idea.</span>
               <br />
-              Lánzalos <span className="gradient-text">cuando validen.</span>
+              Lánzala con <span className="gradient-text">ayuda experta.</span>
             </h1>
 
             {/* Subtitle */}
             <p className="text-base md:text-lg text-white/55 leading-relaxed mb-8" style={fadeIn(0.16)}>
-              Describe tu idea, obtén una preview funcional con código multiarchivo
-              en segundos y refínala por chat. Si quieres convertirlo en producto real,
-              nuestro equipo puede llevarlo a producción.
+              Describe tu idea, obtén una demo navegable con estructura real de proyecto.
+              en segundos y refínala por chat. Cuando el prototipo funciona, 
+              nuestro equipo lo convierte en producto real.
             </p>
 
             {/* CTAs */}
@@ -183,7 +183,7 @@ export function Hero() {
               >
                 <span className="relative z-10 inline-flex items-center gap-2">
                   <Zap size={15} className="fill-white" />
-                  Probar demo sin registro
+                  Crear mi primer prototipo gratis
                   <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-0.5" />
                 </span>
               </Link>
