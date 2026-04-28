@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Twitter, Instagram, Linkedin, ArrowUpRight, Calendar } from "lucide-react";
-import { ConsultationModal } from "./ConsultationModal";
+import { ContactModal } from "@/components/ContactModal";
 
 const FOOTER_LINKS = {
   Producto: [
@@ -193,7 +193,14 @@ export function Footer() {
           </div>
         </div>
       </div>
-      <ConsultationModal open={consultOpen} onClose={() => setConsultOpen(false)} source="footer" />
+      <ContactModal
+        open={consultOpen}
+        onClose={() => setConsultOpen(false)}
+        user={null}
+        title="Agenda una consultoría"
+        subtitle="Cuéntanos tu caso y te contactamos en menos de 24h. Sin compromiso."
+        source="footer"
+      />
     </footer>
   );
 }

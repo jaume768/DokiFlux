@@ -28,6 +28,8 @@ import {
   RotateCcw,
   Wrench,
   X,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -99,11 +101,11 @@ interface CodePreviewProps {
 }
 
 const STATUS_CONFIG: Record<ContainerStatus, { label: string; icon: React.ReactNode; color: string }> = {
-  idle: { label: "Waiting", icon: <Play className="w-3.5 h-3.5" />, color: "text-muted-foreground" },
-  booting: { label: "Starting environment...", icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />, color: "text-blue-500" },
-  installing: { label: "Installing dependencies...", icon: <Package className="w-3.5 h-3.5 animate-pulse" />, color: "text-amber-500" },
-  starting: { label: "Starting dev server...", icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />, color: "text-amber-500" },
-  ready: { label: "Ready", icon: <Check className="w-3.5 h-3.5" />, color: "text-emerald-500" },
+  idle: { label: "Cargando", icon: <Play className="w-3.5 h-3.5" />, color: "text-muted-foreground" },
+  booting: { label: "Iniciando entorno...", icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />, color: "text-blue-500" },
+  installing: { label: "Instalando dependencias...", icon: <Package className="w-3.5 h-3.5 animate-pulse" />, color: "text-amber-500" },
+  starting: { label: "Iniciando servidor...", icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />, color: "text-amber-500" },
+  ready: { label: "Listo", icon: <Check className="w-3.5 h-3.5" />, color: "text-emerald-500" },
   error: { label: "Error", icon: <AlertCircle className="w-3.5 h-3.5" />, color: "text-destructive" },
 };
 
@@ -314,6 +316,21 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
   const [iframePath, setIframePath] = useState("/");
   const [urlInput, setUrlInput] = useState("/");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isFullscreen]);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const { status, previewUrl, error, logs, lastBuildError, lastRuntimeError, clearBuildError, clearRuntimeError, mountFiles, restartContainer } = useWebContainer(framework);
 
@@ -778,7 +795,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className={isFullscreen ? "fixed inset-0 z-[100] flex flex-col bg-background" : "flex flex-col h-full"}>
       <ExportModal
         open={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
@@ -861,8 +878,20 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
           )}
           <Button variant="ghost" size="sm" onClick={handleDownloadProject} className="gap-1 sm:gap-1.5 text-sm px-2 sm:px-3">
             <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Download</span>
+            <span className="hidden sm:inline">Descargar</span>
           </Button>
+          {previewUrl && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setActiveTab("preview"); setIsFullscreen(true); }}
+              title="Pantalla completa"
+              className="gap-1 sm:gap-1.5 text-sm px-2 sm:px-3"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Pantalla completa</span>
+            </Button>
+          )}
           {status !== "idle" && (
             <Button
               variant="ghost"
@@ -872,7 +901,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
               className="gap-1 sm:gap-1.5 text-sm px-2 sm:px-3"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Restart</span>
+              <span className="hidden sm:inline">Reiniciar</span>
             </Button>
           )}
           {activeTab === "preview" && (
@@ -900,6 +929,18 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
                 <Smartphone className="w-3.5 h-3.5" />
               </button>
             </div>
+          )}
+          {isFullscreen && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsFullscreen(false)}
+              title="Salir de pantalla completa (Esc)"
+              className="gap-1 sm:gap-1.5 text-sm px-2 sm:px-3"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Salir de pantalla completa</span>
+            </Button>
           )}
         </div>
       </div>
@@ -940,6 +981,15 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
                     spellCheck={false}
                   />
                 </div>
+                {isFullscreen && (
+                  <button
+                    onClick={() => setIsFullscreen(false)}
+                    title="Salir de pantalla completa (Esc)"
+                    className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition"
+                  >
+                    <Minimize2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
               {/* Iframe */}
               <div className={`relative flex-1 min-h-0 ${

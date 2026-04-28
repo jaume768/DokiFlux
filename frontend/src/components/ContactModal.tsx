@@ -10,9 +10,12 @@ interface ContactModalProps {
   onClose: () => void;
   user: { email: string; full_name?: string } | null;
   project?: { id: number; name?: string } | null;
+  title?: string;
+  subtitle?: string;
+  source?: string;
 }
 
-export function ContactModal({ open, onClose, user, project }: ContactModalProps) {
+export function ContactModal({ open, onClose, user, project, title, subtitle, source }: ContactModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -55,14 +58,17 @@ export function ContactModal({ open, onClose, user, project }: ContactModalProps
     setSending(true);
     setError("");
     try {
+      const composedMessage = source
+        ? `[Consulta desde ${source}]\n\n${message.trim()}`
+        : message.trim();
       await apiPost("/contact/", {
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
         project: project?.id ?? null,
         project_name: project?.name ?? "",
-        message: message.trim(),
-      });
+        message: composedMessage,
+      }, { auth: false });
       setSent(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "No se pudo enviar. Intenta de nuevo.";
@@ -106,10 +112,10 @@ export function ContactModal({ open, onClose, user, project }: ContactModalProps
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-1">
-                  Solicita tu presupuesto gratis
+                  {title ?? "Solicita tu presupuesto gratis"}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Revisamos tu proyecto y te contactamos en 24h. Sin compromiso.
+                  {subtitle ?? "Revisamos tu proyecto y te contactamos en 24h. Sin compromiso."}
                 </p>
               </div>
 

@@ -46,7 +46,9 @@ export function PromptInput({ onSubmit, onCancel, isLoading }: PromptInputProps)
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 300)}px`;
+    const next = Math.min(el.scrollHeight, 300);
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > 300 ? "auto" : "hidden";
   }, []);
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export function PromptInput({ onSubmit, onCancel, isLoading }: PromptInputProps)
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Describe la interfaz que quieres generar..."
-          className="w-full resize-none bg-transparent px-4 pt-3 pb-12 text-[17px] leading-[1.55] outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full resize-none overflow-y-hidden bg-transparent px-4 pt-3 pb-12 text-[17px] leading-[1.55] outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isLoading}
           rows={1}
           style={{ minHeight: "44px", maxHeight: "300px" }}

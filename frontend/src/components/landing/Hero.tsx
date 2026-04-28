@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useFingerprint } from "@/hooks/useFingerprint";
 import { demoStart, writeDemoState } from "@/lib/demo";
+import { ContactModal } from "@/components/ContactModal";
 
 const CHIPS = [
   "Landing SaaS",
@@ -72,6 +73,7 @@ export function Hero() {
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
+  const [contactOpen, setContactOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fingerprint = useFingerprint();
 
@@ -188,14 +190,15 @@ export function Hero() {
                   <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-0.5" />
                 </span>
               </Link>
-              <Link
-                href="#contacto"
+              <button
+                type="button"
+                onClick={() => setContactOpen(true)}
                 className="inline-flex items-center justify-center gap-2 text-[15px] font-semibold text-white px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)" }}
               >
                 <Users size={15} />
                 Hablar con el equipo
-              </Link>
+              </button>
             </div>
 
             {/* Tertiary link */}
@@ -461,6 +464,14 @@ export function Hero() {
           ))}
         </div>
       </div>
+      <ContactModal
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        user={null}
+        title="Habla con el equipo"
+        subtitle="Cuéntanos tu caso y te contactamos en menos de 24h. Sin compromiso."
+        source="hero"
+      />
     </section>
   );
 }
