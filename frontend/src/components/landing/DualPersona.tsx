@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Check, ArrowRight } from "lucide-react";
+import { ContactModal } from "@/components/ContactModal";
 
 const PERSONAS = [
   {
@@ -18,7 +19,7 @@ const PERSONAS = [
       "Soporte técnico continuo post-lanzamiento",
     ],
     cta: "Hablar con el equipo",
-    ctaHref: "mailto:hola@dokiflux.app",
+    ctaHref: "contact",
     color: "#38bdf8",
     colorBg: "rgba(56,189,248,0.10)",
     colorBorder: "rgba(56,189,248,0.22)",
@@ -45,6 +46,7 @@ const PERSONAS = [
 
 export function DualPersona() {
   const [visible, setVisible] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -153,14 +155,15 @@ export function DualPersona() {
                   </ul>
 
                   {/* CTA — full-width solid button */}
-                  {persona.ctaHref.startsWith("mailto:") ? (
-                    <a
-                      href={persona.ctaHref}
-                      className="group/cta flex items-center justify-center gap-2 w-full py-3 rounded-xl text-[14px] font-semibold text-white transition-all duration-300 hover:brightness-110 hover:scale-[1.01]"
+                  {persona.ctaHref === "contact" ? (
+                    <button
+                      type="button"
+                      onClick={() => setContactOpen(true)}
+                      className="group/cta flex items-center justify-center gap-2 w-full py-3 rounded-xl text-[14px] font-semibold text-white transition-all duration-300 hover:brightness-110 hover:scale-[1.01] cursor-pointer"
                       style={{ background: persona.color }}
                     >
                       {ctaContent}
-                    </a>
+                    </button>
                   ) : (
                     <Link
                       href={persona.ctaHref}
@@ -176,6 +179,14 @@ export function DualPersona() {
           })}
         </div>
       </div>
+      <ContactModal
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        user={null}
+        title="Habla con el equipo"
+        subtitle="Cuéntanos tu caso y te contactamos en menos de 24h. Sin compromiso."
+        source="dual-persona"
+      />
     </section>
   );
 }
