@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   XCircle,
   Plus,
+  ReceiptText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -35,6 +36,37 @@ interface BillingPlan {
   cancel_at?: string | null;
 }
 
+interface BillingInvoice {
+  id: number;
+  number: string;
+  status: string;
+  billing_reason: string;
+  hosted_invoice_url: string;
+  invoice_pdf: string;
+  currency: string;
+  total: string;
+  amount_paid: string;
+  paid_at: string | null;
+  created_at: string;
+}
+
+interface BillingPayment {
+  id: number;
+  kind: "subscription" | "topup" | "other";
+  status: string;
+  description: string;
+  currency: string;
+  amount_paid: string;
+  paid_at: string | null;
+  created_at: string;
+}
+
+interface BillingHistory {
+  payments: BillingPayment[];
+  invoices: BillingInvoice[];
+  subscription: unknown | null;
+}
+
 function BillingPageInner() {
   const { balance, planType, refreshBalance } = useAuth();
   const searchParams = useSearchParams();
@@ -46,6 +78,8 @@ function BillingPageInner() {
   const [topupBanner, setTopupBanner] = useState<"success" | "cancelled" | null>(null);
   const [error, setError] = useState("");
   const [billingPlan, setBillingPlan] = useState<BillingPlan | null>(null);
+  const [history, setHistory] = useState<BillingHistory | null>(null);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
   // Sync Stripe status on mount and read cancel_at_period_end
   useEffect(() => {
@@ -60,6 +94,21 @@ function BillingPageInner() {
     }
     syncPlan();
   }, [refreshBalance]);
+
+  useEffect(() => {
+    async function loadHistory() {
+      setIsHistoryLoading(true);
+      try {
+        const data = await apiGet<BillingHistory>("/billing/history/");
+        setHistory(data);
+      } catch {
+        setHistory(null);
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    }
+    loadHistory();
+  }, []);
 
   // Handle ?topup=success|cancelled redirect from Stripe
   useEffect(() => {
@@ -100,6 +149,27 @@ function BillingPageInner() {
   const isPremium = planType === "premium";
   const cancelAtPeriodEnd = billingPlan?.cancel_at_period_end ?? false;
   const cancelAt = billingPlan?.cancel_at ?? null;
+  const invoices = history?.invoices ?? [];
+  const paymentsWithoutInvoice = (history?.payments ?? []).filter(
+    (payment) => !invoices.some((invoice) => invoice.id && payment.created_at === invoice.created_at)
+  );
+
+  function formatMoney(amount: string, currency: string) {
+    const value = Number(amount || 0);
+    return new Intl.NumberFormat("es-ES", {
+      style: "currency",
+      currency: (currency || "eur").toUpperCase(),
+    }).format(value);
+  }
+
+  function formatDate(value: string | null) {
+    if (!value) return "Pendiente";
+    return new Date(value).toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
 
   async function handleUpgrade() {
     setIsUpgrading(true);
@@ -318,6 +388,103 @@ function BillingPageInner() {
             {isToppingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
             Comprar {topupAmount} € de saldo
           </Button>
+        </div>
+
+        <div className="mb-5 rounded-2xl p-5" style={cardStyle}>
+          <div className="mb-4 flex items-center gap-2">
+            <ReceiptText className="h-5 w-5" style={{ color: "#a78bfa" }} />
+            <div>
+              <h3 className="text-lg font-bold text-white">Historial de facturación</h3>
+              <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+                Facturas, recibos y compras sincronizadas con Stripe.
+              </p>
+            </div>
+          </div>
+
+          {isHistoryLoading && (
+            <div className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)" }}>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Cargando historial...
+            </div>
+          )}
+
+          {!isHistoryLoading && invoices.length === 0 && paymentsWithoutInvoice.length === 0 && (
+            <div className="rounded-xl px-4 py-4 text-sm" style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)" }}>
+              Todavía no hay facturas o compras registradas. Cuando Stripe confirme un pago aparecerá aquí.
+            </div>
+          )}
+
+          {!isHistoryLoading && invoices.length > 0 && (
+            <div className="space-y-3">
+              {invoices.map((invoice) => (
+                <div
+                  key={invoice.id}
+                  className="flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-white">
+                        {invoice.number || (invoice.billing_reason === "subscription_cycle" ? "Factura mensual" : "Factura")}
+                      </p>
+                      <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase" style={{ background: "rgba(139,92,246,0.16)", color: "#c4b5fd" }}>
+                        {invoice.status || "pendiente"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+                      {formatDate(invoice.paid_at || invoice.created_at)} · {formatMoney(invoice.amount_paid || invoice.total, invoice.currency)}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {invoice.hosted_invoice_url && (
+                      <a
+                        href={invoice.hosted_invoice_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/75 transition-colors hover:border-white/25 hover:text-white"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Ver factura
+                      </a>
+                    )}
+                    {invoice.invoice_pdf && (
+                      <a
+                        href={invoice.invoice_pdf}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/75 transition-colors hover:border-white/25 hover:text-white"
+                      >
+                        PDF
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!isHistoryLoading && paymentsWithoutInvoice.length > 0 && (
+            <div className="mt-3 space-y-3">
+              {paymentsWithoutInvoice.map((payment) => (
+                <div
+                  key={payment.id}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+                >
+                  <CreditCard className="h-4 w-4 shrink-0" style={{ color: "#a78bfa" }} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-white">{payment.description || "Pago"}</p>
+                    <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+                      {formatDate(payment.paid_at || payment.created_at)} · {payment.status || "pendiente"}
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold text-white">
+                    {formatMoney(payment.amount_paid, payment.currency)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

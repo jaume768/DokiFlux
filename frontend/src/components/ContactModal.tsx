@@ -85,7 +85,14 @@ export function ContactModal({ open, onClose, user, project, title, subtitle, so
         onClick={onClose}
       />
 
-      <div className="relative z-10 my-auto w-full max-w-lg min-h-full sm:min-h-0 sm:rounded-2xl border border-border bg-background shadow-2xl animate-in zoom-in-95 fade-in duration-200 flex flex-col">
+      <div
+        className="relative z-10 my-auto w-full max-w-lg min-h-full sm:min-h-0 sm:rounded-2xl bg-background shadow-2xl animate-in zoom-in-95 fade-in duration-200 flex flex-col"
+        style={{
+          border: "2px solid rgba(139,92,246,0.55)",
+          boxShadow:
+            "0 0 0 1px rgba(139,92,246,0.18), 0 30px 80px -20px rgba(139,92,246,0.5), 0 0 100px -20px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
+        }}
+      >
         <button
           onClick={onClose}
           className="absolute right-4 top-4 z-10 rounded-full p-1.5 bg-black/40 text-white/80 hover:text-white hover:bg-black/60 backdrop-blur-sm transition-colors"

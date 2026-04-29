@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import CreditGrant, CreditTransaction, UserPlan
+from .models import BillingInvoice, BillingPayment, BillingSubscription, CreditTransaction, UserPlan
 from .plans import PLAN_DEFINITIONS
 
 
@@ -25,6 +25,67 @@ class CreditTransactionSerializer(serializers.ModelSerializer):
             "description",
             "generation_id",
             "created_at",
+        ]
+
+
+class BillingPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BillingPayment
+        fields = [
+            "id",
+            "kind",
+            "status",
+            "description",
+            "currency",
+            "amount_total",
+            "amount_paid",
+            "stripe_checkout_session_id",
+            "stripe_payment_intent_id",
+            "stripe_invoice_id",
+            "paid_at",
+            "created_at",
+        ]
+
+
+class BillingInvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BillingInvoice
+        fields = [
+            "id",
+            "stripe_invoice_id",
+            "stripe_subscription_id",
+            "number",
+            "status",
+            "billing_reason",
+            "hosted_invoice_url",
+            "invoice_pdf",
+            "currency",
+            "subtotal",
+            "tax",
+            "total",
+            "amount_paid",
+            "period_start",
+            "period_end",
+            "paid_at",
+            "created_at",
+        ]
+
+
+class BillingSubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BillingSubscription
+        fields = [
+            "id",
+            "stripe_subscription_id",
+            "stripe_price_id",
+            "status",
+            "plan_type",
+            "current_period_start",
+            "current_period_end",
+            "cancel_at_period_end",
+            "cancel_at",
+            "created_at",
+            "updated_at",
         ]
 
 

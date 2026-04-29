@@ -83,8 +83,9 @@ export function ConsultationModal({ open, onClose, source = "footer" }: Consulta
         className="relative max-w-lg w-full rounded-2xl p-6 sm:p-8 my-auto"
         style={{
           background: "linear-gradient(135deg, rgba(139,92,246,0.08) 0%, #0b0b14 70%)",
-          border: "1px solid rgba(139,92,246,0.25)",
-          boxShadow: "0 20px 80px -20px rgba(139,92,246,0.3)",
+          border: "2px solid rgba(139,92,246,0.55)",
+          boxShadow:
+            "0 0 0 1px rgba(139,92,246,0.18), 0 30px 80px -20px rgba(139,92,246,0.5), 0 0 100px -20px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
         }}
         onClick={(e) => e.stopPropagation()}
       >

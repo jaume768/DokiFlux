@@ -1,8 +1,11 @@
 import logging
+from decimal import Decimal
 
 import stripe
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
+from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -10,15 +13,51 @@ from rest_framework.views import APIView
 
 logger = logging.getLogger(__name__)
 
-from .models import CreditTransaction, UserPlan
+from .models import (
+    BillingInvoice,
+    BillingPayment,
+    BillingSubscription,
+    CreditTransaction,
+    StripeEvent,
+    UserPlan,
+)
 from .plans import PLAN_DEFINITIONS
 from .serializers import (
     CreditTransactionSerializer,
+    BillingInvoiceSerializer,
+    BillingPaymentSerializer,
+    BillingSubscriptionSerializer,
     PlanDefinitionSerializer,
 )
 from .services import add_topup_credits, downgrade_to_free, get_balance, renew_monthly_credits, set_subscription_cancellation, upgrade_to_premium
 
 User = get_user_model()
+
+
+def _stripe_ts(value):
+    if not value:
+        return None
+    return timezone.datetime.fromtimestamp(value, tz=timezone.utc)
+
+
+def _cents_to_decimal(value):
+    return Decimal(str(value or 0)) / Decimal("100")
+
+
+def _first_line_item_price_id(subscription):
+    items = subscription.get("items", {}).get("data", [])
+    if not items:
+        return ""
+    price = items[0].get("price") or {}
+    return price.get("id", "")
+
+
+def _invoice_period(invoice):
+    lines = invoice.get("lines", {}).get("data", [])
+    if not lines:
+        return None, None
+    period = lines[0].get("period") or {}
+    return _stripe_ts(period.get("start")), _stripe_ts(period.get("end"))
 
 
 class BalanceView(APIView):
@@ -72,6 +111,46 @@ class TransactionListView(generics.ListAPIView):
 
     def get_queryset(self):
         return CreditTransaction.objects.filter(user=self.request.user)
+
+
+class BillingPaymentListView(generics.ListAPIView):
+    serializer_class = BillingPaymentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return BillingPayment.objects.filter(user=self.request.user)
+
+
+class BillingInvoiceListView(generics.ListAPIView):
+    serializer_class = BillingInvoiceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return BillingInvoice.objects.filter(user=self.request.user)
+
+
+class BillingSubscriptionListView(generics.ListAPIView):
+    serializer_class = BillingSubscriptionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return BillingSubscription.objects.filter(user=self.request.user)
+
+
+class BillingHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        payments = BillingPayment.objects.filter(user=request.user)[:20]
+        invoices = BillingInvoice.objects.filter(user=request.user)[:20]
+        subscription = BillingSubscription.objects.filter(user=request.user).first()
+        return Response(
+            {
+                "payments": BillingPaymentSerializer(payments, many=True).data,
+                "invoices": BillingInvoiceSerializer(invoices, many=True).data,
+                "subscription": BillingSubscriptionSerializer(subscription).data if subscription else None,
+            }
+        )
 
 
 class PlansView(APIView):
@@ -222,6 +301,7 @@ class CreateTopupSessionView(APIView):
                     }
                 ],
                 mode="payment",
+                invoice_creation={"enabled": True},
                 success_url=f"{frontend_url}/app/billing?topup=success&session_id={{CHECKOUT_SESSION_ID}}",
                 cancel_url=f"{frontend_url}/app/billing?topup=cancelled",
                 metadata={
@@ -364,13 +444,19 @@ class StripeWebhookView(APIView):
         data = event["data"]["object"]
         logger.info("[webhook] Received event type=%s id=%s", event_type, event.id)
 
+        try:
+            StripeEvent.objects.create(event_id=event.id, event_type=event_type)
+        except IntegrityError:
+            logger.info("[webhook] Event %s already processed", event.id)
+            return Response({"status": "duplicate"})
+
         if event_type == "checkout.session.completed":
             self._handle_checkout_completed(data)
 
-        elif event_type == "invoice.payment_succeeded":
-            self._handle_invoice_paid(data)
+        elif event_type in ("invoice.payment_succeeded", "invoice.payment_failed"):
+            self._handle_invoice_event(data)
 
-        elif event_type in ("customer.subscription.deleted", "customer.subscription.updated"):
+        elif event_type in ("customer.subscription.created", "customer.subscription.deleted", "customer.subscription.updated"):
             self._handle_subscription_change(data)
 
         return Response({"status": "ok"})
@@ -391,6 +477,83 @@ class StripeWebhookView(APIView):
         except UserPlan.DoesNotExist:
             return None
 
+    def _persist_checkout_payment(self, user, session, kind):
+        amount_total = _cents_to_decimal(session.get("amount_total"))
+        amount_paid = amount_total if session.get("payment_status") == "paid" else Decimal("0")
+        lookup = {"stripe_checkout_session_id": session.id}
+        BillingPayment.objects.update_or_create(
+            **lookup,
+            defaults={
+                "user": user,
+                "kind": kind,
+                "status": session.get("payment_status") or session.get("status") or "",
+                "stripe_payment_intent_id": session.get("payment_intent") or "",
+                "stripe_invoice_id": session.get("invoice") or "",
+                "stripe_customer_id": session.get("customer") or "",
+                "description": "Recarga de saldo" if kind == "topup" else "Suscripción Premium",
+                "currency": (session.get("currency") or "eur").lower(),
+                "amount_total": amount_total,
+                "amount_paid": amount_paid,
+                "paid_at": timezone.now() if session.get("payment_status") == "paid" else None,
+            },
+        )
+
+    def _persist_subscription(self, user, subscription):
+        BillingSubscription.objects.update_or_create(
+            stripe_subscription_id=subscription.id,
+            defaults={
+                "user": user,
+                "stripe_customer_id": subscription.get("customer") or "",
+                "stripe_price_id": _first_line_item_price_id(subscription),
+                "status": subscription.get("status") or "",
+                "plan_type": "premium",
+                "current_period_start": _stripe_ts(subscription.get("current_period_start")),
+                "current_period_end": _stripe_ts(subscription.get("current_period_end")),
+                "cancel_at_period_end": subscription.get("cancel_at_period_end") or False,
+                "cancel_at": _stripe_ts(subscription.get("cancel_at")),
+            },
+        )
+
+    def _persist_invoice(self, user, invoice):
+        period_start, period_end = _invoice_period(invoice)
+        BillingInvoice.objects.update_or_create(
+            stripe_invoice_id=invoice.id,
+            defaults={
+                "user": user,
+                "stripe_subscription_id": invoice.get("subscription") or "",
+                "stripe_customer_id": invoice.get("customer") or "",
+                "number": invoice.get("number") or "",
+                "status": invoice.get("status") or "",
+                "billing_reason": invoice.get("billing_reason") or "",
+                "hosted_invoice_url": invoice.get("hosted_invoice_url") or "",
+                "invoice_pdf": invoice.get("invoice_pdf") or "",
+                "currency": (invoice.get("currency") or "eur").lower(),
+                "subtotal": _cents_to_decimal(invoice.get("subtotal")),
+                "tax": _cents_to_decimal(invoice.get("tax")),
+                "total": _cents_to_decimal(invoice.get("total")),
+                "amount_paid": _cents_to_decimal(invoice.get("amount_paid")),
+                "period_start": period_start,
+                "period_end": period_end,
+                "paid_at": _stripe_ts(invoice.get("status_transitions", {}).get("paid_at")),
+            },
+        )
+        BillingPayment.objects.update_or_create(
+            stripe_invoice_id=invoice.id,
+            defaults={
+                "user": user,
+                "kind": "subscription" if invoice.get("subscription") else "topup",
+                "status": invoice.get("status") or "",
+                "stripe_checkout_session_id": "",
+                "stripe_payment_intent_id": invoice.get("payment_intent") or "",
+                "stripe_customer_id": invoice.get("customer") or "",
+                "description": "Factura de suscripción" if invoice.get("subscription") else "Factura de recarga",
+                "currency": (invoice.get("currency") or "eur").lower(),
+                "amount_total": _cents_to_decimal(invoice.get("total")),
+                "amount_paid": _cents_to_decimal(invoice.get("amount_paid")),
+                "paid_at": _stripe_ts(invoice.get("status_transitions", {}).get("paid_at")),
+            },
+        )
+
     def _handle_checkout_completed(self, session):
         metadata = session.metadata or {}
         user = self._get_user_from_metadata(metadata)
@@ -403,6 +566,7 @@ class StripeWebhookView(APIView):
 
         # Top-up (one-off payment) branch
         if metadata.get("kind") == "topup":
+            self._persist_checkout_payment(user, session, "topup")
             try:
                 amount_eur = int(metadata.get("amount_eur") or 0)
             except (TypeError, ValueError):
@@ -416,14 +580,25 @@ class StripeWebhookView(APIView):
 
         customer_id = session.customer or ""
         subscription_id = session.subscription or ""
+        self._persist_checkout_payment(user, session, "subscription")
         logger.info("[webhook] checkout.session.completed — upgrading user=%s customer=%s sub=%s", user.email, customer_id, subscription_id)
         upgrade_to_premium(user, customer_id, subscription_id)
+        if subscription_id:
+            try:
+                subscription = stripe.Subscription.retrieve(subscription_id)
+                self._persist_subscription(user, subscription)
+            except stripe.StripeError:
+                logger.exception("[webhook] Could not retrieve subscription %s", subscription_id)
 
-    def _handle_invoice_paid(self, invoice):
+    def _handle_invoice_event(self, invoice):
+        customer_id = invoice.customer or ""
+        user = self._get_user_from_customer(customer_id)
+        if user:
+            self._persist_invoice(user, invoice)
+        if invoice.status != "paid":
+            return
         billing_reason = invoice.billing_reason or ""
         if billing_reason == "subscription_cycle":
-            customer_id = invoice.customer or ""
-            user = self._get_user_from_customer(customer_id)
             if user:
                 renew_monthly_credits(user)
 
@@ -435,6 +610,7 @@ class StripeWebhookView(APIView):
         user = self._get_user_from_customer(customer_id)
         if not user:
             return
+        self._persist_subscription(user, subscription)
 
         if sub_status in ("canceled", "unpaid", "past_due"):
             downgrade_to_free(user)

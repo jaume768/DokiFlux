@@ -8,29 +8,17 @@
     pero con setup explícito y guardrails. (El objetivo no es “100 integraciones”, es “3 que eviten re‑prompts”).    
     
 23- Añadir templates y poder hacer proyectos "Del staff" como templates con los prompts
-24- Enseñar anuncios si se genera con ia gratis?
 40- Multiidioma a Español y el Ingles
 41- logs de auditoria (tabla donde guardar todos los logs para auditoria)
-42- integrar facturación, pagos, etc.
 44- formulario de "No sabes como empezar? pulsa aqui para que te ayudemos en 3 pasos" 
     - (Abrir modal simple de preguntas para montar prompt por detras)
     ejemplo: 
         - ¿Qué tipo de negocio es y qué objetivo principal debe cumplir la web: captar clientes, vender, mostrar servicios o reservar citas?
         - ¿Qué secciones quieres incluir: inicio, servicios, sobre nosotros, testimonios, contacto, tienda, blog?
         - ¿Tienes preferencias de estilo: colores de marca, tono visual, ejemplos de webs que te gusten?
-46- Que el usuario pueda subir imagenes en las generaciones y la ia las pueda utilizar   
-47- Hacer full screen de los proyectos como v0
+46- Que el usuario pueda subir imagenes en las generaciones y la ia las pueda utilizar
 
 Incluir Observabilidad: métricas de coste por usuario, latencia, tasa de fallo de generación, logs con trazabilidad.
-
-Riesgos legales a tener en cuenta:
-
-- RGPD: vas a tratar datos personales (cuentas, emails) y potencialmente datos personales dentro del código que el usuario pegue/suba. 
-        Necesitas base legal, minimización, retención, derechos, y acuerdos con encargados. 
-- Cookies y medición: si usas analítica, debes cumplir criterios AEPD y LSSI. 
-        La AEPD ha publicado guías específicas y notas de implementación. 
-- EU AI Act: si comercializas un sistema que genera contenido/código con IA, tienes obligaciones de transparencia y gobernanza según rol (proveedor/deployer) y el tipo de uso. 
-        No es “parálisis legal”, pero sí exige disciplina mínima.
 
 Marketing:
 
