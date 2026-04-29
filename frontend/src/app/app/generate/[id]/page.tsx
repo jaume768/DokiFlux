@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { apiGet, apiPatch, apiPost, API_BASE, getActiveGeneration, getGenerationStatus, cancelGeneration } from "@/lib/api";
+import { apiGet, apiPatch, apiPost, API_BASE, ensureCsrfToken, getActiveGeneration, getGenerationStatus, cancelGeneration } from "@/lib/api";
 import type { ProjectDetail, ChatMessageResponse, PaginatedResponse } from "@/types/auth";
 import { ChatPanel } from "@/components/ChatPanel";
 import { PromptInput } from "@/components/PromptInput";
@@ -349,10 +349,12 @@ export default function GenerateProjectPage({ params }: { params: Promise<{ id: 
       let receivedUsage: { inputTokens: number; outputTokens: number; cost: number } | null = null;
 
       try {
+        const csrfToken = await ensureCsrfToken();
         const res = await fetch(`${API_BASE}/generate/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
           },
           credentials: "include",
           body: JSON.stringify({

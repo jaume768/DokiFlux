@@ -5,10 +5,34 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length !== 2) return null;
+  return parts.pop()?.split(";").shift() ?? null;
+}
+
+export async function ensureCsrfToken(): Promise<string | null> {
+  const existing = getCookie("csrftoken");
+  if (existing) return existing;
+  try {
+    await fetch(`${API_BASE}/auth/csrf/`, {
+      method: "GET",
+      credentials: "include",
+    });
+  } catch {
+    return null;
+  }
+  return getCookie("csrftoken");
+}
+
 async function refreshAccessToken(): Promise<boolean> {
   try {
+    const csrfToken = await ensureCsrfToken();
     const res = await fetch(`${API_BASE}/auth/token/refresh/`, {
       method: "POST",
+      headers: csrfToken ? { "X-CSRFToken": csrfToken } : undefined,
       credentials: "include",
     });
     return res.ok;
@@ -52,6 +76,12 @@ export async function api<T = unknown>(
 
   if (body && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
+  }
+
+  const method = (fetchOptions.method || "GET").toUpperCase();
+  if (!["GET", "HEAD", "OPTIONS", "TRACE"].includes(method) && !headers["X-CSRFToken"]) {
+    const csrfToken = await ensureCsrfToken();
+    if (csrfToken) headers["X-CSRFToken"] = csrfToken;
   }
 
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;

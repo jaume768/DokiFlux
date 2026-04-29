@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from asgiref.sync import sync_to_async
 from django.http import JsonResponse, StreamingHttpResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.utils.timezone import now as timezone_now
 
 from apps.billing.plans import PLAN_DEFINITIONS
 from apps.billing.services import get_balance
@@ -21,7 +21,6 @@ from .providers.registry import get_model_config, list_models, MODEL_REGISTRY, D
 logger = logging.getLogger(__name__)
 
 
-@csrf_exempt
 async def generate_view(request):
     """
     POST /api/generate/
@@ -116,7 +115,6 @@ async def generate_view(request):
     daily_limit = plan_def.get("messages_per_day", 7)
 
     # --- Premium-only model gating ---
-    from .providers.registry import MODEL_REGISTRY
     model_cfg = MODEL_REGISTRY.get(model, {})
     if model_cfg.get("premium_only") and plan_type != "premium":
         return StreamingHttpResponse(
@@ -178,7 +176,6 @@ async def generate_view(request):
     return response
 
 
-@csrf_exempt
 async def estimate_view(request):
     """
     POST /api/estimate/
@@ -261,7 +258,6 @@ async def estimate_view(request):
     })
 
 
-@csrf_exempt
 async def models_view(request):
     """
     GET /api/models/
@@ -273,7 +269,6 @@ async def models_view(request):
     return JsonResponse({"models": list_models(), "default": DEFAULT_MODEL})
 
 
-@csrf_exempt
 async def generation_status_view(request, generation_id: int):
     """
     GET /api/generate/status/<generation_id>/
@@ -313,7 +308,6 @@ async def generation_status_view(request, generation_id: int):
     return JsonResponse(response_data)
 
 
-@csrf_exempt
 async def active_generation_view(request, project_id: int):
     """
     GET /api/projects/<project_id>/active-generation/
@@ -325,8 +319,6 @@ async def active_generation_view(request, project_id: int):
     user = request.user
     if not user.is_authenticated:
         return JsonResponse({"error": "Authentication required"}, status=401)
-
-    from .models import Generation
 
     generation = await sync_to_async(
         lambda: Generation.objects.filter(
@@ -347,7 +339,6 @@ async def active_generation_view(request, project_id: int):
     })
 
 
-@csrf_exempt
 async def cancel_generation_view(request, generation_id: int):
     """
     POST /api/generate/<generation_id>/cancel/
@@ -376,9 +367,8 @@ async def cancel_generation_view(request, generation_id: int):
     # Flip DB status FIRST so that if the worker is still alive it sees the
     # cancellation at its next between-files checkpoint and exits via its
     # own `finally` (which handles billing cleanly).
-    from django.utils.timezone import now as _now
     generation.status = "cancelled"
-    generation.completed_at = _now()
+    generation.completed_at = timezone_now()
     await sync_to_async(generation.save)(update_fields=["status", "completed_at"])
 
     # Revoke the Celery task if we have its ID. SIGTERM may kill the worker

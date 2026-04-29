@@ -6,6 +6,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Count, Sum, F
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -35,7 +37,7 @@ from .serializers import (
 from .models import EmailVerificationToken, PasswordResetToken
 from .services.email import email_service
 from .services.tokens import create_email_verification_token, create_password_reset_token
-from .throttles import AnonAuthThrottle, ResendEmailThrottle
+from .throttles import AnonAuthThrottle, ResendEmailThrottle, TokenRefreshThrottle
 from .validators import validate_username, RESERVED_USERNAMES
 
 logger = logging.getLogger(__name__)
@@ -104,6 +106,7 @@ class CookieTokenRefreshView(APIView):
     """POST /api/auth/token/refresh/ — Rotate refresh token from httpOnly cookie."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [TokenRefreshThrottle]
 
     def post(self, request):
         refresh_token_str = request.COOKIES.get("refresh_token")
@@ -130,6 +133,14 @@ class CookieTokenRefreshView(APIView):
         response = Response({"detail": "Token refreshed."})
         _set_auth_cookies(response, tokens)
         return response
+
+
+@method_decorator(ensure_csrf_cookie, name="dispatch")
+class CsrfTokenView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"detail": "CSRF cookie set."})
 
 
 class RegisterView(APIView):
@@ -557,9 +568,6 @@ class ProfileStatsView(APIView):
         from apps.projects.models import Project
         from apps.generation.models import Generation
         from apps.billing.models import CreditGrant
-        from apps.billing.services import set_subscription_cancellation, downgrade_to_free
-        from django.conf import settings as django_settings
-        from django.utils.timezone import datetime as tz_datetime, timezone as tz
 
         user = request.user
 
@@ -586,26 +594,7 @@ class ProfileStatsView(APIView):
         )["total"] or 0
 
         total_tokens = (gen_agg["total_input_tokens"] or 0) + (gen_agg["total_output_tokens"] or 0)
-
-        # Live-sync Stripe subscription cancellation status (fallback when webhook not received)
         plan = getattr(user, "plan", None)
-        if plan and plan.stripe_subscription_id and django_settings.STRIPE_SECRET_KEY:
-            try:
-                import stripe as stripe_lib
-                stripe_lib.api_key = django_settings.STRIPE_SECRET_KEY
-                sub = stripe_lib.Subscription.retrieve(plan.stripe_subscription_id)
-                sub_status = sub.get("status", "")
-                cape = sub.get("cancel_at_period_end", False)
-                cancel_at_ts = sub.get("cancel_at")
-                if sub_status in ("canceled", "unpaid", "past_due"):
-                    downgrade_to_free(user)
-                    plan.refresh_from_db()
-                elif sub_status == "active":
-                    cancel_at_dt = tz_datetime.fromtimestamp(cancel_at_ts, tz=tz.utc) if cancel_at_ts else None
-                    set_subscription_cancellation(user, cancel_at_period_end=cape, cancel_at=cancel_at_dt)
-                    plan.refresh_from_db()
-            except Exception:
-                pass  # Stripe unavailable — use cached DB values
 
         return Response({
             "date_joined": user.date_joined.isoformat(),

@@ -58,7 +58,7 @@ class EmailService:
             )
             return
 
-        reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+        reset_url = f"{settings.FRONTEND_URL}/password-reset-confirm?token={token}"
 
         self._send_email(
             to_email=user.email,

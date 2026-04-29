@@ -6,11 +6,16 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
+from django.core.exceptions import ImproperlyConfigured
 from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = config("DJANGO_SECRET_KEY", default="insecure-change-me-in-production")
+SECRET_KEY = config("DJANGO_SECRET_KEY", default="")
+if not SECRET_KEY:
+    if os.getenv("DJANGO_SETTINGS_MODULE", "").endswith(".prod"):
+        raise ImproperlyConfigured("DJANGO_SECRET_KEY is required in production.")
+    SECRET_KEY = "insecure-dev-only-change-me"
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
 
@@ -131,6 +136,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon_auth": "10/min",
         "resend_email": "3/min",
+        "token_refresh": "20/min",
     },
 }
 

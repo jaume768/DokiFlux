@@ -11,3 +11,9 @@ class ResendEmailThrottle(AnonRateThrottle):
     """Stricter rate limit for resend-verification endpoint."""
 
     scope = "resend_email"
+
+
+class TokenRefreshThrottle(AnonRateThrottle):
+    """Rate limit refresh attempts by client IP."""
+
+    scope = "token_refresh"
