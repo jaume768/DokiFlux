@@ -96,27 +96,35 @@ export default function OnboardingPage() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(139,92,246,0.18) 0%, transparent 70%)" }} />
 
       {step === "username" ? (
-        <div className="relative z-10 w-full max-w-sm">
+        <div className="relative z-10 w-full max-w-md">
           <div className="flex items-center justify-center mb-6">
             <Image src="/logo-texto-blanco.png" alt="DokiFlux" width={220} height={55} className="h-11 w-auto" />
           </div>
 
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="h-1.5 w-8 rounded-full" style={{ background: "#8b5cf6" }} />
-            <div className="h-1.5 w-8 rounded-full" style={{ background: "rgba(255,255,255,0.15)" }} />
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <div className="h-1.5 w-10 rounded-full" style={{ background: "#8b5cf6" }} />
+            <div className="h-1.5 w-10 rounded-full" style={{ background: "rgba(255,255,255,0.18)" }} />
           </div>
 
-          <div className="rounded-2xl p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
-            <h1 className="text-xl font-bold text-white mb-1">Elige tu username</h1>
-            <p className="text-white/50 text-sm mb-6">Este será tu nombre público en Dokiflux</p>
+          <div
+            className="rounded-3xl p-8 sm:p-10"
+            style={{
+              background: "linear-gradient(140deg, rgba(139,92,246,0.10) 0%, rgba(20,18,35,0.92) 70%)",
+              border: "2px solid rgba(139,92,246,0.55)",
+              boxShadow: "0 0 0 1px rgba(139,92,246,0.18), 0 24px 60px -22px rgba(139,92,246,0.45), 0 0 80px -28px rgba(99,102,241,0.4)",
+              backdropFilter: "blur(20px)",
+            }}
+          >
+            <h1 className="text-3xl font-extrabold text-white mb-2 tracking-tight">Elige tu username</h1>
+            <p className="text-white/85 text-base mb-7">Este será tu nombre público en Dokiflux</p>
 
-            <form onSubmit={handleUsernameSubmit} className="space-y-4">
+            <form onSubmit={handleUsernameSubmit} className="space-y-5">
               {error && (
-                <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-xl">{error}</div>
+                <div className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 px-3 py-2.5 rounded-xl">{error}</div>
               )}
 
-              <div className="space-y-1.5">
-                <label htmlFor="username" className="text-sm font-medium text-white/70">Username</label>
+              <div className="space-y-2">
+                <label htmlFor="username" className="text-sm font-semibold text-white">Username</label>
                 <div className="relative">
                   <input
                     id="username"
@@ -127,28 +135,28 @@ export default function OnboardingPage() {
                     required
                     autoFocus
                     maxLength={30}
-                    className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 pr-10 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                    className="w-full rounded-xl bg-white/5 border-2 border-white/15 px-4 py-3.5 pr-11 text-base text-white placeholder:text-white/35 outline-none focus:border-violet-400/70 focus:ring-2 focus:ring-violet-500/30 transition-all"
                   />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    {checkStatus === "checking" && <Loader2 className="w-4 h-4 animate-spin text-white/40" />}
-                    {checkStatus === "available" && <Check className="w-4 h-4 text-emerald-400" />}
-                    {checkStatus === "taken" && <X className="w-4 h-4 text-red-400" />}
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                    {checkStatus === "checking" && <Loader2 className="w-5 h-5 animate-spin text-white/50" />}
+                    {checkStatus === "available" && <Check className="w-5 h-5 text-emerald-400" />}
+                    {checkStatus === "taken" && <X className="w-5 h-5 text-red-400" />}
                   </div>
                 </div>
-                <p className="text-xs text-white/30">3-30 caracteres. Letras, números, guiones y guiones bajos.</p>
+                <p className="text-xs text-white/55">3-30 caracteres. Letras, números, guiones y guiones bajos.</p>
               </div>
 
               {checkStatus === "taken" && suggestions.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs text-white/40">Sugerencias disponibles:</p>
-                  <div className="flex flex-wrap gap-1.5">
+                  <p className="text-xs font-medium text-white">Sugerencias disponibles:</p>
+                  <div className="flex flex-wrap gap-2">
                     {suggestions.map((s) => (
                       <button
                         key={s}
                         type="button"
                         onClick={() => { setUsername(s); setCheckStatus("available"); setSuggestions([]); }}
-                        className="text-xs px-2.5 py-1 rounded-lg text-white/70 hover:text-white transition-colors"
-                        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
+                        className="text-sm px-3 py-1.5 rounded-lg text-white hover:text-white transition-colors"
+                        style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.4)" }}
                       >
                         {s}
                       </button>
@@ -160,7 +168,7 @@ export default function OnboardingPage() {
               <Button
                 type="submit"
                 disabled={isLoading || username.length < 3 || checkStatus === "taken" || checkStatus === "checking"}
-                className="btn-primary w-full rounded-xl py-2.5 font-semibold"
+                className="btn-primary w-full rounded-xl py-3 text-base font-semibold"
                 size="lg"
               >
                 {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" />Guardando...</> : "Continuar"}
@@ -179,79 +187,77 @@ export default function OnboardingPage() {
             <div className="h-1.5 w-8 rounded-full" style={{ background: "#8b5cf6" }} />
           </div>
 
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white">¿Con qué quieres empezar?</h2>
-            <p className="mt-2 text-white/50 text-base">Elige cómo quieres crear tu primer proyecto</p>
+          <div className="text-center mb-10">
+            <h2 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">¿Con qué quieres empezar?</h2>
+            <p className="mt-3 text-white/85 text-lg">Elige cómo quieres crear tu primer proyecto</p>
           </div>
 
           {error && (
             <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-xl mb-6 text-center">{error}</div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2 mb-8">
+          <div className="grid gap-6 sm:grid-cols-2 mb-8">
             {/* ── Empezar de cero ── */}
             <button
               onClick={() => { window.location.href = "/app"; }}
-              className="group relative rounded-2xl p-7 text-left transition-all duration-300 cursor-pointer"
+              className="group relative rounded-2xl p-9 sm:p-10 text-left transition-all duration-300 cursor-pointer"
               style={{
-                background: "rgba(255,255,255,0.025)",
-                border: "1px solid rgba(255,255,255,0.07)",
+                background: "linear-gradient(140deg, rgba(139,92,246,0.10) 0%, rgba(20,18,35,0.92) 70%)",
+                border: "2px solid rgba(139,92,246,0.55)",
+                boxShadow: "0 0 0 1px rgba(139,92,246,0.18), 0 24px 60px -22px rgba(139,92,246,0.45), 0 0 80px -28px rgba(99,102,241,0.4)",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.border = "1px solid rgba(255,255,255,0.2)";
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)";
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 24px rgba(255,255,255,0.06)";
+                (e.currentTarget as HTMLButtonElement).style.border = "2px solid rgba(167,139,250,0.85)";
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 0 1px rgba(167,139,250,0.35), 0 28px 80px -20px rgba(139,92,246,0.6), 0 0 100px -20px rgba(99,102,241,0.55)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.border = "1px solid rgba(255,255,255,0.07)";
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.025)";
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
+                (e.currentTarget as HTMLButtonElement).style.border = "2px solid rgba(139,92,246,0.55)";
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 0 1px rgba(139,92,246,0.18), 0 24px 60px -22px rgba(139,92,246,0.45), 0 0 80px -28px rgba(99,102,241,0.4)";
               }}
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(139,92,246,0.12)" }}>
-                  <Rocket className="h-5 w-5 text-violet-400" />
+              <div className="flex items-center gap-4 mb-5">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "rgba(139,92,246,0.22)", border: "1px solid rgba(139,92,246,0.45)" }}>
+                  <Rocket className="h-7 w-7" style={{ color: "#c4b5fd" }} />
                 </div>
-                <span className="text-lg font-bold text-white">Empezar de cero</span>
+                <span className="text-2xl font-bold text-white">Empezar de cero</span>
               </div>
-              <p className="text-sm text-white/45 leading-relaxed mb-4">
+              <p className="text-base text-white leading-relaxed mb-6">
                 Crea tu proyecto con tu propia descripción desde la pantalla principal.
               </p>
-              <div className="flex items-center gap-1 text-sm font-medium text-violet-400 group-hover:text-violet-300 transition-colors">
-                Ir al generador <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <div className="flex items-center gap-2 text-base font-semibold text-white group-hover:text-violet-200 transition-colors">
+                Ir al generador <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </div>
             </button>
 
             {/* ── Usar template ── */}
             <button
               onClick={() => { router.push("/app/templates"); }}
-              className="group relative rounded-2xl p-7 text-left transition-all duration-300 cursor-pointer"
+              className="group relative rounded-2xl p-9 sm:p-10 text-left transition-all duration-300 cursor-pointer"
               style={{
-                background: "rgba(255,255,255,0.025)",
-                border: "1px solid rgba(255,255,255,0.07)",
+                background: "linear-gradient(140deg, rgba(99,102,241,0.10) 0%, rgba(20,18,35,0.92) 70%)",
+                border: "2px solid rgba(139,92,246,0.55)",
+                boxShadow: "0 0 0 1px rgba(139,92,246,0.18), 0 24px 60px -22px rgba(139,92,246,0.45), 0 0 80px -28px rgba(99,102,241,0.4)",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.border = "1px solid rgba(139,92,246,0.35)";
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(139,92,246,0.06)";
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 24px rgba(139,92,246,0.12)";
+                (e.currentTarget as HTMLButtonElement).style.border = "2px solid rgba(167,139,250,0.85)";
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 0 1px rgba(167,139,250,0.35), 0 28px 80px -20px rgba(139,92,246,0.6), 0 0 100px -20px rgba(99,102,241,0.55)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.border = "1px solid rgba(255,255,255,0.07)";
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.025)";
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
+                (e.currentTarget as HTMLButtonElement).style.border = "2px solid rgba(139,92,246,0.55)";
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 0 1px rgba(139,92,246,0.18), 0 24px 60px -22px rgba(139,92,246,0.45), 0 0 80px -28px rgba(99,102,241,0.4)";
               }}
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(139,92,246,0.12)" }}>
-                  <LayoutTemplate className="h-5 w-5 text-violet-400" />
+              <div className="flex items-center gap-4 mb-5">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "rgba(139,92,246,0.22)", border: "1px solid rgba(139,92,246,0.45)" }}>
+                  <LayoutTemplate className="h-7 w-7" style={{ color: "#c4b5fd" }} />
                 </div>
-                <span className="text-lg font-bold text-white">Usar un template</span>
+                <span className="text-2xl font-bold text-white">Usar un template</span>
               </div>
-              <p className="text-sm text-white/45 leading-relaxed mb-4">
+              <p className="text-base text-white leading-relaxed mb-6">
                 Elige entre proyectos predefinidos: landing, e-commerce, portfolio…
               </p>
-              <div className="flex items-center gap-1 text-sm font-medium text-violet-400 group-hover:text-violet-300 transition-colors">
-                Ver templates <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <div className="flex items-center gap-2 text-base font-semibold text-white group-hover:text-violet-200 transition-colors">
+                Ver templates <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </div>
             </button>
           </div>
