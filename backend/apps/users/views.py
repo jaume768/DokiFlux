@@ -175,6 +175,20 @@ class RegisterView(APIView):
             is_email_verified=auto_verify,
         )
 
+        # Meta Ads: track registration (server-side, deduplicated by Pixel via event_id)
+        try:
+            from apps.marketing.meta_capi import track_from_request
+
+            track_from_request(
+                request,
+                "CompleteRegistration",
+                email=user.email,
+                external_id=str(user.id),
+                custom_data={"method": "email"},
+            )
+        except Exception:
+            logger.exception("Meta CAPI tracking failed for register %s", user.id)
+
         if auto_verify:
             # DEV: auto-verified, set cookies and return user
             tokens = _get_tokens_for_user(user)
@@ -552,6 +566,20 @@ class GoogleAuthView(APIView):
             if not user.is_email_verified:
                 user.is_email_verified = True
                 user.save(update_fields=["is_email_verified"])
+        else:
+            # Meta Ads: track registration via Google
+            try:
+                from apps.marketing.meta_capi import track_from_request
+
+                track_from_request(
+                    request,
+                    "CompleteRegistration",
+                    email=user.email,
+                    external_id=str(user.id),
+                    custom_data={"method": "google"},
+                )
+            except Exception:
+                logger.exception("Meta CAPI tracking failed for google-register %s", user.id)
 
         tokens = _get_tokens_for_user(user)
         response = Response({"user": UserSerializer(user).data, "created": created})

@@ -226,6 +226,24 @@ class ContactRequestView(APIView):
         serializer.is_valid(raise_exception=True)
         contact = serializer.save(user=user)
 
+        # Meta Ads: track lead from contact form
+        try:
+            from apps.marketing.meta_capi import track_from_request
+
+            track_from_request(
+                request,
+                "Lead",
+                email=contact.email,
+                external_id=str(contact.id),
+                custom_data={"source": "contact_form"},
+            )
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).exception(
+                "Meta CAPI tracking failed for contact %s", contact.id
+            )
+
         try:
             from apps.users.services.email import email_service
 

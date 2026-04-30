@@ -18,6 +18,11 @@ import type {
 } from "@/types/auth";
 import { apiPost, apiGet } from "@/lib/api";
 import { demoMigrate, hasDemoState, type DemoMigrateResponse } from "@/lib/demo";
+import {
+  metaTrackingHeaders,
+  newMetaEventId,
+  trackMetaEvent,
+} from "@/lib/metaPixel";
 
 /**
  * Migrate an anonymous demo session into the just-authenticated user's account.
@@ -169,9 +174,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(
     async (data: RegisterRequest): Promise<AuthResponse> => {
+      const eventId = newMetaEventId();
       const res = await apiPost<AuthResponse>("/auth/register/", data, {
         auth: false,
+        headers: metaTrackingHeaders(eventId),
       });
+      // Pixel side of the dedup pair (CAPI is fired by the backend).
+      trackMetaEvent("CompleteRegistration", eventId, { method: "email" });
 
       if (res.user?.is_email_verified) {
         // AUTO_VERIFY_EMAIL=True (dev) — cookies already set, go straight to onboarding
@@ -189,7 +198,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = useCallback(
     async (code: string, redirectUri: string) => {
-      const res = await apiPost<AuthResponse>("/auth/google/", { code, redirect_uri: redirectUri }, { auth: false });
+      const eventId = newMetaEventId();
+      const res = await apiPost<AuthResponse>(
+        "/auth/google/",
+        { code, redirect_uri: redirectUri },
+        { auth: false, headers: metaTrackingHeaders(eventId) }
+      );
+      // Only fire Pixel if this was a new user (created=true on the backend);
+      // otherwise it's just a login and Meta would double-count registrations.
+      const created = (res as unknown as { created?: boolean }).created;
+      if (created) {
+        trackMetaEvent("CompleteRegistration", eventId, { method: "google" });
+      }
       setUser(res.user);
       refreshBalance();
 

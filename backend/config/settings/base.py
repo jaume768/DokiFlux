@@ -45,6 +45,7 @@ LOCAL_APPS = [
     "apps.billing",
     "apps.generation",
     "apps.demo",
+    "apps.marketing",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -157,6 +158,15 @@ CORS_ALLOWED_ORIGINS = config(
     default="http://localhost:3000",
     cast=Csv(),
 )
+
+# Allow Meta tracking headers from the frontend (event_id + _fbp/_fbc).
+from corsheaders.defaults import default_headers as _default_cors_headers  # noqa: E402
+
+CORS_ALLOW_HEADERS = list(_default_cors_headers) + [
+    "x-meta-event-id",
+    "x-meta-fbp",
+    "x-meta-fbc",
+]
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = config(
@@ -245,3 +255,11 @@ DEMO_MAX_SESSIONS_PER_FP_24H = config("DEMO_MAX_SESSIONS_PER_FP_24H", default=1,
 # during development.
 DEMO_DEV_MODE = config("DEMO_DEV_MODE", default=None, cast=lambda v: (str(v).lower() in ("1", "true", "yes")) if v is not None else None)
 TRUSTED_PROXIES = config("TRUSTED_PROXIES", default="", cast=Csv())
+
+# --- Meta Ads (Pixel + Conversions API) ---
+# Pixel/Dataset ID from Meta Events Manager. Used by both browser Pixel and CAPI.
+META_PIXEL_ID = config("META_PIXEL_ID", default="")
+# CAPI access token (server-side only — never expose to the browser).
+META_CAPI_TOKEN = config("META_CAPI_TOKEN", default="")
+# Optional: when set, events are flagged as test in Events Manager → Test Events.
+META_CAPI_TEST_EVENT_CODE = config("META_CAPI_TEST_EVENT_CODE", default="")

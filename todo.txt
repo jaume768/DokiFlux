@@ -1,13 +1,8 @@
-9- pricing (falta revisar los pricing y compra de craditos adicionales):
-12- “Si la generación no modifica archivos o falla sin producir avance, no se cobra (o se cobra 0)” (revisar esta estrategia)
-13- Que hacer cuando el usuario quiere iterar sobre un proyecto grande? Limite de los modelos en el output/input? (multi api keys y ir cambiando de uno a otro según el rate limit)
-15- Capacidad de volver al estado anterior (con backend)
 18- Integraciones mínimas orientadas a valor:
 
     - Auth + pagos (por ejemplo Stripe), DB provider popular (por ejemplo Supabase) y logging/errores (por ejemplo Sentry), 
     pero con setup explícito y guardrails. (El objetivo no es “100 integraciones”, es “3 que eviten re‑prompts”).    
     
-23- Añadir templates y poder hacer proyectos "Del staff" como templates con los prompts
 40- Multiidioma a Español y el Ingles
 41- logs de auditoria (tabla donde guardar todos los logs para auditoria)
 44- formulario de "No sabes como empezar? pulsa aqui para que te ayudemos en 3 pasos" 

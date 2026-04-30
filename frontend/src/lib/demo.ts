@@ -57,10 +57,20 @@ export interface DemoStartError {
 }
 
 export async function demoStart(args: DemoStartArgs): Promise<DemoSessionState> {
+  // Generate a Meta event_id and forward _fbp/_fbc so the backend CAPI event
+  // dedupes against the browser Pixel event we fire below.
+  const { metaTrackingHeaders, newMetaEventId, trackMetaEvent } = await import(
+    "@/lib/metaPixel"
+  );
+  const eventId = newMetaEventId();
+
   const res = await fetch(`${API_BASE}/demo/start/`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...metaTrackingHeaders(eventId),
+    },
     body: JSON.stringify({
       fingerprint: args.fingerprint,
       prompt: args.prompt || "",
@@ -78,6 +88,14 @@ export async function demoStart(args: DemoStartArgs): Promise<DemoSessionState> 
   }
   const state = data as DemoSessionState;
   writeDemoState(state);
+  // 201 = brand-new session was created → count as a demo start in Meta Ads.
+  // 200 = reused an existing session, do not double-count.
+  if (res.status === 201) {
+    trackMetaEvent("StartTrial", eventId, {
+      framework: args.framework || "react",
+      source: "demo",
+    });
+  }
   return state;
 }
 

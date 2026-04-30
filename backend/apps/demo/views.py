@@ -154,6 +154,18 @@ class DemoStartView(APIView):
             framework=framework,
             initial_prompt=prompt[:1000],
         )
+        # Meta Ads: track demo start (brand-new anonymous session)
+        try:
+            from apps.marketing.meta_capi import track_from_request
+
+            track_from_request(
+                request,
+                "StartTrial",
+                external_id=str(session.session_id),
+                custom_data={"framework": framework, "source": "demo"},
+            )
+        except Exception:
+            logger.exception("Meta CAPI tracking failed for demo start %s", session.session_id)
         resp = Response(_session_payload(session), status=status.HTTP_201_CREATED)
         set_demo_cookie(resp, session.session_id)
         return resp
