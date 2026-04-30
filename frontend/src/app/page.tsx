@@ -27,7 +27,6 @@ export default function LandingPage() {
         <DualPersona />
         <ComparisonV2 />
         <TemplatesShowcase />
-        <Testimonials />
         <FinalCTA />
       </main>
       <Footer />
