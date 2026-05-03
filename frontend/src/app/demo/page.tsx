@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   Zap,
   Lock,
+  ExternalLink,
 } from "lucide-react";
 import { ChatPanel } from "@/components/ChatPanel";
 import { PromptInput } from "@/components/PromptInput";
@@ -49,6 +50,7 @@ import {
 import { useFingerprint } from "@/hooks/useFingerprint";
 import { useAuth } from "@/context/AuthContext";
 import { useIsMobile, useIsIOS } from "@/hooks/useIsMobile";
+import { getEmbeddedBrowserName } from "@/lib/embeddedBrowser";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -60,6 +62,7 @@ export default function DemoPage() {
   const fingerprint = useFingerprint();
   const isMobile = useIsMobile();
   const isIOS = useIsIOS();
+  const [embeddedBrowserName, setEmbeddedBrowserName] = useState<string | null>(null);
 
   const [session, setSession] = useState<DemoSessionState | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
@@ -91,6 +94,10 @@ export default function DemoPage() {
   const currentFilesRef = useRef<FileMap>({});
   const messagesRef = useRef<Message[]>([]);
   const hasAutoRunRef = useRef(false);
+
+  useEffect(() => {
+    setEmbeddedBrowserName(getEmbeddedBrowserName());
+  }, []);
 
   currentFilesRef.current = currentFiles;
   messagesRef.current = messages;
@@ -826,7 +833,22 @@ export default function DemoPage() {
         {/* Preview */}
         {showPreview && (
           <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-            {Object.keys(currentFiles).length === 0 && !isLoading ? (
+            {embeddedBrowserName ? (
+              <div className="flex-1 flex items-center justify-center px-6 text-center">
+                <div className="max-w-md rounded-2xl border bg-background p-6 shadow-2xl">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300">
+                    <ExternalLink className="h-7 w-7" />
+                  </div>
+                  <h2 className="text-xl font-bold mb-3">Abre la demo en tu navegador</h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                    La vista previa interactiva no está disponible dentro del navegador de {embeddedBrowserName}. Ábrelo en Chrome/Safari para ver la demo.
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Toca los tres puntos arriba a la derecha → “Abrir en navegador”.
+                  </p>
+                </div>
+              </div>
+            ) : Object.keys(currentFiles).length === 0 && !isLoading ? (
               <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm px-6 text-center">
                 Tu vista previa aparecerá aquí cuando se genere el primer archivo.
               </div>

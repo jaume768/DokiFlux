@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { useFingerprint } from "@/hooks/useFingerprint";
 import { demoStart, writeDemoState } from "@/lib/demo";
+import { EmbeddedBrowserDemoModal } from "@/components/EmbeddedBrowserDemoModal";
+import { getEmbeddedBrowserName } from "@/lib/embeddedBrowser";
 
 const SUGGESTIONS = [
   { text: "Landing page para cafetería", icon: Coffee },
@@ -25,6 +27,8 @@ export function DemoChatInput() {
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
+  const [embeddedBrowserName, setEmbeddedBrowserName] = useState<string | null>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fingerprint = useFingerprint();
@@ -53,6 +57,12 @@ export function DemoChatInput() {
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!prompt.trim() || isStarting) return;
+    const embeddedName = getEmbeddedBrowserName();
+    if (embeddedName) {
+      setEmbeddedBrowserName(embeddedName);
+      setDemoBlockedOpen(true);
+      return;
+    }
     setIsStarting(true);
     setError(null);
     try {
@@ -243,6 +253,11 @@ export function DemoChatInput() {
           </div>
         </form>
       </div>
+      <EmbeddedBrowserDemoModal
+        open={demoBlockedOpen}
+        onClose={() => setDemoBlockedOpen(false)}
+        browserName={embeddedBrowserName}
+      />
     </section>
   );
 }

@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { EmbeddedBrowserDemoModal } from "@/components/EmbeddedBrowserDemoModal";
+import { getEmbeddedBrowserName } from "@/lib/embeddedBrowser";
 
 const NAV_LINKS = [
   { label: "Cómo funciona", href: "#como-funciona" },
@@ -15,6 +17,8 @@ const NAV_LINKS = [
 export function LandingNavbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
+  const [embeddedBrowserName, setEmbeddedBrowserName] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -33,6 +37,15 @@ export function LandingNavbar() {
       };
     }
   }, [mobileOpen]);
+
+  function handleDemoClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    const name = getEmbeddedBrowserName();
+    if (!name) return;
+    e.preventDefault();
+    setMobileOpen(false);
+    setEmbeddedBrowserName(name);
+    setDemoBlockedOpen(true);
+  }
 
   return (
     <header
@@ -85,6 +98,7 @@ export function LandingNavbar() {
                 {/* Hard <a> — /demo needs full page load to get COOP/COEP headers */}
                 <a
                   href="/demo"
+                  onClick={handleDemoClick}
                   className="btn-primary relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[15px] font-semibold text-white"
                 >
                   <span className="relative z-10">Probar demo</span>
@@ -193,7 +207,10 @@ export function LandingNavbar() {
               </Link>
               <a
                 href="/demo"
-                onClick={() => setMobileOpen(false)}
+                onClick={(e) => {
+                  setMobileOpen(false);
+                  handleDemoClick(e);
+                }}
                 className="btn-primary relative flex items-center justify-center rounded-xl px-5 py-3 text-[15px] font-semibold text-white"
               >
                 <span className="relative z-10">Empieza gratis</span>
@@ -202,6 +219,11 @@ export function LandingNavbar() {
           )}
         </div>
       </aside>
+      <EmbeddedBrowserDemoModal
+        open={demoBlockedOpen}
+        onClose={() => setDemoBlockedOpen(false)}
+        browserName={embeddedBrowserName}
+      />
     </header>
   );
 }

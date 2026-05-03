@@ -20,6 +20,8 @@ import {
 import { useFingerprint } from "@/hooks/useFingerprint";
 import { demoStart, writeDemoState } from "@/lib/demo";
 import { ContactModal } from "@/components/ContactModal";
+import { EmbeddedBrowserDemoModal } from "@/components/EmbeddedBrowserDemoModal";
+import { getEmbeddedBrowserName } from "@/lib/embeddedBrowser";
 
 const CHIPS = [
   "Landing SaaS",
@@ -74,6 +76,8 @@ export function Hero() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
   const [contactOpen, setContactOpen] = useState(false);
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
+  const [embeddedBrowserName, setEmbeddedBrowserName] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fingerprint = useFingerprint();
 
@@ -92,6 +96,12 @@ export function Hero() {
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!prompt.trim() || isStarting) return;
+    const embeddedName = getEmbeddedBrowserName();
+    if (embeddedName) {
+      setEmbeddedBrowserName(embeddedName);
+      setDemoBlockedOpen(true);
+      return;
+    }
     setIsStarting(true);
     setError(null);
     try {
@@ -119,6 +129,14 @@ export function Hero() {
       e.preventDefault();
       handleSubmit();
     }
+  }
+
+  function handleDemoLinkClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    const embeddedName = getEmbeddedBrowserName();
+    if (!embeddedName) return;
+    e.preventDefault();
+    setEmbeddedBrowserName(embeddedName);
+    setDemoBlockedOpen(true);
   }
 
   const fadeIn = (delay: number) => ({
@@ -181,6 +199,7 @@ export function Hero() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5" style={fadeIn(0.24)}>
               <Link
                 href="/demo"
+                onClick={handleDemoLinkClick}
                 className="btn-primary group inline-flex items-center justify-center gap-2 text-[15px] font-bold text-white px-6 py-3.5 rounded-xl cursor-pointer"
                 style={{ boxShadow: "0 0 32px rgba(139,92,246,0.30)" }}
               >
@@ -471,6 +490,11 @@ export function Hero() {
         title="Habla con el equipo"
         subtitle="Cuéntanos tu caso y te contactamos en menos de 24h. Sin compromiso."
         source="hero"
+      />
+      <EmbeddedBrowserDemoModal
+        open={demoBlockedOpen}
+        onClose={() => setDemoBlockedOpen(false)}
+        browserName={embeddedBrowserName}
       />
     </section>
   );

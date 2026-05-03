@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import { ArrowRight, Zap } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { EmbeddedBrowserDemoModal } from "@/components/EmbeddedBrowserDemoModal";
+import { getEmbeddedBrowserName } from "@/lib/embeddedBrowser";
 
 function DotGrid() {
   const dots: { top: string; left: string; opacity: number }[] = [];
@@ -40,6 +41,8 @@ function DotGrid() {
 export function FinalCTA() {
   const [visible, setVisible] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
+  const [embeddedBrowserName, setEmbeddedBrowserName] = useState<string | null>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,6 +58,14 @@ export function FinalCTA() {
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
+
+  function handleDemoClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    const name = getEmbeddedBrowserName();
+    if (!name) return;
+    e.preventDefault();
+    setEmbeddedBrowserName(name);
+    setDemoBlockedOpen(true);
+  }
 
   return (
     <section
@@ -150,6 +161,7 @@ export function FinalCTA() {
         >
           <a
             href="/demo"
+            onClick={handleDemoClick}
             className="btn-primary relative group inline-flex items-center gap-3 text-base sm:text-lg font-bold text-white px-9 py-5 rounded-2xl"
             style={{
               boxShadow: hovered
@@ -201,6 +213,11 @@ export function FinalCTA() {
           }}
         />
       </div>
+      <EmbeddedBrowserDemoModal
+        open={demoBlockedOpen}
+        onClose={() => setDemoBlockedOpen(false)}
+        browserName={embeddedBrowserName}
+      />
     </section>
   );
 }

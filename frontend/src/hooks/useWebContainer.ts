@@ -5,6 +5,7 @@ import { WebContainer } from "@webcontainer/api";
 import type { FileMap } from "@/lib/parser";
 import type { FrameworkId } from "@/lib/frameworks";
 import { getScaffold } from "@/lib/scaffolds";
+import { getEmbeddedBrowserName } from "@/lib/embeddedBrowser";
 
 export type ContainerStatus =
   | "idle"
@@ -72,6 +73,12 @@ async function bootWebContainer(): Promise<WebContainer> {
       // crossOriginIsolated is true, which depends on COOP/COEP headers from
       // the initial page load. Force a hard reload if missing — one-shot, no retry.
       if (typeof window !== "undefined" && !window.crossOriginIsolated) {
+        const embeddedName = getEmbeddedBrowserName();
+        if (embeddedName) {
+          throw new Error(
+            `La vista previa interactiva no está disponible dentro del navegador de ${embeddedName}. Ábrelo en Chrome/Safari para ver la demo.`
+          );
+        }
         console.warn("[WebContainer] crossOriginIsolated is false – reloading to apply COOP/COEP headers.");
         window.location.reload();
         return new Promise<WebContainer>(() => {});
