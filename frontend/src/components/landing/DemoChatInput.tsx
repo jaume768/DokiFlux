@@ -16,7 +16,7 @@ import { EmbeddedBrowserDemoModal } from "@/components/EmbeddedBrowserDemoModal"
 import { getEmbeddedBrowserName } from "@/lib/embeddedBrowser";
 
 const SUGGESTIONS = [
-  { text: "Landing page para cafetería", icon: Coffee },
+  { text: "Web para una cafetería", icon: Coffee },
   { text: "Dashboard con KPIs", icon: BarChart3 },
   { text: "App de tareas con drag & drop", icon: CheckSquare },
   { text: "Portfolio para diseñador", icon: Palette },
