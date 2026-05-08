@@ -1,5 +1,6 @@
 """Anti-abuse helpers for demo mode: IP hashing, quota checks, client identity."""
 import hashlib
+import ipaddress
 import logging
 from datetime import timedelta
 
@@ -51,15 +52,38 @@ def get_client_ip(request) -> str:
     """
     trusted = getattr(settings, "TRUSTED_PROXIES", [])
     remote_addr = request.META.get("REMOTE_ADDR", "")
-    if settings.DEBUG or (trusted and remote_addr in trusted):
+    trust_forwarded = settings.DEBUG or _is_trusted_proxy(remote_addr, trusted)
+    if trust_forwarded:
         xff = request.META.get("HTTP_X_FORWARDED_FOR", "")
         if xff:
             return xff.split(",")[0].strip()
     return remote_addr or "unknown"
 
 
+def _is_trusted_proxy(remote_addr: str, trusted: list[str]) -> bool:
+    if not trusted or not remote_addr:
+        return False
+    if "*" in trusted:
+        return True
+    if remote_addr in trusted:
+        return True
+    try:
+        remote_ip = ipaddress.ip_address(remote_addr)
+    except ValueError:
+        return False
+    for item in trusted:
+        try:
+            if "/" in item and remote_ip in ipaddress.ip_network(item, strict=False):
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 def over_ip_quota(ip_hash: str) -> bool:
     if is_dev_mode():
+        return False
+    if DEMO_MAX_SESSIONS_PER_IP_24H <= 0:
         return False
     from .models import DemoSession
     since = now() - timedelta(hours=24)
