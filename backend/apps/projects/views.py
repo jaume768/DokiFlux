@@ -1,15 +1,18 @@
 from django.db.models import Count
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.generation.models import Generation
-from .models import ChatMessage, ContactRequest, Project, ProjectExportLog
+from .models import ChatMessage, ContactRequest, Project, ProjectAsset, ProjectExportLog
 from .permissions import IsProjectOwner
 from .serializers import (
     ChatMessageSerializer,
     ContactRequestSerializer,
+    ProjectAssetSerializer,
     ProjectCreateSerializer,
     ProjectDetailSerializer,
     ProjectListSerializer,
@@ -115,6 +118,55 @@ class ChatMessageListView(generics.ListAPIView):
         return ChatMessage.objects.filter(
             project_id=project_id,
             project__user=self.request.user,
+        )
+
+
+class ProjectAssetListCreateView(generics.ListCreateAPIView):
+    serializer_class = ProjectAssetSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_project(self):
+        return get_object_or_404(Project, id=self.kwargs["project_id"], user=self.request.user)
+
+    def get_queryset(self):
+        return ProjectAsset.objects.filter(project=self.get_project(), user=self.request.user)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["uploaded_file"] = self.request.FILES.get("file")
+        return context
+
+    def create(self, request, *args, **kwargs):
+        project = self.get_project()
+        uploaded = request.FILES.get("file")
+        if not uploaded:
+            return Response({"error": "La imagen es obligatoria."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        asset = serializer.save(
+            project=project,
+            user=request.user,
+            file=uploaded,
+            original_name=uploaded.name,
+            mime_type=uploaded.content_type or "",
+            size=uploaded.size,
+        )
+        return Response(
+            ProjectAssetSerializer(asset, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class ProjectAssetDetailView(generics.DestroyAPIView):
+    serializer_class = ProjectAssetSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ProjectAsset.objects.filter(
+            project_id=self.kwargs["project_id"],
+            project__user=self.request.user,
+            user=self.request.user,
         )
 
 

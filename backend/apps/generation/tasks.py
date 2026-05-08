@@ -75,7 +75,10 @@ def run_background_generation(self, generation_id: int):
         if file_map else None
     )
 
-    messages = build_messages(prompt, current_project, chat_history, framework=framework)
+    from .services import _serialize_project_assets
+
+    project_assets = _serialize_project_assets(project)
+    messages = build_messages(prompt, current_project, chat_history, framework=framework, project_assets=project_assets)
     provider = get_provider(model)
     model_config = get_model_config(model)
     # Mirror of services.py: 24k cap to avoid mid-file truncation.
@@ -162,6 +165,7 @@ def run_background_generation(self, generation_id: int):
                 already_generated=already_gen_ctx,
                 chat_history=chat_history,
                 framework=framework,
+                project_assets=project_assets,
             )
 
             file_raw = ""

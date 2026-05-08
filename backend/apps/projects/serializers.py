@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import ChatMessage, ContactRequest, Project
+from .models import ChatMessage, ContactRequest, Project, ProjectAsset
 
 
 class ProjectListSerializer(serializers.ModelSerializer):
@@ -61,6 +61,57 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
         model = Project
         fields = ["id", "name", "description", "framework"]
         read_only_fields = ["id"]
+
+
+class ProjectAssetSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProjectAsset
+        fields = [
+            "id",
+            "url",
+            "original_name",
+            "kind",
+            "mime_type",
+            "size",
+            "width",
+            "height",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "url",
+            "original_name",
+            "mime_type",
+            "size",
+            "width",
+            "height",
+            "created_at",
+        ]
+
+    def get_url(self, obj):
+        request = self.context.get("request")
+        if not obj.file:
+            return ""
+        url = obj.file.url
+        if request and url.startswith("/"):
+            return request.build_absolute_uri(url)
+        return url
+
+    def validate_kind(self, value):
+        return value or "other"
+
+    def validate(self, attrs):
+        uploaded = self.context.get("uploaded_file")
+        if uploaded:
+            allowed_types = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+            if uploaded.content_type not in allowed_types:
+                raise serializers.ValidationError("Formato no permitido. Usa JPG, PNG, WebP o GIF.")
+            max_size = 8 * 1024 * 1024
+            if uploaded.size > max_size:
+                raise serializers.ValidationError("La imagen no puede superar 8 MB.")
+        return attrs
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):

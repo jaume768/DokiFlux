@@ -137,6 +137,66 @@ export async function api<T = unknown>(
   return res.json();
 }
 
+export async function apiForm<T = unknown>(
+  path: string,
+  formData: FormData,
+  options: Omit<ApiOptions, "body"> = {}
+): Promise<T> {
+  const { auth = true, rawResponse = false, ...fetchOptions } = options;
+  const headers: Record<string, string> = {
+    ...(fetchOptions.headers as Record<string, string>),
+  };
+  const method = (fetchOptions.method || "POST").toUpperCase();
+  if (!["GET", "HEAD", "OPTIONS", "TRACE"].includes(method) && !headers["X-CSRFToken"]) {
+    const csrfToken = await ensureCsrfToken();
+    if (csrfToken) headers["X-CSRFToken"] = csrfToken;
+  }
+  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+  let res = await fetch(url, {
+    ...fetchOptions,
+    method,
+    headers,
+    credentials: "include",
+    body: formData,
+  });
+  if (res.status === 401 && auth) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      refreshPromise = refreshAccessToken();
+    }
+    const refreshed = await refreshPromise;
+    isRefreshing = false;
+    refreshPromise = null;
+    if (refreshed) {
+      res = await fetch(url, {
+        ...fetchOptions,
+        method,
+        headers,
+        credentials: "include",
+        body: formData,
+      });
+    } else {
+      throw new ApiError(401, { detail: "Session expired" });
+    }
+  }
+  if (rawResponse) {
+    return res as unknown as T;
+  }
+  if (!res.ok) {
+    let data: unknown;
+    try {
+      data = await res.json();
+    } catch {
+      data = await res.text();
+    }
+    throw new ApiError(res.status, data);
+  }
+  if (res.status === 204) {
+    return undefined as T;
+  }
+  return res.json();
+}
+
 // --- Convenience wrappers ---
 
 export function apiGet<T>(path: string, options?: ApiOptions) {

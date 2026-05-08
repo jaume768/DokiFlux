@@ -171,6 +171,7 @@ def build_messages(
     current_project: str | None,
     chat_history: list[dict],
     framework: str = "react",
+    project_assets: list[dict] | None = None,
 ) -> list[dict]:
     """
     Build the message list for the AI provider.
@@ -194,6 +195,12 @@ def build_messages(
             "content": f"Current project state (all files):\n{current_project}",
         })
 
+    if project_assets:
+        messages.append({
+            "role": "developer",
+            "content": _format_project_assets_context(project_assets),
+        })
+
     for msg in _sanitize_chat_history(chat_history):
         messages.append({
             "role": msg["role"],
@@ -202,6 +209,48 @@ def build_messages(
 
     messages.append({"role": "user", "content": prompt})
     return messages
+
+
+def _serialize_project_assets(project: Project) -> list[dict]:
+    assets = []
+    for asset in project.assets.all()[:20]:
+        if not asset.file:
+            continue
+        assets.append({
+            "name": asset.original_name,
+            "kind": asset.kind,
+            "url": asset.file.url,
+            "mime_type": asset.mime_type,
+            "width": asset.width,
+            "height": asset.height,
+        })
+    return assets
+
+
+def _format_project_assets_context(project_assets: list[dict]) -> str:
+    lines = [
+        "User-uploaded project assets are available for this project.",
+        "Rules:",
+        "- Prefer these exact image URLs over Unsplash whenever they fit the UI.",
+        "- Use logo assets in nav/header/brand areas when relevant.",
+        "- Use hero assets in hero sections, backgrounds, or main visual areas when relevant.",
+        "- Use product/gallery/background assets according to their kind.",
+        "- Do not invent local file paths for these assets; use the exact URLs below.",
+        "- Only use Unsplash when no suitable uploaded asset exists.",
+        "",
+        "Assets:",
+    ]
+    for idx, asset in enumerate(project_assets, start=1):
+        meta = []
+        if asset.get("width") and asset.get("height"):
+            meta.append(f"{asset['width']}x{asset['height']}")
+        if asset.get("mime_type"):
+            meta.append(asset["mime_type"])
+        meta_text = f" ({', '.join(meta)})" if meta else ""
+        lines.append(
+            f"{idx}. {asset.get('name', 'asset')} — kind: {asset.get('kind', 'other')} — url: {asset.get('url')}{meta_text}"
+        )
+    return "\n".join(lines)
 
 
 async def stream_generation(
@@ -241,7 +290,8 @@ async def stream_generation(
         )
 
     # 3. Build messages
-    messages = build_messages(prompt, current_project, chat_history, framework=framework)
+    project_assets = await sync_to_async(_serialize_project_assets)(project)
+    messages = build_messages(prompt, current_project, chat_history, framework=framework, project_assets=project_assets)
 
     # 4. Create Generation record (with snapshot of current state)
     generation = await _create_generation(user, project, prompt, model, file_map or {}, is_autofix, chat_history)
@@ -315,6 +365,7 @@ def _build_file_messages(
     already_generated: str | None,
     chat_history: list[dict],
     framework: str = "react",
+    project_assets: list[dict] | None = None,
 ) -> list[dict]:
     """Build the message list for generating a single file."""
     from .providers.prompts import get_framework_override
@@ -324,6 +375,8 @@ def _build_file_messages(
         context_parts.append(f"Existing project files:\n{current_project}")
     if already_generated:
         context_parts.append(f"Files already generated in this session:\n{already_generated}")
+    if project_assets:
+        context_parts.append(_format_project_assets_context(project_assets))
     context_parts.append(f"\nYour task: Generate ONLY the file '{file_path}'.")
 
     messages: list[dict] = []
@@ -470,7 +523,8 @@ async def stream_phased_generation(
         )
 
     # 3. Build planner messages (same structure as standard, without system prompt override)
-    planner_messages = build_messages(prompt, current_project, chat_history, framework=framework)
+    project_assets = await sync_to_async(_serialize_project_assets)(project)
+    planner_messages = build_messages(prompt, current_project, chat_history, framework=framework, project_assets=project_assets)
 
     # 4. Create generation record
     generation = await _create_generation(user, project, prompt, model, file_map or {}, is_autofix, chat_history)
@@ -598,6 +652,7 @@ async def stream_phased_generation(
                 already_generated=already_gen_ctx,
                 chat_history=chat_history,
                 framework=framework,
+                project_assets=project_assets,
             )
 
             file_raw = ""

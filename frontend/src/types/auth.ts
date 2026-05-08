@@ -96,6 +96,20 @@ export interface ProjectDetail {
   file_map_size_kb?: number;
 }
 
+export type ProjectAssetKind = "logo" | "hero" | "product" | "gallery" | "background" | "other";
+
+export interface ProjectAsset {
+  id: number;
+  url: string;
+  original_name: string;
+  kind: ProjectAssetKind;
+  mime_type: string;
+  size: number;
+  width?: number | null;
+  height?: number | null;
+  created_at: string;
+}
+
 export interface ProjectCreateRequest {
   name: string;
   description?: string;

@@ -197,7 +197,7 @@ GENERAL RULES:
 2. Use Tailwind CSS utility classes for ALL styling.
 3. You may import and use icons from "lucide-react".
 4. Import React hooks from "react".
-5. Use realistic placeholder data with Unsplash images.
+5. Use user-provided project assets when available. Only use Unsplash images as fallback placeholders.
 6. Respond ONLY with code using the multi-file format. No markdown fences, no explanations outside of code.
 7. Always include proper TypeScript types.
 8. For multi-page apps, use react-router-dom for URL-based navigation.

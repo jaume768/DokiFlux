@@ -1,5 +1,8 @@
 from django.conf import settings
 from django.db import models
+from django.utils.text import slugify
+import os
+import uuid
 
 
 class Project(models.Model):
@@ -78,6 +81,49 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"[{self.role}] {self.content[:50]}..."
+
+
+def project_asset_upload_path(instance, filename):
+    ext = os.path.splitext(filename)[1].lower()
+    safe_name = slugify(os.path.splitext(filename)[0])[:60] or "asset"
+    return f"projects/{instance.project_id}/assets/{uuid.uuid4().hex}-{safe_name}{ext}"
+
+
+class ProjectAsset(models.Model):
+    KIND_CHOICES = [
+        ("logo", "Logo"),
+        ("hero", "Hero"),
+        ("product", "Product"),
+        ("gallery", "Gallery"),
+        ("background", "Background"),
+        ("other", "Other"),
+    ]
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="assets",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="project_assets",
+    )
+    file = models.ImageField(upload_to=project_asset_upload_path)
+    original_name = models.CharField(max_length=255)
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES, default="other")
+    mime_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField(default=0)
+    width = models.PositiveIntegerField(null=True, blank=True)
+    height = models.PositiveIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        db_table = "project_assets"
+
+    def __str__(self):
+        return f"{self.original_name} ({self.project_id})"
 
 
 class ProjectExportLog(models.Model):

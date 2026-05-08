@@ -22,6 +22,16 @@ urlpatterns = [
         name="messages",
     ),
     path(
+        "<int:project_id>/assets/",
+        views.ProjectAssetListCreateView.as_view(),
+        name="assets",
+    ),
+    path(
+        "<int:project_id>/assets/<int:pk>/",
+        views.ProjectAssetDetailView.as_view(),
+        name="asset-detail",
+    ),
+    path(
         "<int:pk>/restore/<int:generation_id>/",
         views.ProjectRestoreView.as_view(),
         name="restore",

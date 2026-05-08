@@ -713,7 +713,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
         }
         return prev + 1;
       });
-    }, 900);
+    }, 1700);
 
     iframeLoadTimeoutRef.current = setTimeout(() => {
       setIframeLoaded(true);
@@ -723,7 +723,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
         progressIntervalRef.current = null;
       }
       setLoadingProgress(100);
-    }, 90000);
+    }, 1700000);
   }, []);
 
   const [exportModalOpen, setExportModalOpen] = useState(false);
