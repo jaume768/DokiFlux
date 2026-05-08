@@ -275,13 +275,13 @@ CELERY_TASK_TIME_LIMIT = 600  # 10 minutes max per task
 DEMO_IP_SALT = config("DEMO_IP_SALT", default="")
 DEMO_INITIAL_CREDITS = config("DEMO_INITIAL_CREDITS", default=2.0, cast=float)
 DEMO_SIGNUP_BONUS_CREDITS = config("DEMO_SIGNUP_BONUS_CREDITS", default=3.0, cast=float)
-DEMO_MAX_SESSIONS_PER_IP_24H = config("DEMO_MAX_SESSIONS_PER_IP_24H", default=3, cast=int)
+DEMO_MAX_SESSIONS_PER_IP_24H = config("DEMO_MAX_SESSIONS_PER_IP_24H", default=0, cast=int)
 DEMO_MAX_SESSIONS_PER_FP_24H = config("DEMO_MAX_SESSIONS_PER_FP_24H", default=1, cast=int)
 # When True (defaults to DEBUG): disables IP/fingerprint quotas and refills
 # demo credits on every /api/demo/start/ — lets you test the demo freely
 # during development.
 DEMO_DEV_MODE = config("DEMO_DEV_MODE", default=None, cast=lambda v: (str(v).lower() in ("1", "true", "yes")) if v is not None else None)
-TRUSTED_PROXIES = config("TRUSTED_PROXIES", default="", cast=Csv())
+TRUSTED_PROXIES = config("TRUSTED_PROXIES", default="127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16", cast=Csv())
 
 # --- Meta Ads (Pixel + Conversions API) ---
 # Pixel/Dataset ID from Meta Events Manager. Used by both browser Pixel and CAPI.
