@@ -1,8 +1,8 @@
 """
 Demo mode generation: mirrors `stream_phased_generation` but works with a
-DemoSession instead of a User/Project pair. Forces the cheapest model
-(gemini-3.1-flash-lite), hard-caps tokens and credits, and stores the resulting
-files directly on the DemoSession.
+DemoSession instead of a User/Project pair. Forces `gpt-5.5` with a per-file
+token budget that matches production (reasoning tokens consume the budget),
+hard-caps credits, and stores the resulting files directly on the DemoSession.
 """
 import logging
 from decimal import Decimal
@@ -30,9 +30,12 @@ logger = logging.getLogger(__name__)
 
 
 # --- Demo hard limits ---
-DEMO_MODEL = "gemini-3.1-flash-lite"
-DEMO_MAX_FILE_TOKENS = 12000
-DEMO_MAX_PLANNER_TOKENS = 12000
+# gpt-5.5 is a reasoning model: reasoning tokens count against `max_output_tokens`.
+# 12k was too tight (output got truncated to empty). 31000 matches production's
+# effective budget for gpt-5.5 (`min(max_output_tokens=31000, 44000)`).
+DEMO_MODEL = "gpt-5.5"
+DEMO_MAX_FILE_TOKENS = 31000
+DEMO_MAX_PLANNER_TOKENS = 12000  # legacy constant; planner uses provider-internal cap
 DEMO_MAX_FILES_PER_GEN = 8  # safety cap
 DEMO_MAX_PROMPT_LENGTH = 10000
 
@@ -186,8 +189,68 @@ async def stream_demo_generation(
         files = _sort_files_for_generation(files)
 
         if not files:
-            yield {"type": "error", "error": "El planner no devolvió archivos. Inténtalo de nuevo."}
-            error_occurred = True
+            # Fallback EXACTLY como `stream_phased_generation` cuando el planner
+            # devuelve files=[]: streamea el output crudo del provider (chunks
+            # `text` y `chat`) y deja que el frontend acumule. Al final parsea
+            # los marcadores `// --- FILE: ---` y los persiste en file_map.
+            logger.warning(
+                "[demo fallback] planner returned no files; falling back to single-shot stream (model=%s)",
+                DEMO_MODEL,
+            )
+            import re as _re
+
+            single_shot_raw = ""
+            async for chunk in provider.stream_generate(
+                planner_messages, model=DEMO_MODEL, max_tokens=DEMO_MAX_FILE_TOKENS
+            ):
+                ctype = chunk.get("type")
+                if ctype == "text":
+                    single_shot_raw += chunk.get("content", "")
+                    yield chunk  # passthrough crudo, igual que producción
+                elif ctype == "chat":
+                    assistant_text_for_history += chunk.get("content", "")
+                    yield chunk
+                elif ctype == "usage":
+                    u = chunk.get("usage", {}) or {}
+                    total_input_tokens += u.get("inputTokens", 0)
+                    total_output_tokens += u.get("outputTokens", 0)
+                elif ctype == "error":
+                    error_occurred = True
+                    yield chunk
+                else:
+                    yield chunk
+
+            # Parsea archivos del output crudo para persistir en DemoSession.file_map.
+            extracted = _extract_file_content(single_shot_raw)
+            logger.warning(
+                "[demo fallback] stream_raw_len=%s extracted_len=%s sample=%r",
+                len(single_shot_raw), len(extracted) if extracted else 0,
+                single_shot_raw[:200] if single_shot_raw else "<empty>",
+            )
+            if extracted:
+                pattern = _re.compile(r"//\s*---\s*FILE:\s*(\S+?)\s*---\s*\n", _re.MULTILINE)
+                matches = list(pattern.finditer(extracted))
+                for i, m in enumerate(matches):
+                    fp = m.group(1).strip()
+                    if not fp.startswith("/"):
+                        fp = "/" + fp
+                    start = m.end()
+                    end = matches[i + 1].start() if i + 1 < len(matches) else len(extracted)
+                    content = extracted[start:end].strip()
+                    if content:
+                        accumulated_files[fp] = content
+
+            cost = calculate_cost(total_input_tokens, total_output_tokens, DEMO_MODEL)
+            yield {
+                "type": "usage",
+                "usage": {
+                    "inputTokens": total_input_tokens,
+                    "outputTokens": total_output_tokens,
+                    "cost": float(cost),
+                },
+            }
+            yield {"type": "done"}
+            completed_normally = True
             return
 
         # 3. Emit plan

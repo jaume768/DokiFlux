@@ -226,6 +226,11 @@ class OpenAIProvider(BaseProvider):
                     headers=headers,
                 )
                 data = resp.json()
+                if "choices" not in data:
+                    logger.error(
+                        "[planner debug] status=%s body=%s payload_model=%s",
+                        resp.status_code, data, api_model,
+                    )
                 text = data["choices"][0]["message"]["content"] or ""
                 usage = data.get("usage", {})
                 plan = self._parse_plan(text)
