@@ -23,7 +23,7 @@ class OpenAIProvider(BaseProvider):
         messages: list[dict],
         tools: list[dict] | None = None,
         model: str = "gpt-5.5",
-        max_tokens: int = 31000,
+        max_tokens: int = 62000,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Stream from OpenAI Responses API and yield SSE-compatible chunks.

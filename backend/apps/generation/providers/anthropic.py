@@ -22,8 +22,8 @@ class AnthropicProvider(BaseProvider):
         self,
         messages: list[dict],
         tools: list[dict] | None = None,
-        model: str = "claude-sonnet-4.6",
-        max_tokens: int = 16384,
+        model: str = "claude-opus-4.7-low",
+        max_tokens: int = 81920,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Stream from Anthropic Messages API and yield SSE-compatible chunks.
