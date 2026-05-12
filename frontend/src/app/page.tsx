@@ -1,35 +1,25 @@
-"use client";
-
+import type { Metadata } from "next";
+import LandingClient from "@/components/landing/LandingClient";
 import {
-  LandingNavbar,
-  Hero,
-  HowItWorks,
-  ComparisonV2,
-  Testimonials,
-  TemplatesShowcase,
-  DualPersona,
-  FinalCTA,
-  Footer,
-  DemoChatInput,
-} from "@/components/landing";
+  JsonLd,
+  organizationSchema,
+  websiteSchema,
+  softwareApplicationSchema,
+} from "@/components/seo/JsonLd";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "DokiFlux — De prompt a prototipo React en segundos",
+  path: "/",
+});
 
 export default function LandingPage() {
   return (
-    <div
-      className="landing bg-[#0a0a0f] text-white min-h-screen antialiased overflow-x-hidden"
-      style={{ fontFamily: "'Inter', sans-serif" }}
-    >
-      <LandingNavbar />
-      <main>
-        <Hero />
-        <DemoChatInput />
-        <HowItWorks />
-        <DualPersona />
-        <ComparisonV2 />
-        <TemplatesShowcase />
-        <FinalCTA />
-      </main>
-      <Footer />
-    </div>
+    <>
+      <JsonLd data={organizationSchema} />
+      <JsonLd data={websiteSchema} />
+      <JsonLd data={softwareApplicationSchema} />
+      <LandingClient />
+    </>
   );
 }
