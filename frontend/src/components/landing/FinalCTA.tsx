@@ -118,7 +118,7 @@ export function FinalCTA() {
           }}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Más de 500 equipos ya prototipan con IA
+          Cientos de equipos ya prototipan con IA
         </div>
 
         {/* H2 */}
@@ -144,8 +144,8 @@ export function FinalCTA() {
             transition: "opacity 0.65s ease 0.25s, transform 0.65s ease 0.25s",
           }}
         >
-          Únete a más de{" "}
-          <span className="text-white/90 font-semibold">500 equipos</span> que ya
+          Únete a{" "}
+          <span className="text-white/90 font-semibold">cientos de equipos</span> que ya
           prototipan con IA y lanzan productos reales con nuestro equipo.
         </p>
 

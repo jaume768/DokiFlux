@@ -23,7 +23,6 @@ type Row = {
 
 const TOOLS: Tool[] = [
   { key: "dokiflux", name: "DokiFlux", highlighted: true },
-  { key: "chatgpt", name: "ChatGPT", icon: "◎", iconColor: "text-emerald-400" },
   { key: "v0", name: "V0.dev", icon: "", iconColor: "text-white" },
   { key: "lovable", name: "Lovable", icon: "♥", iconColor: "text-pink-400" },
   { key: "agencias", name: "Agencias\nTradicionales" },
@@ -35,7 +34,6 @@ const ROWS: Row[] = [
     subtitle: "Vista previa interactiva en segundos",
     cells: {
       dokiflux: { status: "yes", text: "Sí, preview interactiva real" },
-      chatgpt: { status: "yes", text: "Sí, con limitaciones" },
       v0: { status: "yes", text: "Sí, buena calidad" },
       lovable: { status: "yes", text: "Sí, muy rápida" },
       agencias: { status: "no", text: "No, requiere briefing" },
@@ -46,7 +44,6 @@ const ROWS: Row[] = [
     subtitle: "Listo para exportar y usar",
     cells: {
       dokiflux: { status: "yes", text: "Sí, código limpio y estructurado" },
-      chatgpt: { status: "warn", text: "A veces desordenado" },
       v0: { status: "yes", text: "Sí, en React" },
       lovable: { status: "no", text: "Limitado" },
       agencias: { status: "yes", text: "Sí, pero más lento" },
@@ -57,7 +54,6 @@ const ROWS: Row[] = [
     subtitle: "Refina sin perder contexto",
     cells: {
       dokiflux: { status: "yes", text: "Sí, chat contextual inteligente" },
-      chatgpt: { status: "yes", text: "Sí, conversación" },
       v0: { status: "warn", text: "Limitado" },
       lovable: { status: "warn", text: "Básico" },
       agencias: { status: "yes", text: "Sí, con reuniones" },
@@ -68,7 +64,6 @@ const ROWS: Row[] = [
     subtitle: "Elige el mejor para cada tarea",
     cells: {
       dokiflux: { status: "yes", text: "Sí, OpenAI, Claude, Gemini, etc." },
-      chatgpt: { status: "warn", text: "Depende del prompt" },
       v0: { status: "no", text: "No, un solo modelo" },
       lovable: { status: "no", text: "No, un solo modelo" },
       agencias: { status: "yes", text: "Sí, a medida" },
@@ -79,7 +74,6 @@ const ROWS: Row[] = [
     subtitle: "Equipo senior que lo construye por ti",
     cells: {
       dokiflux: { status: "yes", text: "Sí, te lo entregamos en 2–6 semanas" },
-      chatgpt: { status: "no", text: "No, solo asistencia" },
       v0: { status: "no", text: "No, solo prototipo" },
       lovable: { status: "no", text: "No, solo prototipo" },
       agencias: { status: "yes", text: "Sí, pero más costoso" },
@@ -90,7 +84,6 @@ const ROWS: Row[] = [
     subtitle: "Empieza en segundos",
     cells: {
       dokiflux: { status: "yes", text: "Sí, sin registro ni tarjeta" },
-      chatgpt: { status: "warn", text: "Requiere cuenta" },
       v0: { status: "yes", text: "Sí, sin registro" },
       lovable: { status: "yes", text: "Sí, sin registro" },
       agencias: { status: "no", text: "No aplica" },
@@ -101,7 +94,6 @@ const ROWS: Row[] = [
     subtitle: "Enfocado en founders y equipos",
     cells: {
       dokiflux: { status: "yes", text: "Sí, diseñado para validar y lanzar" },
-      chatgpt: { status: "warn", text: "Generalista" },
       v0: { status: "warn", text: "Más para devs" },
       lovable: { status: "yes", text: "Muy fácil de usar" },
       agencias: { status: "warn", text: "No enfocado a validación" },

@@ -181,18 +181,16 @@ export function Hero() {
               className="text-[34px] xs:text-[38px] sm:text-5xl lg:text-[56px] font-black tracking-tight leading-[1.08] sm:leading-[1.1] text-white mb-5 text-balance"
               style={fadeIn(0.08)}
             >
-              Genera un prototipo funcional.{" "}
-              <span className="gradient-text whitespace-nowrap">Valida la idea.</span>{" "}
+              Genera tu prototipo.{" "}
+              <span className="gradient-text whitespace-nowrap">Valida tu idea.</span>{" "}
               <span className="block sm:inline">
-                Lánzala con <span className="gradient-text">ayuda experta.</span>
+                <span className="gradient-text">Lánzala.</span>
               </span>
             </h1>
 
             {/* Subtitle */}
             <p className="text-base md:text-lg text-white/55 leading-relaxed mb-8" style={fadeIn(0.16)}>
-              Describe tu idea, obtén una demo navegable con estructura real de proyecto.
-              en segundos y refínala por chat. Cuando el prototipo funciona, 
-              nuestro equipo lo convierte en producto real.
+              De prompt a demo funcional, y de demo a producto real con ayuda experta.
             </p>
 
             {/* CTAs */}
@@ -204,9 +202,7 @@ export function Hero() {
                 style={{ boxShadow: "0 0 32px rgba(139,92,246,0.30)" }}
               >
                 <span className="relative z-10 inline-flex items-center gap-2">
-                  <Zap size={15} className="fill-white" />
                   Crear mi primer prototipo gratis
-                  <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-0.5" />
                 </span>
               </Link>
               <button
@@ -215,7 +211,6 @@ export function Hero() {
                 className="inline-flex items-center justify-center gap-2 text-[15px] font-semibold text-white px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)" }}
               >
-                <Users size={15} />
                 Hablar con el equipo
               </button>
             </div>
