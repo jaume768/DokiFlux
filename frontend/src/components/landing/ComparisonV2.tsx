@@ -255,7 +255,7 @@ export function ComparisonV2() {
           }}
         >
           <div
-            className="min-w-[1100px] rounded-2xl overflow-hidden relative"
+            className="min-w-[900px] rounded-2xl overflow-hidden relative"
             style={{
               background: "linear-gradient(180deg, rgba(30,27,60,0.5) 0%, rgba(15,13,35,0.7) 100%)",
               border: "1px solid rgba(255,255,255,0.08)",
@@ -267,7 +267,7 @@ export function ComparisonV2() {
               className="absolute top-0 bottom-0 pointer-events-none"
               style={{
                 left: "220px", // start after first col (220px)
-                width: "calc((100% - 220px) / 5)",
+                width: "calc((100% - 220px) / 4)",
                 background:
                   "linear-gradient(180deg, rgba(139,92,246,0.18) 0%, rgba(99,102,241,0.08) 100%)",
                 border: "2px solid rgba(139,92,246,0.55)",
@@ -280,7 +280,7 @@ export function ComparisonV2() {
             <div
               className="grid relative"
               style={{
-                gridTemplateColumns: "220px repeat(5, 1fr)",
+                gridTemplateColumns: "220px repeat(4, 1fr)",
                 borderBottom: "1px solid rgba(255,255,255,0.08)",
               }}
             >
@@ -306,7 +306,7 @@ export function ComparisonV2() {
                   key={row.title}
                   className="grid relative transition-colors"
                   style={{
-                    gridTemplateColumns: "220px repeat(5, 1fr)",
+                    gridTemplateColumns: "220px repeat(4, 1fr)",
                     borderBottom:
                       i < ROWS.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
                     background: zebra ? "rgba(255,255,255,0.015)" : "transparent",
