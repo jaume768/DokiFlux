@@ -62,7 +62,7 @@ def _set_auth_cookies(response, tokens: dict) -> None:
         httponly=True,
         samesite="Lax",
         secure=secure,
-        max_age=1800,  # 30 minutes — matches ACCESS_TOKEN_LIFETIME
+        max_age=86400,  # 1 day — matches ACCESS_TOKEN_LIFETIME
         path="/",
     )
     response.set_cookie(
@@ -71,7 +71,7 @@ def _set_auth_cookies(response, tokens: dict) -> None:
         httponly=True,
         samesite="Lax",
         secure=secure,
-        max_age=604800,  # 7 days — matches REFRESH_TOKEN_LIFETIME
+        max_age=1209600,  # 14 days — matches REFRESH_TOKEN_LIFETIME
         path="/",
     )
 

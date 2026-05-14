@@ -880,7 +880,7 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Descargar</span>
           </Button>
-          {previewUrl && (
+          {previewUrl && !isFullscreen && (
             <Button
               variant="ghost"
               size="sm"

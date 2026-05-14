@@ -50,13 +50,13 @@ export default function CookiesPage() {
                 <tr>
                   <td><code>access_token</code></td>
                   <td>Técnica / Sesión</td>
-                  <td>15 min</td>
+                  <td>1 día</td>
                   <td>Token de autenticación JWT para mantener la sesión activa.</td>
                 </tr>
                 <tr>
                   <td><code>refresh_token</code></td>
                   <td>Técnica / Persistente</td>
-                  <td>7 días</td>
+                  <td>14 días</td>
                   <td>Permite renovar el access token sin que el usuario tenga que volver a iniciar sesión.</td>
                 </tr>
                 <tr>
