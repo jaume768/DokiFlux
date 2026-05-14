@@ -8,6 +8,7 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.projects.views import ContactRequestView
+from apps.stats.views import dashboard_view as stats_dashboard_view
 
 
 def public_config_view(_request):
@@ -19,6 +20,7 @@ def public_config_view(_request):
 
 
 urlpatterns = [
+    path("admin/stats/", stats_dashboard_view, name="admin-stats"),
     path("admin/", admin.site.urls),
     path("api/config/", public_config_view, name="public-config"),
     path("api/auth/", include("apps.users.urls")),
