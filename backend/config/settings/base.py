@@ -51,7 +51,11 @@ LOCAL_APPS = [
     "apps.stats",
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+# apps.stats debe ir antes que django.contrib.admin para que su override
+# de admin/base_site.html (que añade el botón "📊 Stats") tenga prioridad.
+INSTALLED_APPS = ["apps.stats"] + DJANGO_APPS + THIRD_PARTY_APPS + [
+    a for a in LOCAL_APPS if a != "apps.stats"
+]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
