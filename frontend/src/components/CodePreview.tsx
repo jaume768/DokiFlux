@@ -584,13 +584,6 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
   // errors accumulated during long streams (e.g. thinking models).
   useEffect(() => {
     const fileCount = Object.keys(files).length;
-    console.log("[CodePreview effect]", {
-      fileCount,
-      generationKey,
-      restartKey,
-      prevGen: prevGenKeyRef.current,
-      prevRestart: prevRestartKeyRef.current,
-    });
     if (fileCount === 0) return;
 
     // Wait until the parent has explicitly signalled we should act — by
@@ -629,12 +622,10 @@ export function CodePreview({ files, generationKey, restartKey = 0, isIOS = fals
         clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = null;
       }
-      console.log("[CodePreview] → restartContainer");
       restartContainer(files);
       return;
     }
 
-    console.log("[CodePreview] → mountFiles");
     mountFiles(files);
   }, [generationKey, restartKey, files, mountFiles, restartContainer]);
 
