@@ -23,7 +23,7 @@ class AnthropicProvider(BaseProvider):
         messages: list[dict],
         tools: list[dict] | None = None,
         model: str = "claude-opus-4.7-low",
-        max_tokens: int = 81920,
+        max_tokens: int = 163840,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Stream from Anthropic Messages API and yield SSE-compatible chunks.
