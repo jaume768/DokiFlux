@@ -5,7 +5,7 @@ from .providers.registry import VALID_MODEL_IDS, DEFAULT_MODEL
 
 class GenerateRequestSerializer(serializers.Serializer):
     project_id = serializers.IntegerField()
-    prompt = serializers.CharField(max_length=10000)
+    prompt = serializers.CharField(max_length=20000)
     chat_history = serializers.ListField(
         child=serializers.DictField(),
         required=False,
@@ -44,7 +44,7 @@ class GenerateRequestSerializer(serializers.Serializer):
 
 class EstimateRequestSerializer(serializers.Serializer):
     project_id = serializers.IntegerField()
-    prompt = serializers.CharField(max_length=10000)
+    prompt = serializers.CharField(max_length=20000)
     chat_history = serializers.ListField(
         child=serializers.DictField(),
         required=False,
