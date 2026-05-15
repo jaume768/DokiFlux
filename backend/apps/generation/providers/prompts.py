@@ -348,6 +348,7 @@ Rules for choosing Option A:
   2. Leaf components (Hero, Skills, Card, Button...) next.
   3. Container components that import leaves.
   4. The ENTRY / ROOT file ABSOLUTELY LAST — always. For React this is /App.tsx, for Vue /App.vue, for Next.js /app/page.tsx. The entry file imports everything else, so putting it last lets the model see all real component names and avoid fabricating imports.
+- Maximum 10 files per generation.
 - For iterations on existing projects, list ONLY files that need to change.
 - File extensions follow the framework: React uses .tsx/.ts, Vue uses .vue/.ts, Next.js uses .tsx/.ts. When a FRAMEWORK OVERRIDE block is present, its rules are authoritative.
 
