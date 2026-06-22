@@ -38,35 +38,35 @@ MODEL_REGISTRY = {
 
     # ── Anthropic ─────────────────────────────────────────────
 
-    "claude-opus-4.7-low": {
+    "claude-opus-4.8-low": {
         "provider": "anthropic",
-        "api_model": "claude-opus-4-7",
+        "api_model": "claude-opus-4-8",
         "thinking_effort": "low",
         "input_per_million": Decimal("5.00"),
         "output_per_million": Decimal("25.00"),
         "max_output_tokens": 163840,
-        "display_name": "Claude Opus 4.7 (Low)",
+        "display_name": "Claude Opus 4.8 (Low)",
         "category": "anthropic",
     },
-    "claude-opus-4.7-medium": {
+    "claude-opus-4.8-medium": {
         "provider": "anthropic",
-        "api_model": "claude-opus-4-7",
+        "api_model": "claude-opus-4-8",
         "thinking_effort": "medium",
         "input_per_million": Decimal("5.00"),
         "output_per_million": Decimal("25.00"),
         "max_output_tokens": 245760,
-        "display_name": "Claude Opus 4.7 (Medium)",
+        "display_name": "Claude Opus 4.8 (Medium)",
         "category": "anthropic",
         "premium_only": True,
     },
-    "claude-opus-4.7-high": {
+    "claude-opus-4.8-high": {
         "provider": "anthropic",
-        "api_model": "claude-opus-4-7",
+        "api_model": "claude-opus-4-8",
         "thinking_effort": "high",
         "input_per_million": Decimal("5.00"),
         "output_per_million": Decimal("25.00"),
         "max_output_tokens": 327680,
-        "display_name": "Claude Opus 4.7 (High)",
+        "display_name": "Claude Opus 4.8 (High)",
         "category": "anthropic",
         "premium_only": True,
     },

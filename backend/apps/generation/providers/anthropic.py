@@ -22,7 +22,7 @@ class AnthropicProvider(BaseProvider):
         self,
         messages: list[dict],
         tools: list[dict] | None = None,
-        model: str = "claude-opus-4.7-low",
+        model: str = "claude-opus-4.8-low",
         max_tokens: int = 163840,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
@@ -73,9 +73,9 @@ class AnthropicProvider(BaseProvider):
             "stream": True,
         }
 
-        # Adaptive thinking (Claude Opus 4.7+). The model dynamically decides
+        # Adaptive thinking (Claude Opus 4.8+). The model dynamically decides
         # whether and how much to think; `output_config.effort` is soft guidance
-        # (low | medium | high | xhigh | max). Required format for Opus 4.7 —
+        # (low | medium | high | xhigh | max). Required format for Opus 4.8 —
         # the legacy {type: "enabled", budget_tokens: N} is rejected with 400.
         # Thinking tokens are billed as output tokens and arrive in separate
         # `thinking` content blocks that we silently skip (only text_delta is
