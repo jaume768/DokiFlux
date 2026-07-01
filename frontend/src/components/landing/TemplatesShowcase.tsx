@@ -2,13 +2,38 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Rocket, ShoppingBag, User } from "lucide-react";
+import {
+  ArrowRight,
+  Rocket,
+  ShoppingBag,
+  User,
+  LayoutDashboard,
+  Newspaper,
+  UtensilsCrossed,
+  Smartphone,
+  CreditCard,
+  Lock,
+  Clock,
+  BookOpen,
+  Ticket,
+  Palette,
+} from "lucide-react";
 import { TEMPLATES } from "@/lib/templates";
 
 const TEMPLATE_ICONS: Record<string, { icon: typeof Rocket; color: string; colorBg: string }> = {
   "saas-landing": { icon: Rocket, color: "#38bdf8", colorBg: "rgba(56,189,248,0.15)" },
   "ecommerce-product": { icon: ShoppingBag, color: "#34d399", colorBg: "rgba(52,211,153,0.15)" },
   "portfolio": { icon: User, color: "#f59e0b", colorBg: "rgba(245,158,11,0.15)" },
+  "dashboard-admin": { icon: LayoutDashboard, color: "#818cf8", colorBg: "rgba(129,140,248,0.15)" },
+  "blog-magazine": { icon: Newspaper, color: "#f472b6", colorBg: "rgba(244,114,182,0.15)" },
+  "restaurant": { icon: UtensilsCrossed, color: "#fb923c", colorBg: "rgba(251,146,60,0.15)" },
+  "mobile-app-landing": { icon: Smartphone, color: "#22d3ee", colorBg: "rgba(34,211,238,0.15)" },
+  "pricing-page": { icon: CreditCard, color: "#a78bfa", colorBg: "rgba(167,139,250,0.15)" },
+  "auth-pages": { icon: Lock, color: "#4ade80", colorBg: "rgba(74,222,128,0.15)" },
+  "coming-soon": { icon: Clock, color: "#facc15", colorBg: "rgba(250,204,21,0.15)" },
+  "docs-site": { icon: BookOpen, color: "#60a5fa", colorBg: "rgba(96,165,250,0.15)" },
+  "event-conference": { icon: Ticket, color: "#f87171", colorBg: "rgba(248,113,113,0.15)" },
+  "agency": { icon: Palette, color: "#e879f9", colorBg: "rgba(232,121,249,0.15)" },
 };
 
 function TemplateMiniPreview({ templateId, color }: { templateId: string; color: string }) {
@@ -126,7 +151,7 @@ export function TemplatesShowcase() {
                 <div className="relative overflow-hidden" style={{ height: 200, background: "rgba(10,10,20,0.8)" }}>
                   <img
                     src={template.image}
-                    alt={template.name}
+                    alt={template.alt}
                     className="w-full h-full object-cover object-top"
                     onError={(e) => {
                       const target = e.currentTarget;
