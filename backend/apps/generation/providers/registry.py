@@ -80,6 +80,44 @@ MODEL_REGISTRY = {
         "category": "anthropic",
         "premium_only": True,
     },
+    # Claude Sonnet 5 (released 2026-06-30): best speed/intelligence balance,
+    # near-Opus quality at Sonnet prices. Same API surface as Opus 4.8 — adaptive
+    # thinking + output_config.effort, no budget_tokens. Available to all plans.
+    # NOTE: standard pricing is $3/$15; introductory $2/$10 runs through
+    # 2026-08-31. We store the durable standard price so cost calc stays correct
+    # after the intro period ends.
+    "claude-sonnet-5-low": {
+        "provider": "anthropic",
+        "api_model": "claude-sonnet-5",
+        "thinking_effort": "low",
+        "input_per_million": Decimal("3.00"),
+        "output_per_million": Decimal("15.00"),
+        "max_output_tokens": 131072,
+        "display_name": "Claude Sonnet 5 (Low)",
+        "category": "anthropic",
+    },
+    "claude-sonnet-5-medium": {
+        "provider": "anthropic",
+        "api_model": "claude-sonnet-5",
+        "thinking_effort": "medium",
+        "input_per_million": Decimal("3.00"),
+        "output_per_million": Decimal("15.00"),
+        "max_output_tokens": 131072,
+        "display_name": "Claude Sonnet 5 (Medium)",
+        "category": "anthropic",
+        "premium_only": True,
+    },
+    "claude-sonnet-5-high": {
+        "provider": "anthropic",
+        "api_model": "claude-sonnet-5",
+        "thinking_effort": "high",
+        "input_per_million": Decimal("3.00"),
+        "output_per_million": Decimal("15.00"),
+        "max_output_tokens": 131072,
+        "display_name": "Claude Sonnet 5 (High)",
+        "category": "anthropic",
+        "premium_only": True,
+    },
 
     # ── OpenAI ────────────────────────────────────────────────
     "gpt-5.5": {
