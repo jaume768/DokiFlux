@@ -14,6 +14,12 @@ logger = logging.getLogger(__name__)
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 
+# Hard cap on output tokens for current Claude models (Sonnet 5, Opus 4.8, …)
+# on the synchronous Messages API. Requesting more returns a 400
+# ("max_tokens: N > 128000, which is the maximum allowed..."). We clamp every
+# request to this ceiling so a bad registry value can never trigger that error.
+ANTHROPIC_MAX_OUTPUT_TOKENS = 128000
+
 
 class AnthropicProvider(BaseProvider):
     """Anthropic Messages API provider with httpx async streaming."""
@@ -22,8 +28,8 @@ class AnthropicProvider(BaseProvider):
         self,
         messages: list[dict],
         tools: list[dict] | None = None,
-        model: str = "claude-opus-4.8-low",
-        max_tokens: int = 163840,
+        model: str = "claude-sonnet-5-low",
+        max_tokens: int = ANTHROPIC_MAX_OUTPUT_TOKENS,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Stream from Anthropic Messages API and yield SSE-compatible chunks.
@@ -64,10 +70,15 @@ class AnthropicProvider(BaseProvider):
         # Convert messages from OpenAI format to Anthropic format
         anthropic_messages = self._convert_messages(messages)
 
+        # Clamp to the model's hard output-token ceiling. Anthropic rejects any
+        # request above 128000 with a 400, so we never send more regardless of
+        # what the registry / caller passed in.
+        safe_max_tokens = min(max_tokens, ANTHROPIC_MAX_OUTPUT_TOKENS)
+
         # No tools — plain text generation so streaming starts immediately
         payload = {
             "model": api_model,
-            "max_tokens": max_tokens,
+            "max_tokens": safe_max_tokens,
             "system": system_prompt,
             "messages": anthropic_messages,
             "stream": True,
