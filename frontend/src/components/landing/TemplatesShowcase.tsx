@@ -131,7 +131,7 @@ export function TemplatesShowcase() {
 
         {/* Templates grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {TEMPLATES.map((template, i) => {
+          {TEMPLATES.slice(0, 3).map((template, i) => {
             const meta = TEMPLATE_ICONS[template.id] || { icon: Rocket, color: "#8b5cf6", colorBg: "rgba(139,92,246,0.15)" };
             const Icon = meta.icon;
             return (

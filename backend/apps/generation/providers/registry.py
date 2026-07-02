@@ -109,16 +109,6 @@ MODEL_REGISTRY = {
         "category": "anthropic",
         "premium_only": True,
     },
-    "claude-opus-4.6": {
-        "provider": "anthropic",
-        "api_model": "claude-opus-4-6",
-        "input_per_million": Decimal("5.00"),
-        "output_per_million": Decimal("25.00"),
-        "max_output_tokens": 163840,
-        "display_name": "Claude Opus 4.6",
-        "category": "anthropic",
-        "premium_only": True,
-    },
 
     # ── OpenAI ────────────────────────────────────────────────
     "gpt-5.5": {
