@@ -51,13 +51,31 @@ function formatDate(iso: string): string {
 function formatModel(model: string): string {
   if (!model) return "—";
   const map: Record<string, string> = {
-    "gpt-5.5": "GPT-5.5",
-    "gpt-5.5-mini": "GPT-5.5 Mini",
-    "claude-sonnet-4-6": "Claude Sonnet 4.6",
-    "claude-opus-4-6": "Claude Opus 4.6",
-    "claude-haiku-4-5": "Claude Haiku 4.5",
+    "gpt-6-luna": "GPT-6 Luna",
+    "gpt-6.1-sol-low": "GPT-6.1 Sol (Low)",
+    "gpt-6.1-sol": "GPT-6.1 Sol",
+    "gpt-6.1-sol-high": "GPT-6.1 Sol (High)",
+    "gpt-6.1-sol-xhigh": "GPT-6.1 Sol (xHigh)",
+    "gpt-6-astra": "GPT-6 Astra",
+    "gpt-6-astra-high": "GPT-6 Astra (High)",
+    "claude-sonnet-5.5": "Claude Sonnet 5.5",
+    "claude-opus-5.5-low": "Claude Opus 5.5 (Low)",
+    "claude-opus-5.5-medium": "Claude Opus 5.5 (Medium)",
+    "claude-opus-5.5-high": "Claude Opus 5.5 (High)",
+    "claude-fable-5.1": "Claude Fable 5.1",
+    "gemini-3.5-flash-lite": "Gemini 3.5 Flash-Lite",
+    "gemini-3.8-flash": "Gemini 3.8 Flash",
     "gemini-3.1-pro": "Gemini 3.1 Pro",
-    "gemini-3-flash": "Gemini 3 Flash",
+    // Retired models — still present in generation history
+    "gpt-5.5": "GPT-5.5",
+    "gpt-5.5-low": "GPT-5.5 (Low)",
+    "gpt-5.5-medium": "GPT-5.5 (Medium)",
+    "gpt-5.5-high": "GPT-5.5 (High)",
+    "gpt-5.5-xhigh": "GPT-5.5 (xHigh)",
+    "claude-opus-4.7-low": "Claude Opus 4.7 (Low)",
+    "claude-opus-4.7-medium": "Claude Opus 4.7 (Medium)",
+    "claude-opus-4.7-high": "Claude Opus 4.7 (High)",
+    "claude-opus-4.6": "Claude Opus 4.6",
     "gemini-3.1-flash-lite": "Gemini 3.1 Flash-Lite",
   };
   return map[model] ?? model;

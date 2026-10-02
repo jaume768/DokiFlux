@@ -21,7 +21,7 @@ class GeminiProvider(BaseProvider):
         self,
         messages: list[dict],
         tools: list[dict] | None = None,
-        model: str = "gemini-3.1-pro",
+        model: str = "gemini-3.8-flash",
         max_tokens: int = 65536,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
@@ -73,6 +73,14 @@ class GeminiProvider(BaseProvider):
             },
         }
 
+        # Gemini 3 thinking depth (minimal | low | medium | high; supported
+        # values vary per model). Omitted → model default.
+        thinking_level = config.get("thinking_level")
+        if thinking_level:
+            payload["generation_config"]["thinking_config"] = {
+                "thinking_level": thinking_level,
+            }
+
         api_key = get_gemini_key()
         url = f"{GEMINI_API_BASE}/{api_model}:streamGenerateContent?key={api_key}&alt=sse"
 
@@ -84,7 +92,7 @@ class GeminiProvider(BaseProvider):
         output_tokens = 0
 
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=10.0)) as client:
                 async with client.stream(
                     "POST",
                     url,
@@ -140,7 +148,7 @@ class GeminiProvider(BaseProvider):
                                 parts = content.get("parts", [])
 
                                 for part in parts:
-                                    if "text" not in part:
+                                    if "text" not in part or part.get("thought"):
                                         continue
                                     text = part["text"]
                                     if not text:
@@ -161,14 +169,16 @@ class GeminiProvider(BaseProvider):
                                     else:
                                         yield {"type": "text", "content": text}
 
-                            # Extract usage metadata
+                            # Extract usage metadata (cumulative per event).
+                            # Thinking tokens are billed as output but reported
+                            # separately from candidatesTokenCount.
                             usage_meta = event.get("usageMetadata", {})
                             if usage_meta:
                                 input_tokens = usage_meta.get(
                                     "promptTokenCount", input_tokens
                                 )
-                                output_tokens = usage_meta.get(
-                                    "candidatesTokenCount", output_tokens
+                                output_tokens = max(
+                                    output_tokens, self._output_tokens(usage_meta)
                                 )
 
                     # Flush any remaining prefix buffer (short response)
@@ -227,10 +237,16 @@ class GeminiProvider(BaseProvider):
 
         contents = self._convert_messages(messages)
 
+        # Thinking tokens count against max_output_tokens, so plan at the
+        # lowest level every Gemini 3 model accepts, with headroom. Temperature
+        # is left at the default (1.0) as Google recommends for Gemini 3.
         payload = {
             "system_instruction": {"parts": [{"text": system_text}]},
             "contents": contents,
-            "generation_config": {"max_output_tokens": 600, "temperature": 0.1},
+            "generation_config": {
+                "max_output_tokens": 4096,
+                "thinking_config": {"thinking_level": "low"},
+            },
         }
 
         api_key = get_gemini_key()
@@ -240,21 +256,34 @@ class GeminiProvider(BaseProvider):
             async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
                 resp = await client.post(url, json=payload, headers={"Content-Type": "application/json"})
                 data = resp.json()
+                if resp.status_code != 200:
+                    logger.error(
+                        "Gemini planner error %s: %s",
+                        resp.status_code,
+                        data.get("error", {}).get("message", ""),
+                    )
                 text = ""
                 for candidate in data.get("candidates", []):
                     for part in candidate.get("content", {}).get("parts", []):
-                        if "text" in part:
+                        if "text" in part and not part.get("thought"):
                             text += part["text"]
                 meta = data.get("usageMetadata", {})
                 plan = self._parse_plan(text)
                 plan["usage"] = {
                     "inputTokens": meta.get("promptTokenCount", 0),
-                    "outputTokens": meta.get("candidatesTokenCount", 0),
+                    "outputTokens": self._output_tokens(meta),
                 }
                 return plan
         except Exception as e:
             logger.error("Gemini planner error: %s", str(e), exc_info=True)
             return {"thinking": "", "files": [], "usage": {"inputTokens": 0, "outputTokens": 0}}
+
+    @staticmethod
+    def _output_tokens(usage_meta: dict) -> int:
+        """Billable output tokens: visible candidates + thinking tokens."""
+        return (usage_meta.get("candidatesTokenCount") or 0) + (
+            usage_meta.get("thoughtsTokenCount") or 0
+        )
 
     @staticmethod
     def _convert_messages(messages: list[dict]) -> list[dict]:

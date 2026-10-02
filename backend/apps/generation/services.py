@@ -11,7 +11,7 @@ from apps.billing.services import consume_credits, get_balance
 from apps.projects.models import ChatMessage, Project
 
 from .models import Generation
-from .providers.registry import get_model_config, calculate_cost
+from .providers.registry import DEFAULT_MODEL, get_model_config, calculate_cost
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +33,15 @@ async def _call_title_gemini(prompt: str) -> str:
         raise RuntimeError("No Gemini keys")
     api_key = _gemini_pool.next()
     import httpx
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent"
     payload = {
         "system_instruction": {"parts": [{"text": _TITLE_SYSTEM}]},
         "contents": [{"role": "user", "parts": [{"text": prompt[:500]}]}],
-        "generationConfig": {"maxOutputTokens": 30, "temperature": 0.4},
+        # Thinking tokens count against maxOutputTokens — keep it minimal.
+        "generationConfig": {
+            "maxOutputTokens": 64,
+            "thinkingConfig": {"thinkingLevel": "minimal"},
+        },
     }
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.post(url, json=payload, params={"key": api_key})
@@ -117,7 +121,7 @@ async def generate_ai_title(prompt: str) -> str:
     return " ".join(prompt.split()[:5])
 
 
-def get_provider(model: str = "gpt-5.5"):
+def get_provider(model: str = DEFAULT_MODEL):
     """Factory: return the appropriate provider for the model."""
     config = get_model_config(model)
     provider_name = config["provider"]
@@ -258,7 +262,7 @@ async def stream_generation(
     project: Project,
     prompt: str,
     chat_history: list[dict],
-    model: str = "gpt-5.5",
+    model: str = DEFAULT_MODEL,
     is_autofix: bool = False,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """
@@ -497,7 +501,7 @@ async def stream_phased_generation(
     project: Project,
     prompt: str,
     chat_history: list[dict],
-    model: str = "gpt-5.5",
+    model: str = DEFAULT_MODEL,
     is_autofix: bool = False,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """

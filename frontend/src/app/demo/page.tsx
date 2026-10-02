@@ -948,7 +948,7 @@ export default function DemoPage() {
               {[
                 "Muchas más iteraciones incluidas",
                 "Proyecto guardado automáticamente en la nube",
-                "Acceso a modelos más potentes (GPT-4o, Claude, Gemini)",
+                "Acceso a modelos más potentes (GPT-6, Claude, Gemini)",
               ].map((benefit) => (
                 <li key={benefit} className="flex items-start gap-2.5 text-sm">
                   <CheckCircle2 className="w-4 h-4 text-violet-400 mt-0.5 shrink-0" />

@@ -22,8 +22,8 @@ class OpenAIProvider(BaseProvider):
         self,
         messages: list[dict],
         tools: list[dict] | None = None,
-        model: str = "gpt-5.5",
-        max_tokens: int = 62000,
+        model: str = "gpt-6.1-sol",
+        max_tokens: int = 64000,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Stream from OpenAI Responses API and yield SSE-compatible chunks.
@@ -74,7 +74,7 @@ class OpenAIProvider(BaseProvider):
         output_tokens = 0
 
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=10.0)) as client:
                 async with client.stream(
                     "POST",
                     self.base_url,
@@ -146,9 +146,11 @@ class OpenAIProvider(BaseProvider):
                                     "content": event["delta"],
                                 }
 
-                            # Response completed — extract usage
+                            # Response finished — extract usage. `incomplete`
+                            # (max_output_tokens hit) is billed too.
                             if (
-                                event_type == "response.completed"
+                                event_type
+                                in ("response.completed", "response.incomplete")
                                 and "response" in event
                             ):
                                 usage = event["response"].get("usage", {})
@@ -205,11 +207,15 @@ class OpenAIProvider(BaseProvider):
             if msg.get("role") not in ("system", "developer"):
                 chat_messages.append({"role": msg["role"], "content": msg["content"]})
 
+        # GPT-6 models always reason: `temperature` is rejected unless effort
+        # is `none` (unavailable on 6.1 Sol / Astra), `max_tokens` is replaced
+        # by `max_completion_tokens`, and reasoning tokens count against it —
+        # so run at low effort with headroom for reasoning + the JSON plan.
         payload = {
             "model": api_model,
             "messages": chat_messages,
-            "max_tokens": 600,
-            "temperature": 0.1,
+            "max_completion_tokens": 4000,
+            "reasoning_effort": "low",
         }
 
         api_key = get_openai_key()

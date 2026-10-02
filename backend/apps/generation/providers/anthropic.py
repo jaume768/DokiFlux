@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
+# Beta header for `fallbacks: "default"` (server-side refusal fallback).
+ANTHROPIC_FALLBACK_BETA = "server-side-fallback-2026-07-01"
+REFUSAL_ERROR = "The model declined this request. Please rephrase it or try another model."
 
 
 class AnthropicProvider(BaseProvider):
@@ -22,8 +25,8 @@ class AnthropicProvider(BaseProvider):
         self,
         messages: list[dict],
         tools: list[dict] | None = None,
-        model: str = "claude-opus-4.7-low",
-        max_tokens: int = 81920,
+        model: str = "claude-opus-5.5-low",
+        max_tokens: int = 64000,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Stream from Anthropic Messages API and yield SSE-compatible chunks.
@@ -73,29 +76,28 @@ class AnthropicProvider(BaseProvider):
             "stream": True,
         }
 
-        # Adaptive thinking (Claude Opus 4.7+). The model dynamically decides
-        # whether and how much to think; `output_config.effort` is soft guidance
-        # (low | medium | high | xhigh | max). Required format for Opus 4.7 —
-        # the legacy {type: "enabled", budget_tokens: N} is rejected with 400.
-        # Thinking tokens are billed as output tokens and arrive in separate
-        # `thinking` content blocks that we silently skip (only text_delta is
-        # forwarded to the client).
+        # Adaptive thinking. On Opus 5.5 / Sonnet 5.5 / Fable 5.1 thinking is
+        # always on ({type: "disabled"} and budget_tokens are rejected with 400)
+        # and `output_config.effort` (low | medium | high | xhigh | max) is the
+        # only control over how much the model thinks. Thinking tokens are
+        # billed as output tokens, count against `max_tokens`, and arrive in
+        # separate `thinking` content blocks that we silently skip (only
+        # text_delta is forwarded to the client).
         if thinking_effort:
             payload["thinking"] = {"type": "adaptive"}
             payload["output_config"] = {"effort": thinking_effort}
 
-        api_key = get_anthropic_key()
-        headers = {
-            "x-api-key": api_key,
-            "anthropic-version": ANTHROPIC_VERSION,
-            "content-type": "application/json",
-        }
+        if config.get("refusal_fallback"):
+            payload["fallbacks"] = "default"
+
+        headers = self._build_headers(config)
 
         input_tokens = 0
         output_tokens = 0
+        stop_reason = None
 
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=10.0)) as client:
                 async with client.stream(
                     "POST",
                     ANTHROPIC_API_URL,
@@ -181,12 +183,23 @@ class AnthropicProvider(BaseProvider):
                                 else:
                                     yield {"type": "text", "content": text}
 
-                            # message_delta — extract output tokens
+                            # message_delta — extract output tokens + stop reason
                             elif event_type == "message_delta":
                                 usage = event.get("usage", {})
                                 output_tokens = usage.get(
                                     "output_tokens", output_tokens
                                 )
+                                stop_reason = event.get("delta", {}).get(
+                                    "stop_reason", stop_reason
+                                )
+
+                    # Safety classifiers decline with HTTP 200 + stop_reason
+                    # "refusal" (after fallbacks, the whole chain refused).
+                    # Any text already streamed is partial — fail the generation.
+                    if stop_reason == "refusal":
+                        logger.warning("Anthropic refusal for model %s", api_model)
+                        yield {"type": "error", "error": REFUSAL_ERROR}
+                        return
 
                     # Flush any remaining prefix buffer (short response)
                     if prefix_buf:
@@ -244,24 +257,32 @@ class AnthropicProvider(BaseProvider):
 
         anthropic_messages = self._convert_messages(messages)
 
+        # Thinking can't be disabled on these models and counts against
+        # `max_tokens`, so the planner runs at low effort with enough headroom
+        # for thinking plus the (small) JSON plan.
         payload = {
             "model": api_model,
-            "max_tokens": 600,
+            "max_tokens": 4096,
             "system": system_prompt,
             "messages": anthropic_messages,
         }
+        if config.get("thinking_effort"):
+            payload["output_config"] = {"effort": "low"}
+        if config.get("refusal_fallback"):
+            payload["fallbacks"] = "default"
 
-        api_key = get_anthropic_key()
-        headers = {
-            "x-api-key": api_key,
-            "anthropic-version": ANTHROPIC_VERSION,
-            "content-type": "application/json",
-        }
+        headers = self._build_headers(config)
 
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
                 resp = await client.post(ANTHROPIC_API_URL, json=payload, headers=headers)
                 data = resp.json()
+                if resp.status_code != 200:
+                    logger.error(
+                        "Anthropic planner error %s: %s",
+                        resp.status_code,
+                        data.get("error", {}).get("message", ""),
+                    )
                 text = ""
                 for block in data.get("content", []):
                     if block.get("type") == "text":
@@ -276,6 +297,17 @@ class AnthropicProvider(BaseProvider):
         except Exception as e:
             logger.error("Anthropic planner error: %s", str(e), exc_info=True)
             return {"thinking": "", "files": [], "usage": {"inputTokens": 0, "outputTokens": 0}}
+
+    @staticmethod
+    def _build_headers(config: dict) -> dict:
+        headers = {
+            "x-api-key": get_anthropic_key(),
+            "anthropic-version": ANTHROPIC_VERSION,
+            "content-type": "application/json",
+        }
+        if config.get("refusal_fallback"):
+            headers["anthropic-beta"] = ANTHROPIC_FALLBACK_BETA
+        return headers
 
     @staticmethod
     def _convert_messages(messages: list[dict]) -> list[dict]:

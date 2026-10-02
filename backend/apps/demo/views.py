@@ -227,7 +227,7 @@ async def demo_generate_view(request):
     """
     POST /api/demo/generate/
     Streams SSE chunks for an anonymous demo generation.
-    Forces model=claude-haiku-4.5 and charges DemoSession.credits_remaining.
+    Forces model=DEMO_MODEL and charges DemoSession.credits_remaining.
     """
     if request.method != "POST":
         return StreamingHttpResponse(

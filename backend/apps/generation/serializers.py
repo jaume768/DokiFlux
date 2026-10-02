@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .providers.registry import VALID_MODEL_IDS, DEFAULT_MODEL
+from .providers.registry import VALID_MODEL_IDS, DEFAULT_MODEL, resolve_model_id
 
 
 class GenerateRequestSerializer(serializers.Serializer):
@@ -16,7 +16,8 @@ class GenerateRequestSerializer(serializers.Serializer):
     is_autofix = serializers.BooleanField(default=False, required=False)
 
     def validate_model(self, value):
-        """Ensure model is in the registry."""
+        """Ensure model is in the registry (retired IDs map to their successor)."""
+        value = resolve_model_id(value)
         if value not in VALID_MODEL_IDS:
             raise serializers.ValidationError(
                 f"Unknown model '{value}'. Valid models: {', '.join(sorted(VALID_MODEL_IDS))}"

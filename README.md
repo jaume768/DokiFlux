@@ -88,7 +88,7 @@ El objetivo es convertirlo en un SaaS con autenticación, persistencia de proyec
 | **Base de datos** | PostgreSQL 16 |
 | **Cache / Rate Limiting** | Redis 7 |
 | **Email transaccional** | Brevo (Sendinblue) |
-| **IA** | Multi-proveedor: OpenAI GPT-5.5, Claude (Sonnet/Opus 4.6, Haiku 4.5), Gemini (3.1 Pro, 3 Flash, 3.1 Flash-Lite) |
+| **IA** | Multi-proveedor: OpenAI (GPT-6.1 Sol, GPT-6 Astra, GPT-6 Luna), Claude (Fable 5.1, Opus 5.5, Sonnet 5.5), Gemini (3.8 Flash, 3.1 Pro, 3.5 Flash-Lite) |
 | **Auth** | JWT (access 30min / refresh 7d), Google OAuth (`google-auth`) |
 | **Infraestructura** | Docker Compose (dev), Dockerfiles multietapa |
 
@@ -277,7 +277,7 @@ Se aplica solo al endpoint `/api/generate/`.
 **Por qué:** Para ser competitivo hay que ofrecer múltiples modelos (cada uno tiene sus fortalezas en coste, velocidad e inteligencia).
 
 **Qué se hizo:**
-- **11 modelos de IA** — GPT-5.5 (5 niveles de reasoning: none/low/medium/high/xhigh), Claude Sonnet 4.6, Claude Opus 4.6, Claude Haiku 4.5, Gemini 3.1 Pro, Gemini 3 Flash, Gemini 3.1 Flash-Lite
+- **15 modelos de IA** — GPT-6.1 Sol (4 niveles de reasoning: low/medium/high/xhigh), GPT-6 Astra (medium/high), GPT-6 Luna, Claude Opus 5.5 (low/medium/high), Claude Sonnet 5.5, Claude Fable 5.1, Gemini 3.8 Flash, Gemini 3.1 Pro, Gemini 3.5 Flash-Lite
 - **3 providers** — `OpenAIProvider` (refactorizado), `AnthropicProvider` (nuevo), `GeminiProvider` (nuevo), todos sobre `BaseProvider`
 - **MODEL_REGISTRY centralizado** — Config, pricing y límites de cada modelo en `providers/registry.py`. Único punto de verdad.
 - **Multi API Key rotation** — `KeyPool` thread-safe con round-robin en `providers/key_pool.py`. Soporta múltiples keys por proveedor (comma-separated en `.env`).
@@ -289,7 +289,8 @@ Se aplica solo al endpoint `/api/generate/`.
 
 **Decisiones técnicas:**
 - **Prompts compartidos** — `SYSTEM_PROMPT` y `CODEGEN_RULES` en `providers/prompts.py`, con tool definitions en formato específico de cada proveedor (OpenAI function, Anthropic input_schema, Gemini function_declarations).
-- **Reasoning effort en GPT-5.5** — Parámetro `reasoning.effort` controla "thinking tokens". Se facturan como output tokens, así que xhigh es significativamente más caro.
+- **Reasoning effort** — `reasoning.effort` (OpenAI), `output_config.effort` (Anthropic) y `thinking_level` (Gemini) controlan los "thinking tokens". Se facturan como output tokens, así que los niveles altos son significativamente más caros.
+- **IDs retirados** — `LEGACY_MODEL_ALIASES` en el registry mapea IDs antiguos (p. ej. `gpt-5.5`, `claude-opus-4.7-low`) a su sucesor, para generaciones/proyectos guardados y clientes con caché.
 - **Backward compatible** — Si solo `OPENAI_API_KEY` está definida (sin `OPENAI_API_KEYS`), se usa como fallback. Ídem para Anthropic y Gemini.
 - **Message format conversion** — Cada provider convierte mensajes internos a su formato nativo (OpenAI: `developer`/`user`/`assistant`, Anthropic: `system` param + `user`/`assistant`, Gemini: `system_instruction` + `user`/`model`).
 
@@ -612,15 +613,17 @@ Dokiflux/
 
 | Modelo | Input / 1M tokens | Output / 1M tokens | Max output |
 |--------|-------------------|--------------------|-----------|
-| GPT-5.5 (all reasoning levels) | $2.50 | $15.00 | 31,000 |
-| Claude Sonnet 4.6 | $3.00 | $15.00 | 16,384 |
-| Claude Opus 4.6 | $5.00 | $25.00 | 16,384 |
-| Claude Haiku 4.5 | $1.00 | $5.00 | 8,192 |
+| GPT-6 Luna | $0.10 | $0.50 | 64,000 |
+| GPT-6.1 Sol (low / medium / high / xhigh) | $2.00 | $10.00 | 64,000 – 96,000 |
+| GPT-6 Astra (medium / high) | $10.00 | $50.00 | 64,000 – 96,000 |
+| Claude Sonnet 5.5 | $2.00 | $10.00 | 64,000 |
+| Claude Opus 5.5 (low / medium / high) | $4.00 | $20.00 | 64,000 – 96,000 |
+| Claude Fable 5.1 | $10.00 | $50.00 | 64,000 |
+| Gemini 3.5 Flash-Lite | $0.30 | $2.50 | 65,536 |
+| Gemini 3.8 Flash | $0.75 | $3.75 | 65,536 |
 | Gemini 3.1 Pro | $2.00 | $12.00 | 65,536 |
-| Gemini 3 Flash | $0.50 | $3.00 | 65,536 |
-| Gemini 3.1 Flash-Lite | $0.25 | $1.50 | 65,536 |
 
-> **Nota:** En GPT-5.5 con reasoning effort (low/medium/high/xhigh), los "thinking tokens" se facturan como output. A mayor effort, más tokens de salida consumidos.
+> **Nota:** Precios base de API (el usuario paga × `COST_MARKUP`). Los "thinking tokens" se facturan como output en los tres proveedores: a mayor effort, más tokens de salida consumidos. El precio de Gemini 3.8 Flash es introductorio hasta el 31/12/2026 ($1.50 / $7.50 después).
 
 ---
 
