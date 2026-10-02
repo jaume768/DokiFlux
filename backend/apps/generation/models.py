@@ -25,7 +25,7 @@ class Generation(models.Model):
         related_name="generations",
     )
     prompt = models.TextField()
-    model = models.CharField(max_length=50, default="gpt-5.5")
+    model = models.CharField(max_length=50, default="claude-sonnet-5-low")
     input_tokens = models.IntegerField(default=0)
     output_tokens = models.IntegerField(default=0)
     cost = models.DecimalField(max_digits=10, decimal_places=6, default=0)

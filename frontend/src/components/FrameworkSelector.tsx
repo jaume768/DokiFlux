@@ -103,7 +103,7 @@ export function FrameworkSelector({ value, onChange, disabled }: FrameworkSelect
                     {fw.badgeText}
                   </span>
                 )}
-                {!comingSoon && fw.premiumOnly && (
+                {locked && !comingSoon && (
                   <span className="text-[9px] font-medium text-amber-400/80 bg-amber-400/10 px-1.5 py-0.5 rounded-full shrink-0">
                     Premium
                   </span>

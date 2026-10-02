@@ -103,16 +103,40 @@ MODEL_REGISTRY = {
     # control (sent as `output_config.effort`). `refusal_fallback` opts into
     # server-side fallbacks so a safety-classifier decline is retried on
     # another model instead of failing the generation.
-    "claude-sonnet-5.5": {
+    "claude-sonnet-5.5-low": {
+        "provider": "anthropic",
+        "api_model": "claude-sonnet-5-5",
+        "thinking_effort": "low",
+        "refusal_fallback": True,
+        "input_per_million": Decimal("2.00"),
+        "output_per_million": Decimal("10.00"),
+        "max_output_tokens": 128000,
+        "display_name": "Claude Sonnet 5.5 (Low)",
+        "category": "anthropic",
+    },
+    "claude-sonnet-5.5-medium": {
         "provider": "anthropic",
         "api_model": "claude-sonnet-5-5",
         "thinking_effort": "medium",
         "refusal_fallback": True,
         "input_per_million": Decimal("2.00"),
         "output_per_million": Decimal("10.00"),
-        "max_output_tokens": 64000,
-        "display_name": "Claude Sonnet 5.5",
+        "max_output_tokens": 128000,
+        "display_name": "Claude Sonnet 5.5 (Medium)",
         "category": "anthropic",
+        "premium_only": True,
+    },
+    "claude-sonnet-5.5-high": {
+        "provider": "anthropic",
+        "api_model": "claude-sonnet-5-5",
+        "thinking_effort": "high",
+        "refusal_fallback": True,
+        "input_per_million": Decimal("2.00"),
+        "output_per_million": Decimal("10.00"),
+        "max_output_tokens": 128000,
+        "display_name": "Claude Sonnet 5.5 (High)",
+        "category": "anthropic",
+        "premium_only": True,
     },
     "claude-opus-5.5-low": {
         "provider": "anthropic",
@@ -121,7 +145,7 @@ MODEL_REGISTRY = {
         "refusal_fallback": True,
         "input_per_million": Decimal("4.00"),
         "output_per_million": Decimal("20.00"),
-        "max_output_tokens": 64000,
+        "max_output_tokens": 128000,
         "display_name": "Claude Opus 5.5 (Low)",
         "category": "anthropic",
     },
@@ -132,7 +156,7 @@ MODEL_REGISTRY = {
         "refusal_fallback": True,
         "input_per_million": Decimal("4.00"),
         "output_per_million": Decimal("20.00"),
-        "max_output_tokens": 64000,
+        "max_output_tokens": 128000,
         "display_name": "Claude Opus 5.5 (Medium)",
         "category": "anthropic",
         "premium_only": True,
@@ -144,7 +168,7 @@ MODEL_REGISTRY = {
         "refusal_fallback": True,
         "input_per_million": Decimal("4.00"),
         "output_per_million": Decimal("20.00"),
-        "max_output_tokens": 96000,
+        "max_output_tokens": 128000,
         "display_name": "Claude Opus 5.5 (High)",
         "category": "anthropic",
         "premium_only": True,
@@ -156,7 +180,7 @@ MODEL_REGISTRY = {
         "refusal_fallback": True,
         "input_per_million": Decimal("10.00"),
         "output_per_million": Decimal("50.00"),
-        "max_output_tokens": 64000,
+        "max_output_tokens": 128000,
         "display_name": "Claude Fable 5.1",
         "category": "anthropic",
         "premium_only": True,
@@ -203,7 +227,7 @@ MODEL_REGISTRY = {
 VALID_MODEL_IDS = frozenset(MODEL_REGISTRY.keys())
 
 # Default model
-DEFAULT_MODEL = "gpt-6.1-sol"
+DEFAULT_MODEL = "claude-sonnet-5.5-low"
 
 # Retired model IDs → current successor. Old IDs are still stored on
 # Generation.model / Project.last_used_model and may be sent by stale clients.
@@ -217,6 +241,12 @@ LEGACY_MODEL_ALIASES = {
     "claude-opus-4.7-medium": "claude-opus-5.5-medium",
     "claude-opus-4.7-high": "claude-opus-5.5-high",
     "claude-opus-4.6": "claude-opus-5.5-medium",
+    "claude-opus-4.8-low": "claude-opus-5.5-low",
+    "claude-opus-4.8-medium": "claude-opus-5.5-medium",
+    "claude-opus-4.8-high": "claude-opus-5.5-high",
+    "claude-sonnet-5-low": "claude-sonnet-5.5-low",
+    "claude-sonnet-5-medium": "claude-sonnet-5.5-medium",
+    "claude-sonnet-5-high": "claude-sonnet-5.5-high",
     "gemini-3.1-flash-lite": "gemini-3.5-flash-lite",
 }
 

@@ -28,6 +28,7 @@ DJANGO_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.humanize",
 ]
 
 THIRD_PARTY_APPS = [
@@ -47,9 +48,14 @@ LOCAL_APPS = [
     "apps.generation",
     "apps.demo",
     "apps.marketing",
+    "apps.stats",
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+# apps.stats debe ir antes que django.contrib.admin para que su override
+# de admin/base_site.html (que añade el botón "📊 Stats") tenga prioridad.
+INSTALLED_APPS = ["apps.stats"] + DJANGO_APPS + THIRD_PARTY_APPS + [
+    a for a in LOCAL_APPS if a != "apps.stats"
+]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -145,8 +151,8 @@ REST_FRAMEWORK = {
 # --- Simple JWT ---
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),

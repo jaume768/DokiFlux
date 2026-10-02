@@ -277,7 +277,7 @@ Se aplica solo al endpoint `/api/generate/`.
 **Por qué:** Para ser competitivo hay que ofrecer múltiples modelos (cada uno tiene sus fortalezas en coste, velocidad e inteligencia).
 
 **Qué se hizo:**
-- **15 modelos de IA** — GPT-6.1 Sol (4 niveles de reasoning: low/medium/high/xhigh), GPT-6 Astra (medium/high), GPT-6 Luna, Claude Opus 5.5 (low/medium/high), Claude Sonnet 5.5, Claude Fable 5.1, Gemini 3.8 Flash, Gemini 3.1 Pro, Gemini 3.5 Flash-Lite
+- **17 modelos de IA** — Claude Sonnet 5.5 (low/medium/high; Low es el modelo por defecto), Claude Opus 5.5 (low/medium/high), Claude Fable 5.1, GPT-6.1 Sol (4 niveles de reasoning: low/medium/high/xhigh), GPT-6 Astra (medium/high), GPT-6 Luna, Gemini 3.8 Flash, Gemini 3.1 Pro, Gemini 3.5 Flash-Lite
 - **3 providers** — `OpenAIProvider` (refactorizado), `AnthropicProvider` (nuevo), `GeminiProvider` (nuevo), todos sobre `BaseProvider`
 - **MODEL_REGISTRY centralizado** — Config, pricing y límites de cada modelo en `providers/registry.py`. Único punto de verdad.
 - **Multi API Key rotation** — `KeyPool` thread-safe con round-robin en `providers/key_pool.py`. Soporta múltiples keys por proveedor (comma-separated en `.env`).
@@ -616,9 +616,9 @@ Dokiflux/
 | GPT-6 Luna | $0.10 | $0.50 | 64,000 |
 | GPT-6.1 Sol (low / medium / high / xhigh) | $2.00 | $10.00 | 64,000 – 96,000 |
 | GPT-6 Astra (medium / high) | $10.00 | $50.00 | 64,000 – 96,000 |
-| Claude Sonnet 5.5 | $2.00 | $10.00 | 64,000 |
-| Claude Opus 5.5 (low / medium / high) | $4.00 | $20.00 | 64,000 – 96,000 |
-| Claude Fable 5.1 | $10.00 | $50.00 | 64,000 |
+| Claude Sonnet 5.5 (low / medium / high) | $2.00 | $10.00 | 128,000 |
+| Claude Opus 5.5 (low / medium / high) | $4.00 | $20.00 | 128,000 |
+| Claude Fable 5.1 | $10.00 | $50.00 | 128,000 |
 | Gemini 3.5 Flash-Lite | $0.30 | $2.50 | 65,536 |
 | Gemini 3.8 Flash | $0.75 | $3.75 | 65,536 |
 | Gemini 3.1 Pro | $2.00 | $12.00 | 65,536 |

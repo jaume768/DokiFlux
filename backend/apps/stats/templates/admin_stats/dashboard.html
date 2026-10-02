@@ -1,0 +1,166 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block title %}Stats · {{ site_title|default:"Django site admin" }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; Statistics
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 12px 0 28px; }
+  .stats-card { background: var(--body-bg, #fff); border: 1px solid var(--border-color, #e0e0e0); border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .stats-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--body-quiet-color, #666); margin-bottom: 6px; }
+  .stats-card .value { font-size: 26px; font-weight: 700; line-height: 1.1; }
+  .stats-card .sub { font-size: 12px; color: var(--body-quiet-color, #666); margin-top: 4px; }
+  .stats-section { margin-top: 28px; }
+  .stats-section h2 { border-bottom: 1px solid var(--border-color, #e0e0e0); padding-bottom: 6px; margin-bottom: 12px; font-size: 15px; text-transform: uppercase; letter-spacing: .05em; color: var(--body-quiet-color, #444); }
+  .stats-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .stats-table th, .stats-table td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border-color, #eee); }
+  .stats-table th { background: var(--darkened-bg, #f7f7f7); font-weight: 600; }
+  .stats-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px; }
+  .chart-box { background: var(--body-bg, #fff); border: 1px solid var(--border-color, #e0e0e0); border-radius: 10px; padding: 14px; }
+  .chart-box h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--body-quiet-color, #555); }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .pill.green { background: #d1fae5; color: #065f46; }
+  .pill.red { background: #fee2e2; color: #991b1b; }
+  .pill.gray { background: #e5e7eb; color: #374151; }
+</style>
+
+<h1>Estadísticas — {{ today|date:"j M Y H:i" }}</h1>
+<p style="color: var(--body-quiet-color, #666); margin-top: -8px;">Datos en vivo desde la base de datos. Recarga la página para refrescar.</p>
+
+{# ── USERS ───────────────────────────────────────────── #}
+<div class="stats-section">
+  <h2>Usuarios</h2>
+  <div class="stats-grid">
+    <div class="stats-card"><div class="label">Total registrados</div><div class="value">{{ users_total|intcomma }}</div><div class="sub">Onboardados: {{ users_onboarded|intcomma }} · Verificados: {{ users_verified|intcomma }}</div></div>
+    <div class="stats-card"><div class="label">Hoy</div><div class="value">+{{ users_today }}</div><div class="sub">Últimas 24h</div></div>
+    <div class="stats-card"><div class="label">Últimos 7d</div><div class="value">+{{ users_7d }}</div></div>
+    <div class="stats-card"><div class="label">Últimos 30d</div><div class="value">+{{ users_30d }}</div></div>
+    <div class="stats-card"><div class="label">Activos 7d</div><div class="value">{{ active_7d }}</div><div class="sub">Con ≥1 generación</div></div>
+    <div class="stats-card"><div class="label">Activos 30d</div><div class="value">{{ active_30d }}</div></div>
+    <div class="stats-card"><div class="label">Premium</div><div class="value">{{ premium_count }}</div><div class="sub">Cancelaciones pendientes: {{ pending_cancellation }}</div></div>
+    <div class="stats-card"><div class="label">Free</div><div class="value">{{ free_count }}</div></div>
+    <div class="stats-card"><div class="label">Auth Google / Email</div><div class="value">{{ users_google }} <span style="font-size:14px;font-weight:400;color:#888">/ {{ users_email }}</span></div></div>
+  </div>
+</div>
+
+{# ── GENERATION ──────────────────────────────────────── #}
+<div class="stats-section">
+  <h2>Generación</h2>
+  <div class="stats-grid">
+    <div class="stats-card"><div class="label">Total</div><div class="value">{{ gen_total|intcomma }}</div></div>
+    <div class="stats-card"><div class="label">Hoy</div><div class="value">{{ gen_today }}</div></div>
+    <div class="stats-card"><div class="label">7d / 30d</div><div class="value">{{ gen_7d }} <span style="font-size:14px;color:#888">/ {{ gen_30d }}</span></div></div>
+    <div class="stats-card"><div class="label">Éxito 30d</div><div class="value">{{ success_rate_30d }}%</div><div class="sub">{{ gen_completed_30d }} ok · {{ gen_failed_30d }} fail</div></div>
+    <div class="stats-card"><div class="label">Tokens IN 30d</div><div class="value">{{ tokens_in_30d|intcomma }}</div></div>
+    <div class="stats-card"><div class="label">Tokens OUT 30d</div><div class="value">{{ tokens_out_30d|intcomma }}</div></div>
+    <div class="stats-card"><div class="label">Coste 30d</div><div class="value">${{ cost_30d|floatformat:2 }}</div></div>
+    <div class="stats-card"><div class="label">Proyectos</div><div class="value">{{ projects_total|intcomma }}</div><div class="sub">+{{ projects_30d }} en 30d</div></div>
+  </div>
+
+  <div class="stats-charts" style="margin-top: 14px;">
+    <div class="chart-box">
+      <h3>Estado (histórico)</h3>
+      <table class="stats-table">
+        <tr><th>Estado</th><th style="text-align:right">Total</th></tr>
+        {% for k, v in gen_status.items %}
+          <tr><td>{{ k }}</td><td style="text-align:right">{{ v|intcomma }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+    <div class="chart-box">
+      <h3>Top modelos (30d)</h3>
+      <table class="stats-table">
+        <tr><th>Modelo</th><th style="text-align:right">Generaciones</th></tr>
+        {% for m in top_models %}
+          <tr><td>{{ m.model }}</td><td style="text-align:right">{{ m.c|intcomma }}</td></tr>
+        {% empty %}
+          <tr><td colspan="2" style="color:#888">Sin datos</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+
+{# ── DEMO ────────────────────────────────────────────── #}
+<div class="stats-section">
+  <h2>Demo (sin registro)</h2>
+  <div class="stats-grid">
+    <div class="stats-card"><div class="label">Sesiones totales</div><div class="value">{{ demo_total|intcomma }}</div></div>
+    <div class="stats-card"><div class="label">Hoy</div><div class="value">{{ demo_today }}</div></div>
+    <div class="stats-card"><div class="label">7d / 30d</div><div class="value">{{ demo_7d }} <span style="font-size:14px;color:#888">/ {{ demo_30d }}</span></div></div>
+    <div class="stats-card"><div class="label">Conversión a registro</div><div class="value">{{ demo_conversion }}%</div><div class="sub">{{ demo_migrated|intcomma }} migradas</div></div>
+    <div class="stats-card"><div class="label">Engagement</div><div class="value">{{ demo_engagement }}%</div><div class="sub">Sesiones con ≥1 gen</div></div>
+  </div>
+</div>
+
+{# ── BILLING ─────────────────────────────────────────── #}
+<div class="stats-section">
+  <h2>Billing</h2>
+  <div class="stats-grid">
+    <div class="stats-card"><div class="label">Ingresos 30d</div><div class="value">€{{ revenue_30d|floatformat:2 }}</div><div class="sub">Histórico: €{{ revenue_total|floatformat:2 }}</div></div>
+    <div class="stats-card"><div class="label">Top-ups 30d</div><div class="value">{{ topups_30d }}</div><div class="sub">Pagos suscripción 30d: {{ subs_payments_30d }}</div></div>
+    <div class="stats-card"><div class="label">Suscripciones premium</div><div class="value">{{ premium_count }}</div><div class="sub">Cancelaciones pendientes: {{ pending_cancellation }}</div></div>
+    <div class="stats-card"><div class="label">Deuda total</div><div class="value">{{ total_debt|floatformat:4 }}</div><div class="sub">Suma UserPlan.debt</div></div>
+    <div class="stats-card"><div class="label">Créditos disponibles ahora</div><div class="value">{{ credits_remaining_now|floatformat:2 }}</div><div class="sub">Suma de grants no expirados</div></div>
+    <div class="stats-card"><div class="label">Concedidos 30d</div><div class="value">{{ credits_granted_30d|floatformat:2 }}</div></div>
+    <div class="stats-card"><div class="label">Consumidos 30d</div><div class="value">{{ credits_consumed_30d|floatformat:2 }}</div></div>
+  </div>
+</div>
+
+{# ── SUPPORT ─────────────────────────────────────────── #}
+<div class="stats-section">
+  <h2>Soporte / Leads</h2>
+  <div class="stats-grid">
+    <div class="stats-card"><div class="label">Contact requests</div><div class="value">{{ contacts_total }}</div><div class="sub">Nuevos en 7d: {{ contacts_new_7d }}</div></div>
+    {% for k, v in contacts_status.items %}
+      <div class="stats-card"><div class="label">{{ k|title }}</div><div class="value">{{ v }}</div></div>
+    {% endfor %}
+  </div>
+</div>
+
+{# ── CHARTS ──────────────────────────────────────────── #}
+<div class="stats-section">
+  <h2>Tendencia (últimos 30 días)</h2>
+  <div class="stats-charts">
+    <div class="chart-box"><h3>Nuevos usuarios / día</h3><canvas id="chart-users" height="120"></canvas></div>
+    <div class="chart-box"><h3>Generaciones / día</h3><canvas id="chart-gens" height="120"></canvas></div>
+    <div class="chart-box"><h3>Sesiones demo / día</h3><canvas id="chart-demo" height="120"></canvas></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{{ series_users|json_script:"data-users" }}
+{{ series_generations|json_script:"data-gens" }}
+{{ series_demo|json_script:"data-demo" }}
+<script>
+(function () {
+  const opts = {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+  };
+  function render(canvasId, jsonId, color) {
+    const data = JSON.parse(document.getElementById(jsonId).textContent);
+    const ctx = document.getElementById(canvasId).getContext("2d");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: data.map(d => d.date.slice(5)),
+        datasets: [{ data: data.map(d => d.count), backgroundColor: color }],
+      },
+      options: opts,
+    });
+  }
+  render("chart-users", "data-users", "rgba(139, 92, 246, 0.8)");
+  render("chart-gens", "data-gens", "rgba(99, 102, 241, 0.8)");
+  render("chart-demo", "data-demo", "rgba(56, 189, 248, 0.8)");
+})();
+</script>
+{% endblock %}

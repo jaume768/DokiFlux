@@ -32,7 +32,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   gemini: "Google",
 };
 
-const PROVIDER_ORDER = ["openai", "anthropic", "gemini"];
+const PROVIDER_ORDER = ["anthropic", "openai", "gemini"];
 
 type GroupedModels = { provider: string; label: string; models: ModelConfig[] }[];
 

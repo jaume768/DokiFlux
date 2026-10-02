@@ -58,7 +58,9 @@ function formatModel(model: string): string {
     "gpt-6.1-sol-xhigh": "GPT-6.1 Sol (xHigh)",
     "gpt-6-astra": "GPT-6 Astra",
     "gpt-6-astra-high": "GPT-6 Astra (High)",
-    "claude-sonnet-5.5": "Claude Sonnet 5.5",
+    "claude-sonnet-5.5-low": "Claude Sonnet 5.5 (Low)",
+    "claude-sonnet-5.5-medium": "Claude Sonnet 5.5 (Medium)",
+    "claude-sonnet-5.5-high": "Claude Sonnet 5.5 (High)",
     "claude-opus-5.5-low": "Claude Opus 5.5 (Low)",
     "claude-opus-5.5-medium": "Claude Opus 5.5 (Medium)",
     "claude-opus-5.5-high": "Claude Opus 5.5 (High)",
@@ -76,6 +78,12 @@ function formatModel(model: string): string {
     "claude-opus-4.7-medium": "Claude Opus 4.7 (Medium)",
     "claude-opus-4.7-high": "Claude Opus 4.7 (High)",
     "claude-opus-4.6": "Claude Opus 4.6",
+    "claude-opus-4.8-low": "Claude Opus 4.8 (Low)",
+    "claude-opus-4.8-medium": "Claude Opus 4.8 (Medium)",
+    "claude-opus-4.8-high": "Claude Opus 4.8 (High)",
+    "claude-sonnet-5-low": "Claude Sonnet 5 (Low)",
+    "claude-sonnet-5-medium": "Claude Sonnet 5 (Medium)",
+    "claude-sonnet-5-high": "Claude Sonnet 5 (High)",
     "gemini-3.1-flash-lite": "Gemini 3.1 Flash-Lite",
   };
   return map[model] ?? model;

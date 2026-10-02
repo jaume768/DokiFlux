@@ -293,3 +293,101 @@ def renew_monthly_credits(user):
     Called on each successful Stripe invoice payment to grant monthly credits.
     """
     return grant_monthly_credits(user)
+
+
+def admin_adjust_balance(user, delta, reason: str = ""):
+    """
+    Adjust a user's credit balance from the admin.
+    - delta > 0: pays outstanding debt first, then creates a CreditGrant
+      (source="purchase", 1-year expiry) for the remainder.
+    - delta < 0: consumes FIFO from active grants; if not enough, the rest
+      is added to UserPlan.debt.
+    Logs CreditTransaction rows with description prefixed "[admin]".
+    Returns the new balance.
+    """
+    delta = Decimal(str(delta))
+    if delta == 0:
+        return get_balance(user)
+
+    tag = f"[admin] {reason}".strip()
+
+    with transaction.atomic():
+        if delta > 0:
+            remaining_amount = apply_to_debt(user, delta)
+            if remaining_amount <= 0:
+                CreditTransaction.objects.create(
+                    user=user,
+                    amount=delta,
+                    tx_type="purchase",
+                    description=f"{tag} (applied entirely to debt)",
+                    grant=None,
+                )
+            else:
+                grant = CreditGrant.objects.create(
+                    user=user,
+                    original_amount=remaining_amount,
+                    remaining=remaining_amount,
+                    source="purchase",
+                    expires_at=now() + timedelta(days=365),
+                )
+                CreditTransaction.objects.create(
+                    user=user,
+                    amount=remaining_amount,
+                    tx_type="purchase",
+                    description=tag,
+                    grant=grant,
+                )
+            logger.info("[admin-adjust] user=%s +%s reason=%s", user.email, delta, reason)
+        else:
+            amount = -delta  # positive
+            grants = list(
+                CreditGrant.objects.filter(
+                    user=user, remaining__gt=0, expires_at__gt=now()
+                )
+                .select_for_update()
+                .order_by("expires_at")
+            )
+
+            remaining_to_deduct = amount
+            for grant in grants:
+                if remaining_to_deduct <= 0:
+                    break
+                deduction = min(grant.remaining, remaining_to_deduct)
+                grant.remaining -= deduction
+                grant.save(update_fields=["remaining"])
+                remaining_to_deduct -= deduction
+
+                CreditTransaction.objects.create(
+                    user=user,
+                    amount=-deduction,
+                    tx_type="refund",
+                    description=tag,
+                    grant=grant,
+                )
+
+            if remaining_to_deduct > 0:
+                plan = (
+                    UserPlan.objects.select_for_update()
+                    .filter(user=user)
+                    .first()
+                )
+                if plan is None:
+                    plan = UserPlan.objects.create(user=user, plan_type="free")
+                    plan = (
+                        UserPlan.objects.select_for_update()
+                        .filter(pk=plan.pk)
+                        .first()
+                    )
+                plan.debt = (plan.debt or Decimal("0")) + remaining_to_deduct
+                plan.save(update_fields=["debt"])
+
+                CreditTransaction.objects.create(
+                    user=user,
+                    amount=-remaining_to_deduct,
+                    tx_type="debt",
+                    description=f"{tag} [overdraft]",
+                    grant=None,
+                )
+            logger.info("[admin-adjust] user=%s -%s reason=%s", user.email, amount, reason)
+
+    return get_balance(user)

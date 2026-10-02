@@ -73,7 +73,7 @@ export default function TemplatesPage() {
               <div className="relative h-44 overflow-hidden" style={{ background: "rgba(10,10,20,0.8)" }}>
                 <Image
                   src={template.image}
-                  alt={template.name}
+                  alt={template.alt}
                   fill
                   className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
