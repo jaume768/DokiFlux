@@ -320,7 +320,7 @@ export function Hero() {
                     style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
                   >
                     <Lock className="w-3 h-3" />
-                    Gemini 3.1 Flash
+                    GPT-6 Luna
                     <ChevronDown className="w-3 h-3 opacity-60" />
                   </div>
                   <button

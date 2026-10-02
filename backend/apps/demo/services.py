@@ -1,6 +1,6 @@
 """
 Demo mode generation: mirrors `stream_phased_generation` but works with a
-DemoSession instead of a User/Project pair. Forces `gpt-6.1-sol` with a per-file
+DemoSession instead of a User/Project pair. Forces `gpt-6-luna` with a per-file
 token budget that matches production (reasoning tokens consume the budget),
 hard-caps credits, and stores the resulting files directly on the DemoSession.
 """
@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 
 
 # --- Demo hard limits ---
-# gpt-6.1-sol is a reasoning model: reasoning tokens count against `max_output_tokens`.
+# gpt-6-luna is a reasoning model: reasoning tokens count against `max_output_tokens`.
 # 12k was too tight (output got truncated to empty), so the per-file budget is 31000.
-DEMO_MODEL = "gpt-6.1-sol"
+DEMO_MODEL = "gpt-6-luna"
 DEMO_MAX_FILE_TOKENS = 31000
 DEMO_MAX_PLANNER_TOKENS = 12000  # legacy constant; planner uses provider-internal cap
 DEMO_MAX_FILES_PER_GEN = 8  # safety cap

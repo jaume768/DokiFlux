@@ -209,18 +209,8 @@ MODEL_REGISTRY = {
         "display_name": "Gemini 3.8 Flash",
         "category": "gemini",
     },
-    # Price for prompts ≤200K tokens.
-    "gemini-3.1-pro": {
-        "provider": "gemini",
-        "api_model": "gemini-3.1-pro-preview",
-        "thinking_level": "high",
-        "input_per_million": Decimal("2.00"),
-        "output_per_million": Decimal("12.00"),
-        "max_output_tokens": 65536,
-        "display_name": "Gemini 3.1 Pro",
-        "category": "gemini",
-        "premium_only": True,
-    },
+    # Gemini 3.1 Pro is not offered: it has no free-tier quota, and the Gemini
+    # key in use is a free-tier key (requests fail with 429, limit 0).
 }
 
 # Set of valid model IDs for quick validation
@@ -248,6 +238,7 @@ LEGACY_MODEL_ALIASES = {
     "claude-sonnet-5-medium": "claude-sonnet-5.5-medium",
     "claude-sonnet-5-high": "claude-sonnet-5.5-high",
     "gemini-3.1-flash-lite": "gemini-3.5-flash-lite",
+    "gemini-3.1-pro": "gemini-3.8-flash",
 }
 
 

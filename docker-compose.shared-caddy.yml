@@ -1,0 +1,104 @@
+# Despliegue en un servidor donde OTRO proyecto ya tiene un Caddy en 80/443
+# (servidor de webs, /srv/dokiflux → https://dokiflux.websjfs.com).
+# Solo frontend y backend se unen a la red Docker de ese Caddy; él hace de proxy
+# (bloque en deploy/dokiflux.caddy, añadido al final de su Caddyfile).
+#
+# Las imágenes se construyen fuera del servidor (tiene 1 vCPU / 2 GB: el build
+# de Next.js no cabe) y se cargan con `docker save | ssh ... docker load`.
+#
+# Los servicios NO se llaman `backend`, `db`, `web`... a propósito: el nombre del
+# servicio es un alias DNS en la red compartida y chocaría con los de otros
+# proyectos (jaume-leveling ya tiene un `db`).
+
+services:
+  dokiflux-frontend:
+    image: dokiflux-frontend:websjfs
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+    depends_on:
+      - dokiflux-backend
+    networks:
+      - proxy
+    mem_limit: 384m
+
+  dokiflux-backend:
+    image: dokiflux-backend:websjfs
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.prod
+      - POSTGRES_HOST=dokiflux-db
+      - POSTGRES_PORT=5432
+    # Un solo worker de uvicorn (las vistas de streaming son async): el servidor va justo de RAM.
+    command:
+      - sh
+      - -c
+      - python manage.py migrate --noinput --fake-initial && exec uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --workers 1
+    depends_on:
+      dokiflux-db:
+        condition: service_healthy
+      dokiflux-redis:
+        condition: service_started
+    networks:
+      - internal
+      - proxy
+    mem_limit: 512m
+
+  dokiflux-worker:
+    image: dokiflux-backend:websjfs
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.prod
+      - POSTGRES_HOST=dokiflux-db
+      - POSTGRES_PORT=5432
+    command: celery -A config worker -l INFO --concurrency=1
+    depends_on:
+      dokiflux-db:
+        condition: service_healthy
+      dokiflux-redis:
+        condition: service_started
+    networks:
+      - internal
+    mem_limit: 384m
+
+  dokiflux-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dokiflux}
+      POSTGRES_USER: ${POSTGRES_USER:-dokiflux}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dokiflux}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+    mem_limit: 256m
+
+  dokiflux-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:?falta REDIS_PASSWORD en .env}
+    volumes:
+      - redisdata:/data
+    networks:
+      - internal
+    mem_limit: 96m
+
+networks:
+  internal:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:?falta PROXY_NETWORK en .env (red Docker del Caddy existente)}
+
+volumes:
+  pgdata:
+  redisdata:

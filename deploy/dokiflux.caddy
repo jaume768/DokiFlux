@@ -1,0 +1,29 @@
+# --- dokiflux (Next.js + Django, /srv/dokiflux, compose docker-compose.shared-caddy.yml) ---
+# Bloque del sitio para el Caddy que ya ocupa 80/443 en el servidor.
+# Se añade al final del Caddyfile de ese Caddy (con >>, no con sed -i: rompe
+# el bind mount) y se recarga. El DNS *.websjfs.com ya apunta al servidor.
+dokiflux.websjfs.com {
+	# API, admin y estáticos → Django. Sin `encode`: /api/generate es SSE.
+	handle /api/* {
+		reverse_proxy dokiflux-backend:8000
+	}
+	handle /admin/* {
+		reverse_proxy dokiflux-backend:8000
+	}
+	handle /static/* {
+		reverse_proxy dokiflux-backend:8000
+	}
+
+	# COOP/COEP para WebContainer los pone Next.js (next.config.ts).
+	handle /app/* {
+		header Referrer-Policy "strict-origin-when-cross-origin"
+		reverse_proxy dokiflux-frontend:3000
+	}
+
+	handle {
+		encode zstd gzip
+		reverse_proxy dokiflux-frontend:3000
+	}
+
+	header -Server
+}

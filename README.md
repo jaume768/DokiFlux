@@ -88,7 +88,7 @@ El objetivo es convertirlo en un SaaS con autenticación, persistencia de proyec
 | **Base de datos** | PostgreSQL 16 |
 | **Cache / Rate Limiting** | Redis 7 |
 | **Email transaccional** | Brevo (Sendinblue) |
-| **IA** | Multi-proveedor: OpenAI (GPT-6.1 Sol, GPT-6 Astra, GPT-6 Luna), Claude (Fable 5.1, Opus 5.5, Sonnet 5.5), Gemini (3.8 Flash, 3.1 Pro, 3.5 Flash-Lite) |
+| **IA** | Multi-proveedor: OpenAI (GPT-6.1 Sol, GPT-6 Astra, GPT-6 Luna), Claude (Fable 5.1, Opus 5.5, Sonnet 5.5), Gemini (3.8 Flash, 3.5 Flash-Lite) |
 | **Auth** | JWT (access 30min / refresh 7d), Google OAuth (`google-auth`) |
 | **Infraestructura** | Docker Compose (dev), Dockerfiles multietapa |
 
@@ -277,7 +277,7 @@ Se aplica solo al endpoint `/api/generate/`.
 **Por qué:** Para ser competitivo hay que ofrecer múltiples modelos (cada uno tiene sus fortalezas en coste, velocidad e inteligencia).
 
 **Qué se hizo:**
-- **17 modelos de IA** — Claude Sonnet 5.5 (low/medium/high; Low es el modelo por defecto), Claude Opus 5.5 (low/medium/high), Claude Fable 5.1, GPT-6.1 Sol (4 niveles de reasoning: low/medium/high/xhigh), GPT-6 Astra (medium/high), GPT-6 Luna, Gemini 3.8 Flash, Gemini 3.1 Pro, Gemini 3.5 Flash-Lite
+- **16 modelos de IA** — Claude Sonnet 5.5 (low/medium/high; Low es el modelo por defecto), Claude Opus 5.5 (low/medium/high), Claude Fable 5.1, GPT-6.1 Sol (4 niveles de reasoning: low/medium/high/xhigh), GPT-6 Astra (medium/high), GPT-6 Luna, Gemini 3.8 Flash, Gemini 3.5 Flash-Lite
 - **3 providers** — `OpenAIProvider` (refactorizado), `AnthropicProvider` (nuevo), `GeminiProvider` (nuevo), todos sobre `BaseProvider`
 - **MODEL_REGISTRY centralizado** — Config, pricing y límites de cada modelo en `providers/registry.py`. Único punto de verdad.
 - **Multi API Key rotation** — `KeyPool` thread-safe con round-robin en `providers/key_pool.py`. Soporta múltiples keys por proveedor (comma-separated en `.env`).
@@ -621,7 +621,6 @@ Dokiflux/
 | Claude Fable 5.1 | $10.00 | $50.00 | 128,000 |
 | Gemini 3.5 Flash-Lite | $0.30 | $2.50 | 65,536 |
 | Gemini 3.8 Flash | $0.75 | $3.75 | 65,536 |
-| Gemini 3.1 Pro | $2.00 | $12.00 | 65,536 |
 
 > **Nota:** Precios base de API (el usuario paga × `COST_MARKUP`). Los "thinking tokens" se facturan como output en los tres proveedores: a mayor effort, más tokens de salida consumidos. El precio de Gemini 3.8 Flash es introductorio hasta el 31/12/2026 ($1.50 / $7.50 después).
 
