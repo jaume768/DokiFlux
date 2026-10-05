@@ -213,7 +213,6 @@ class CreateCheckoutSessionView(APIView):
 
             session = stripe.checkout.Session.create(
                 customer=customer_id,
-                payment_method_types=["card"],
                 line_items=[
                     {
                         "price": settings.STRIPE_PREMIUM_PRICE_ID,
@@ -286,7 +285,6 @@ class CreateTopupSessionView(APIView):
 
             session = stripe.checkout.Session.create(
                 customer=customer_id,
-                payment_method_types=["card"],
                 line_items=[
                     {
                         "price_data": {
